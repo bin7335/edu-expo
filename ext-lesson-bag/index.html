@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수업 가방 - 탭 묶음을 수업 세트로 저장하는 크롬 확장 체험</title>
+<meta name="description" content="지금 열린 탭들을 '3교시 과학 - 물의 순환' 같은 수업 세트로 담아 두고 한 번에 다시 여는 교사용 크롬 확장. QR 코드와 JSON 백업까지, 설치 없이 이 페이지에서 체험해 보세요.">
+<style>
+  :root{--bg:#fbf6f1;--ink:#1f2937;--muted:#6b7280;--line:#e5e7eb;--brand:#c2410c;--brand2:#b45309}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:14px;padding:12px 24px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff}
+  .logo{width:42px;height:42px;border-radius:11px;background:#fff;display:grid;place-items:center;font-size:24px;flex:none}
+  h1{margin:0;font-size:24px;letter-spacing:-.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;gap:4px;background:#431407;color:#fdba74;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px}
+  header p{margin:2px 0 0;font-size:14px;opacity:.92}
+  .dl{margin-left:auto;flex:none;background:#fff;color:var(--brand);font-weight:800;font-size:15px;text-decoration:none;padding:10px 16px;border-radius:12px;box-shadow:0 2px 0 #0002}
+  .dl:hover{filter:brightness(.96)}
+
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;padding:14px 24px;max-width:1400px;margin:0 auto}
+  .how{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;margin-bottom:8px}
+  .how b{background:#ffedd5;color:#9a3412;border-radius:999px;padding:2px 9px;font-size:13px}
+  .btn{font:inherit;font-weight:700;font-size:13px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:6px 11px;cursor:pointer}
+  .btn:hover{filter:brightness(.96)}
+
+  .browser{background:#fff;border:1px solid #d1d5db;border-radius:12px;overflow:hidden;box-shadow:0 6px 20px #c2410c12}
+  .tabs{display:flex;gap:3px;background:#e5e7eb;padding:6px 8px 0;overflow:hidden}
+  .tab{font-size:12px;background:#d1d5db;color:#374151;border-radius:8px 8px 0 0;padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 170px}
+  .tab.on{background:#fff;font-weight:700}
+  .addr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line)}
+  .addr span{flex:1;min-width:0;background:#f3f4f6;border-radius:999px;padding:4px 12px;font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .addr i{font-style:normal;font-size:16px}
+  .pg{padding:14px 18px;display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:16px;align-items:center}
+  .pg h2{margin:0 0 6px;font-size:19px}
+  .pg p{margin:0 0 8px;font-size:14px;line-height:1.65;color:#374151}
+  .pg .arrow{font-weight:800;color:var(--brand)}
+  .qrbox{text-align:center;font-size:12px;color:var(--muted)}
+  .qrbox div{border:1px solid var(--line);border-radius:10px;overflow:hidden;width:150px;margin:0 auto 4px}
+  .qrbox svg{display:block;width:100%;height:auto}
+
+  .info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.55}
+  .card h3{margin:0 0 6px;font-size:14px}
+  .card ol,.card ul{margin:0;padding-left:20px}
+  .card code{background:#fff7ed;color:#c2410c;border-radius:5px;padding:0 4px}
+  .card .safe{margin:8px 0 0;color:#9a3412;background:#fff7ed;border-radius:8px;padding:6px 8px}
+
+  .popup{background:#fff;border:1px solid #d1d5db;border-radius:14px;padding:14px;box-shadow:0 10px 30px #c2410c22;position:relative;align-self:start}
+  .popup::before{content:"확장 팝업 · 툴바의 🎒 아이콘을 누르면 열려요";position:absolute;top:-10px;left:12px;background:#334155;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .reset{margin-top:8px;text-align:right}
+  footer{text-align:right;padding:0 24px 18px;font-size:13px}
+  footer a{color:var(--muted);text-decoration:none}
+  footer a:hover{color:var(--brand)}
+
+  @media (max-width:900px){
+    header{flex-wrap:wrap;padding:12px 14px}
+    h1{font-size:21px}
+    .dl{margin-left:0}
+    .wrap{grid-template-columns:minmax(0,1fr);padding:12px}
+    .pg{grid-template-columns:minmax(0,1fr)}
+    .info{grid-template-columns:minmax(0,1fr)}
+    .popup{margin-top:6px}
+    .tab{flex-basis:110px}
+  }
+/* ==css:start== 수업 가방 화면 모양 (확장 팝업·편집 페이지·체험 페이지 공통) */
+.lb{--lb-ink:#1f2937;--lb-muted:#6b7280;--lb-line:#e5e7eb;--lb-brand:#c2410c;--lb-soft:#fff7ed;
+  font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--lb-ink);font-size:14px;line-height:1.45}
+.lb *{box-sizing:border-box}
+.lb-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.lb-logo{width:36px;height:36px;border-radius:10px;background:var(--lb-brand);display:grid;place-items:center;font-size:20px;flex:none}
+.lb-head b{font-size:17px;display:block}
+.lb-head small{color:var(--lb-muted);font-size:12px;display:block}
+.lb-save{background:var(--lb-soft);border:1px solid #fed7aa;border-radius:12px;padding:10px;display:grid;gap:8px}
+.lb-in{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid #d1d5db;border-radius:9px;background:#fff;color:var(--lb-ink)}
+.lb-in:focus{outline:2px solid #fdba74;border-color:transparent}
+.lb details{background:#fff;border:1px solid var(--lb-line);border-radius:9px;padding:6px 9px}
+.lb summary{cursor:pointer;font-size:13px}
+.lb summary span{color:var(--lb-muted);font-size:12px}
+.lb-tabs{max-height:150px;overflow:auto;margin-top:6px;display:grid;gap:2px}
+.lb-tabs label{display:flex;gap:7px;align-items:flex-start;font-size:13px;cursor:pointer;padding:3px 2px;border-radius:6px}
+.lb-tabs label:hover{background:#f9fafb}
+.lb-tabs input{margin-top:3px;accent-color:var(--lb-brand)}
+.lb-tabs span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-tabs small,.lb-tt small,.lb-lt small{display:block;color:var(--lb-muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-mini{display:flex;gap:6px;margin-top:6px}
+.lb-btn{font:inherit;font-weight:700;font-size:14px;border-radius:10px;border:1px solid var(--lb-line);background:#fff;color:var(--lb-ink);padding:8px 12px;cursor:pointer}
+.lb-btn:hover{filter:brightness(.96)}
+.lb-btn:disabled{opacity:.4;cursor:default}
+.lb-btn.on{background:#ffedd5;border-color:#fdba74}
+.lb-primary{background:var(--lb-brand);color:#fff;border:0}
+.lb-sm{font-size:12px;padding:5px 9px;border-radius:8px}
+.lb-danger{color:#b91c1c}
+.lb-sets-h{font-weight:800;margin:14px 0 6px}
+.lb-sets-h span{color:var(--lb-muted);font-weight:600;font-size:12px}
+.lb-sets{display:grid;gap:8px}
+.lb-card{border:1px solid var(--lb-line);border-radius:12px;padding:9px 10px;background:#fff}
+.lb-card.lb-open{border-color:#fdba74;box-shadow:0 2px 10px #c2410c1a}
+.lb-top{display:flex;gap:8px;align-items:center}
+.lb-tt{flex:1;min-width:0}
+.lb-tt b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-go{background:var(--lb-brand);color:#fff;border:0;flex:none;padding:7px 12px}
+.lb-acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.lb-edit,.lb-qr{margin-top:8px;padding-top:8px;border-top:1px dashed var(--lb-line);display:grid;gap:7px}
+.lb-edit ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.lb-edit li{display:flex;gap:4px;align-items:center;background:#f9fafb;border-radius:8px;padding:5px 6px}
+.lb-lt{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-ic{border:1px solid var(--lb-line);background:#fff;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:11px;color:var(--lb-ink);flex:none;padding:0}
+.lb-ic:disabled{opacity:.3;cursor:default}
+.lb-rm{color:#b91c1c;font-size:15px}
+.lb-add{display:flex;gap:6px}
+.lb-add .lb-in{flex:1;min-width:0;padding:6px 8px;font-size:13px}
+.lb-qrimg{width:190px;max-width:100%;margin:0 auto;border:1px solid var(--lb-line);border-radius:10px;overflow:hidden}
+.lb-qrimg svg{display:block;width:100%;height:auto}
+.lb-cap{margin:0;font-size:12px;color:var(--lb-muted);text-align:center}
+.lb-warn{margin:0;color:#b91c1c;font-size:13px;text-align:center}
+.lb-empty{color:var(--lb-muted);font-size:13px;margin:4px 0}
+.lb-foot{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.lb-msg{min-height:20px;margin-top:8px;font-size:13px;font-weight:600;color:var(--lb-brand)}
+.lb-full .lb-qrimg{width:240px}
+/* ==css:end== */
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🎒</div>
+  <div>
+    <h1>수업 가방 <span class="badge">🧩 크롬 확장</span></h1>
+    <p>수업에 쓸 탭 묶음을 세트로 담아 두고, 다음 시간엔 클릭 한 번으로 다시 열어요</p>
+  </div>
+  <a class="dl" href="../extensions/lesson-bag.zip" download>⬇ zip 내려받기</a>
+</header>
+
+<div class="wrap">
+  <main>
+    <div class="how"><b>체험</b> 아래 브라우저 창에 탭 5개가 열려 있다고 생각해 보세요. 오른쪽 팝업에서 이름을 적고 <b>🎒 가방에 담기</b> → <b>▶ 열기</b> · <b>✏️ 편집</b> · <b>▦ QR</b></div>
+    <div class="browser">
+      <div class="tabs" id="tabs"></div>
+      <div class="addr"><i aria-hidden="true">🔒</i><span id="addr"></span><i title="수업 가방 확장" aria-hidden="true">🎒</i></div>
+      <div class="pg">
+        <div>
+          <h2>📚 수업 준비하다 보면 탭이 이렇게…</h2>
+          <p>위키백과, 에듀넷, 과학관 누리집… 수업마다 여는 탭을 매번 다시 찾지 마세요.</p>
+          <p class="arrow">→ 지금 창의 탭을 <u>수업 세트</u>로 저장하고, 수업 시간에 새 창으로 한 번에 열어요.</p>
+          <p>세트 안 링크는 순서 바꾸기·지우기·추가가 되고, JSON 파일로 내보내 다른 컴퓨터로 옮길 수 있어요.</p>
+        </div>
+        <div class="qrbox"><div id="miniQr"></div>QR로 학생 기기에 링크 전달</div>
+      </div>
+    </div>
+    <div class="info">
+      <div class="card">
+        <h3>▦ QR은 왜 '링크 하나'가 기본인가요?</h3>
+        <ul>
+          <li>서버 없이 세트 전체를 여는 공유 주소는 만들 수 없어요.</li>
+          <li>그래서 기본은 <b>링크 하나</b> — 학생이 카메라로 찍으면 바로 열려요.</li>
+          <li><b>목록 전체(글자)</b>도 고를 수 있어요. 찍으면 주소 목록이 글로 보여요.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>⚙️ 내 크롬에 설치 (3단계)</h3>
+        <ol>
+          <li>위 <b>zip 내려받기</b> → 압축 풀기</li>
+          <li><code>chrome://extensions</code> → 오른쪽 위 <b>개발자 모드</b> 켜기</li>
+          <li><b>압축해제된 확장 프로그램 로드</b> → 푼 폴더 고르기</li>
+        </ol>
+        <p class="safe">🔐 권한은 탭·저장소 두 가지뿐. 세트는 내 컴퓨터에만 저장돼요.</p>
+      </div>
+    </div>
+  </main>
+
+  <aside>
+    <div class="popup" id="popup"></div>
+    <div class="reset"><button class="btn" id="reset">↺ 예시 세트로 되돌리기</button></div>
+  </aside>
+</div>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<script>
+// ==core:start== 수업 가방 핵심 로직 (확장 bag-core.js 와 체험 페이지가 같은 코드)
+// 네트워크 요청 없음. QR도 이 파일 안에서 직접 그립니다.
+
+/*
+ * 작은 QR 코드 인코더 (바이트 모드, 오류 정정 M, 버전 1-40)
+ * 이 앱을 위해 새로 작성. 알고리즘 구조는 ISO/IEC 18004 표준 및
+ * Project Nayuki "QR Code generator library"(MIT License, Copyright (c) Project Nayuki)의
+ * 공개된 설계를 참고했습니다.
+ * (edu-expo "척척 QR 이름표"의 인코더를 그대로 옮겨 씀)
+ */
+const QR = (() => {
+  // [버전] 블록당 ECC 코드워드 수 / 블록 수 (오류 정정 레벨 M)
+  const ECC_PER_BLOCK = [-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28];
+  const NUM_BLOCKS    = [-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49];
+  const FORMAT_M = 0; // 레벨 M의 형식 비트 값
+
+  function rawModules(v){
+    let r = (16*v + 128)*v + 64;
+    if (v >= 2){ const n = Math.floor(v/7) + 2; r -= (25*n - 10)*n - 55; if (v >= 7) r -= 36; }
+    return r;
+  }
+  const dataCodewords = v => Math.floor(rawModules(v)/8) - ECC_PER_BLOCK[v]*NUM_BLOCKS[v];
+
+  function gfMul(x, y){ let z = 0; for (let i = 7; i >= 0; i--){ z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z & 0xFF; }
+  function rsDivisor(deg){
+    const r = new Array(deg).fill(0); r[deg-1] = 1; let root = 1;
+    for (let i = 0; i < deg; i++){
+      for (let j = 0; j < r.length; j++){ r[j] = gfMul(r[j], root); if (j+1 < r.length) r[j] ^= r[j+1]; }
+      root = gfMul(root, 2);
+    }
+    return r;
+  }
+  function rsRemainder(data, div){
+    const r = div.map(() => 0);
+    for (const b of data){ const f = b ^ r.shift(); r.push(0); div.forEach((c, i) => r[i] ^= gfMul(c, f)); }
+    return r;
+  }
+
+  function encode(text){
+    const bytes = Array.from(new TextEncoder().encode(text));
+    const nonAscii = bytes.some(b => b > 127);
+    // 버전 결정
+    let ver = 0, bitsNeeded = 0;
+    for (let v = 1; v <= 40; v++){
+      const cc = v < 10 ? 8 : 16;
+      bitsNeeded = (nonAscii ? 12 : 0) + 4 + cc + bytes.length*8;
+      if (bitsNeeded <= dataCodewords(v)*8){ ver = v; break; }
+    }
+    if (!ver) throw new Error('너무 길어요');
+    // 비트열
+    const bb = [];
+    const put = (val, len) => { for (let i = len-1; i >= 0; i--) bb.push((val >>> i) & 1); };
+    if (nonAscii){ put(0b0111, 4); put(26, 8); }   // ECI 26 = UTF-8
+    put(0b0100, 4); put(bytes.length, ver < 10 ? 8 : 16);
+    bytes.forEach(b => put(b, 8));
+    const cap = dataCodewords(ver)*8;
+    put(0, Math.min(4, cap - bb.length));
+    put(0, (8 - bb.length % 8) % 8);
+    for (let p = 0xEC; bb.length < cap; p ^= 0xEC ^ 0x11) put(p, 8);
+    const data = [];
+    for (let i = 0; i < bb.length; i += 8){ let x = 0; for (let j = 0; j < 8; j++) x = (x << 1) | bb[i+j]; data.push(x); }
+
+    // ECC + 인터리브
+    const nb = NUM_BLOCKS[ver], el = ECC_PER_BLOCK[ver], raw = Math.floor(rawModules(ver)/8);
+    const nShort = nb - raw % nb, shortLen = Math.floor(raw / nb);
+    const div = rsDivisor(el), blocks = [];
+    for (let i = 0, k = 0; i < nb; i++){
+      const d = data.slice(k, k + shortLen - el + (i < nShort ? 0 : 1)); k += d.length;
+      const e = rsRemainder(d, div);
+      if (i < nShort) d.push(0);
+      blocks.push(d.concat(e));
+    }
+    const cw = [];
+    for (let i = 0; i < blocks[0].length; i++)
+      for (let j = 0; j < nb; j++)
+        if (i !== shortLen - el || j >= nShort) cw.push(blocks[j][i]);
+
+    // 행렬
+    const size = ver*4 + 17;
+    const mod = Array.from({length:size}, () => new Array(size).fill(false));
+    const fn  = Array.from({length:size}, () => new Array(size).fill(false));
+    const set = (x, y, d) => { mod[y][x] = d; fn[y][x] = true; };
+
+    for (let i = 0; i < size; i++){ set(6, i, i%2 === 0); set(i, 6, i%2 === 0); }
+    const finder = (cx, cy) => {
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++){
+        const x = cx+dx, y = cy+dy, d = Math.max(Math.abs(dx), Math.abs(dy));
+        if (x >= 0 && x < size && y >= 0 && y < size) set(x, y, d !== 2 && d !== 4);
+      }
+    };
+    finder(3,3); finder(size-4,3); finder(3,size-4);
+    // 정렬 패턴
+    let al = [];
+    if (ver > 1){
+      const n = Math.floor(ver/7) + 2;
+      const step = ver === 32 ? 26 : Math.ceil((ver*4 + 4) / (n*2 - 2)) * 2;
+      al = [6];
+      for (let p = size - 7; al.length < n; p -= step) al.splice(1, 0, p);
+    }
+    al.forEach((ax, i) => al.forEach((ay, j) => {
+      if ((i === 0 && j === 0) || (i === 0 && j === al.length-1) || (i === al.length-1 && j === 0)) return;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++)
+        set(ax+dx, ay+dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+    }));
+    const drawFormat = mask => {
+      const d = (FORMAT_M << 3) | mask; let r = d;
+      for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+      const bits = ((d << 10) | r) ^ 0x5412;
+      const g = i => ((bits >>> i) & 1) !== 0;
+      for (let i = 0; i <= 5; i++) set(8, i, g(i));
+      set(8, 7, g(6)); set(8, 8, g(7)); set(7, 8, g(8));
+      for (let i = 9; i < 15; i++) set(14 - i, 8, g(i));
+      for (let i = 0; i < 8; i++) set(size - 1 - i, 8, g(i));
+      for (let i = 8; i < 15; i++) set(8, size - 15 + i, g(i));
+      set(8, size - 8, true);
+    };
+    drawFormat(0);
+    if (ver >= 7){
+      let r = ver;
+      for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1F25);
+      const bits = (ver << 12) | r;
+      for (let i = 0; i < 18; i++){
+        const b = ((bits >>> i) & 1) !== 0, a = size - 11 + i % 3, c = Math.floor(i / 3);
+        set(a, c, b); set(c, a, b);
+      }
+    }
+    // 데이터 배치 (지그재그)
+    let bi = 0;
+    for (let right = size - 1; right >= 1; right -= 2){
+      if (right === 6) right = 5;
+      for (let vert = 0; vert < size; vert++){
+        for (let j = 0; j < 2; j++){
+          const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - vert : vert;
+          if (!fn[y][x] && bi < cw.length*8){ mod[y][x] = ((cw[bi >>> 3] >>> (7 - (bi & 7))) & 1) !== 0; bi++; }
+        }
+      }
+    }
+    // 마스크 선택
+    const maskFn = [
+      (x,y) => (x+y)%2 === 0, (x,y) => y%2 === 0, (x,y) => x%3 === 0, (x,y) => (x+y)%3 === 0,
+      (x,y) => (Math.floor(x/3)+Math.floor(y/2))%2 === 0, (x,y) => x*y%2 + x*y%3 === 0,
+      (x,y) => (x*y%2 + x*y%3)%2 === 0, (x,y) => ((x+y)%2 + x*y%3)%2 === 0,
+    ];
+    const applyMask = m => { for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!fn[y][x] && maskFn[m](x,y)) mod[y][x] = !mod[y][x]; };
+    const penalty = () => {
+      let p = 0, dark = 0;
+      const lineScore = get => {
+        for (let a = 0; a < size; a++){
+          let run = 1, s = '';
+          for (let b = 0; b < size; b++){
+            const v = get(a, b); s += v ? '1' : '0';
+            if (b > 0){ if (v === get(a, b-1)){ run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; }
+          }
+          const t = '0000' + s + '0000';
+          for (let i = t.indexOf('1011101'); i !== -1; i = t.indexOf('1011101', i + 1))
+            if (t.substr(i-4, 4) === '0000' || t.substr(i+7, 4) === '0000') p += 40;
+        }
+      };
+      lineScore((a,b) => mod[a][b]); lineScore((a,b) => mod[b][a]);
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
+        if (mod[y][x]) dark++;
+        if (x < size-1 && y < size-1){ const c = mod[y][x]; if (c === mod[y][x+1] && c === mod[y+1][x] && c === mod[y+1][x+1]) p += 3; }
+      }
+      const total = size*size;
+      p += Math.max(0, Math.ceil(Math.abs(dark*20 - total*10) / total) - 1) * 10;
+      return p;
+    };
+    let best = 0, bestP = Infinity;
+    for (let m = 0; m < 8; m++){
+      applyMask(m); drawFormat(m);
+      const pv = penalty();
+      if (pv < bestP){ bestP = pv; best = m; }
+      applyMask(m);
+    }
+    applyMask(best); drawFormat(best);
+    return { size, ver, mask: best, modules: mod };
+  }
+
+  function toSvg(text, quiet = 4){
+    const q = encode(text), n = q.size + quiet*2;
+    let d = '';
+    for (let y = 0; y < q.size; y++) for (let x = 0; x < q.size; x++)
+      if (q.modules[y][x]) d += `M${x+quiet} ${y+quiet}h1v1h-1z`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" role="img"><rect width="${n}" height="${n}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+  }
+  return { encode, toSvg };
+})();
+
+const BagCore = (() => {
+  const clean = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  // http/https 주소만 담기 (크롬 설정 화면·확장 페이지 등은 뺌)
+  function normalizeUrl(u){
+    let s = clean(u);
+    if (!s) return null;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = 'https://' + s;
+    try { const x = new URL(s); return /^https?:$/.test(x.protocol) ? x.href : null; } catch (_) { return null; }
+  }
+  function displayUrl(u){ try { return decodeURI(u); } catch (_) { return u; } }
+  function hostOf(u){ try { return new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return ''; } }
+
+  // 제목 없이 주소만 넣었을 때: 주소 끝부분으로 제목 짐작 (예: …/wiki/수증기 → '수증기 - ko.wikipedia.org')
+  function guessTitle(url){
+    const host = hostOf(url);
+    try {
+      const seg = decodeURIComponent(new URL(url).pathname.split('/').filter(Boolean).pop() || '').replace(/_/g, ' ').trim();
+      return seg ? `${seg.slice(0, 60)} - ${host}` : host || url;
+    } catch (_) { return host || url; }
+  }
+  function makeLinks(list){
+    const out = [];
+    (list || []).forEach(x => {
+      const url = normalizeUrl(x && x.url);
+      if (url) out.push({ title: clean(x.title) || guessTitle(url), url });
+    });
+    return out;
+  }
+  const defaultName = (now = new Date()) => `${now.getMonth() + 1}월 ${now.getDate()}일 수업 세트`;
+  const makeSet = (name, links, now = new Date()) =>
+    ({ id: uid(), name: clean(name) || defaultName(now), createdAt: now.toISOString(), links: makeLinks(links) });
+
+  function move(arr, i, d){
+    const j = i + d;
+    if (i < 0 || j < 0 || i >= arr.length || j >= arr.length) return arr;
+    const a = arr.slice(); [a[i], a[j]] = [a[j], a[i]]; return a;
+  }
+
+  const exportJson = sets => JSON.stringify({
+    app: 'lesson-bag', version: 1, exportedAt: new Date().toISOString(),
+    sets: sets.map(s => ({ name: s.name, createdAt: s.createdAt, links: s.links })),
+  }, null, 2);
+
+  // 내보낸 JSON(또는 세트 배열)을 읽어 새 세트 목록으로. 이상한 주소는 건너뜀
+  function parseImport(text){
+    const data = JSON.parse(text);
+    const arr = Array.isArray(data) ? data : data && Array.isArray(data.sets) ? data.sets : null;
+    if (!arr) throw new Error('수업 가방에서 내보낸 JSON이 아니에요');
+    let skipped = 0;
+    const sets = [];
+    arr.forEach(s => {
+      if (!s || !Array.isArray(s.links)) { skipped++; return; }
+      const links = makeLinks(s.links);
+      skipped += s.links.length - links.length;
+      if (!links.length) return;
+      const set = makeSet(s.name, [], s.createdAt ? new Date(s.createdAt) : new Date());
+      if (isNaN(new Date(set.createdAt))) set.createdAt = new Date().toISOString();
+      set.links = links;
+      sets.push(set);
+    });
+    return { sets, skipped };
+  }
+
+  // QR에 넣을 글: 링크 하나(카메라로 찍으면 바로 열림) 또는 목록 전체(글자)
+  function qrText(set, choice){
+    if (choice === 'list')
+      return `[수업 가방] ${set.name}\n` + set.links.map((l, i) => `${i + 1}. ${l.title}\n${l.url}`).join('\n');
+    const l = set.links[+choice] || set.links[0];
+    return l ? l.url : '';
+  }
+  function qrSvg(text){ try { return QR.toSvg(text); } catch (_) { return ''; } }
+
+  const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : `${d.getMonth() + 1}월 ${d.getDate()}일`; };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  return { normalizeUrl, displayUrl, hostOf, makeLinks, defaultName, makeSet, move, exportJson, parseImport, qrText, qrSvg, fmtDate, esc };
+})();
+// ==core:end==
+</script>
+<script>
+// ==ui:start== 수업 가방 화면 (확장 팝업·편집 페이지·체험 페이지가 같은 코드, 저장·탭 다루기만 adapter로 바꿔 끼움)
+// adapter: mode('popup'|'full'), load() → sets, save(sets), getTabs() → [{title,url,highlighted}],
+//          open(set) → {blocked}, openFull() (popup 모드에서 큰 편집 화면 열기)
+const LessonBagUI = (() => {
+  function mount(root, adapter){
+    const B = BagCore, esc = B.esc;
+    let sets = [], tabs = [], picked = new Set();
+    let view = { id: null, kind: null };     // 펼친 카드: 편집(edit) / QR(qr)
+    const qrChoice = {};                      // 세트별 QR 선택
+    let delArmed = { id: null, at: 0 };
+    root.classList.add('lb');
+    if (adapter.mode === 'full') root.classList.add('lb-full');
+
+    root.innerHTML = `
+      <div class="lb-head"><span class="lb-logo">🎒</span><div><b>수업 가방</b><small>지금 열린 탭들을 수업 세트로 담아 두고, 한 번에 다시 열어요</small></div></div>
+      <section class="lb-save">
+        <input class="lb-in" data-r="name" maxlength="60" placeholder="세트 이름 (예: 3교시 과학 - 물의 순환)">
+        <details data-r="box"><summary data-r="sum"></summary><div class="lb-tabs" data-r="tabs"></div>
+          <div class="lb-mini"><button type="button" class="lb-btn lb-sm" data-r="all">모두 고르기</button><button type="button" class="lb-btn lb-sm" data-r="none">모두 빼기</button></div>
+        </details>
+        <button type="button" class="lb-btn lb-primary" data-r="saveBtn">🎒 가방에 담기</button>
+      </section>
+      <div class="lb-sets-h" data-r="setsH"></div>
+      <div class="lb-sets" data-r="sets"></div>
+      <div class="lb-foot" data-r="foot">${adapter.mode === 'full'
+        ? `<button type="button" class="lb-btn lb-sm" data-r="exp">⬇ JSON 내보내기</button><button type="button" class="lb-btn lb-sm" data-r="imp">⬆ JSON 가져오기</button><input type="file" accept=".json,application/json" data-r="file" hidden>`
+        : `<button type="button" class="lb-btn lb-sm" data-r="full">⚙ 크게 편집 · JSON 백업</button>`}</div>
+      <div class="lb-msg" data-r="msg" aria-live="polite"></div>`;
+    const $ = k => root.querySelector(`[data-r="${k}"]`);
+    let msgT;
+    const say = m => { $('msg').textContent = m; clearTimeout(msgT); msgT = setTimeout(() => { $('msg').textContent = ''; }, 3500); };
+    const persist = () => adapter.save(sets);
+    const find = id => sets.find(s => s.id === id);
+
+    function renderTabs(){
+      $('sum').innerHTML = `지금 창의 탭 <b>${tabs.length}개 중 ${picked.size}개</b> 담기 <span>(눌러서 고르기)</span>`;
+      $('tabs').innerHTML = tabs.length ? tabs.map((t, i) =>
+        `<label><input type="checkbox" data-tab="${i}" ${picked.has(i) ? 'checked' : ''}><span>${esc(t.title || t.url)}<small>${esc(B.hostOf(t.url))}</small></span></label>`).join('')
+        : '<p class="lb-empty">담을 수 있는 웹페이지 탭이 없어요</p>';
+    }
+
+    function cardHtml(s){
+      const open = view.id === s.id ? view.kind : null;
+      const armed = delArmed.id === s.id && Date.now() - delArmed.at < 3000;
+      let body = '';
+      if (open === 'edit'){
+        body = `<div class="lb-edit">
+          <input class="lb-in" data-f="rename" maxlength="60" value="${esc(s.name)}" aria-label="세트 이름">
+          <ol>${s.links.map((l, i) => `<li><span class="lb-lt">${esc(l.title)}<small>${esc(B.displayUrl(l.url))}</small></span>
+            <button type="button" class="lb-ic" data-act="up" data-i="${i}" ${i ? '' : 'disabled'} aria-label="위로">▲</button>
+            <button type="button" class="lb-ic" data-act="down" data-i="${i}" ${i < s.links.length - 1 ? '' : 'disabled'} aria-label="아래로">▼</button>
+            <button type="button" class="lb-ic lb-rm" data-act="rm" data-i="${i}" aria-label="링크 지우기">×</button></li>`).join('')}</ol>
+          <div class="lb-add"><input class="lb-in" data-f="addUrl" placeholder="링크 주소 붙여넣기 (https://…)"><button type="button" class="lb-btn lb-sm" data-act="add">+ 추가</button></div>
+          <button type="button" class="lb-btn lb-sm" data-act="close">완료</button></div>`;
+      } else if (open === 'qr'){
+        const ch = qrChoice[s.id] ?? '0';
+        const text = B.qrText(s, ch), svg = text ? B.qrSvg(text) : '';
+        body = `<div class="lb-qr">
+          <select class="lb-in" data-f="qrSel" aria-label="QR에 담을 내용">
+            ${s.links.map((l, i) => `<option value="${i}" ${String(i) === String(ch) ? 'selected' : ''}>🔗 ${i + 1}. ${esc(l.title.slice(0, 40))}</option>`).join('')}
+            <option value="list" ${ch === 'list' ? 'selected' : ''}>📝 목록 전체 (글자로)</option>
+          </select>
+          ${svg ? `<div class="lb-qrimg">${svg}</div>` : '<p class="lb-warn">링크가 많아 QR 하나에 다 안 들어가요. 링크 하나를 골라 주세요.</p>'}
+          <p class="lb-cap">${ch === 'list'
+            ? '카메라로 찍으면 세트 이름과 링크 목록이 <b>글자</b>로 보여요. 주소를 눌러 하나씩 열어요.'
+            : '휴대폰·태블릿 카메라로 찍으면 <b>이 링크가 바로 열려요</b>. 수업 시작 링크로 가장 편해요.'}</p></div>`;
+      }
+      return `<article class="lb-card${open ? ' lb-open' : ''}" data-id="${s.id}">
+        <div class="lb-top"><div class="lb-tt"><b>${esc(s.name)}</b><small>링크 ${s.links.length}개 · ${B.fmtDate(s.createdAt)}</small></div>
+          <button type="button" class="lb-btn lb-go" data-act="open">▶ 열기</button></div>
+        <div class="lb-acts">
+          <button type="button" class="lb-btn lb-sm${open === 'edit' ? ' on' : ''}" data-act="edit">✏️ 편집</button>
+          <button type="button" class="lb-btn lb-sm${open === 'qr' ? ' on' : ''}" data-act="qr">▦ QR</button>
+          <button type="button" class="lb-btn lb-sm lb-danger" data-act="del">${armed ? '정말 지울까요?' : '🗑 삭제'}</button>
+        </div>${body}</article>`;
+    }
+    function renderSets(){
+      $('setsH').innerHTML = `📚 내 수업 세트 <span>${sets.length}개</span>`;
+      $('sets').innerHTML = sets.length ? sets.map(cardHtml).join('')
+        : '<p class="lb-empty">아직 세트가 없어요. 위에서 이름을 적고 [가방에 담기]를 눌러 보세요.</p>';
+    }
+    const render = () => { renderTabs(); renderSets(); };
+
+    $('tabs').addEventListener('change', e => {
+      const i = e.target.dataset.tab; if (i == null) return;
+      e.target.checked ? picked.add(+i) : picked.delete(+i);
+      renderTabs();
+    });
+    $('all').addEventListener('click', () => { picked = new Set(tabs.map((_, i) => i)); renderTabs(); });
+    $('none').addEventListener('click', () => { picked = new Set(); renderTabs(); });
+    $('saveBtn').addEventListener('click', async () => {
+      const chosen = tabs.filter((_, i) => picked.has(i));
+      if (!chosen.length) return say('담을 탭을 하나 이상 골라 주세요');
+      const s = B.makeSet($('name').value, chosen);
+      sets.unshift(s); $('name').value = '';
+      await persist(); renderSets();
+      say(`✅ '${s.name}' 세트에 링크 ${s.links.length}개를 담았어요`);
+    });
+    $('name').addEventListener('keydown', e => { if (e.key === 'Enter') $('saveBtn').click(); });
+
+    $('sets').addEventListener('click', async e => {
+      const btn = e.target.closest('button[data-act]'); if (!btn) return;
+      const card = btn.closest('.lb-card'), s = find(card.dataset.id); if (!s) return;
+      const act = btn.dataset.act, i = +btn.dataset.i;
+      if (act === 'open'){
+        const r = (await adapter.open(s)) || {};
+        say(r.blocked ? `⚠ 브라우저가 새 탭 ${r.blocked}개를 막았어요. 주소창 오른쪽 팝업 아이콘에서 '항상 허용'을 눌러 주세요.` : `▶ '${s.name}' 링크 ${s.links.length}개를 열었어요`);
+        return;
+      }
+      if (act === 'edit' || act === 'qr'){ view = view.id === s.id && view.kind === act ? { id: null } : { id: s.id, kind: act }; return renderSets(); }
+      if (act === 'close'){ view = { id: null }; return renderSets(); }
+      if (act === 'del'){
+        if (delArmed.id !== s.id || Date.now() - delArmed.at > 3000){ delArmed = { id: s.id, at: Date.now() }; renderSets(); setTimeout(renderSets, 3100); return; }
+        sets = sets.filter(x => x !== s); delArmed = { id: null }; await persist(); renderSets();
+        return say(`🗑 '${s.name}' 세트를 지웠어요`);
+      }
+      if (act === 'up' || act === 'down') s.links = B.move(s.links, i, act === 'up' ? -1 : 1);
+      if (act === 'rm'){
+        if (s.links.length === 1) return say('링크가 하나뿐이에요. 세트를 지우려면 [삭제]를 눌러 주세요');
+        s.links = s.links.filter((_, k) => k !== i);
+      }
+      if (act === 'add'){
+        const inp = card.querySelector('[data-f="addUrl"]');
+        const links = B.makeLinks([{ url: inp.value }]);
+        if (!links.length) return say('http:// 또는 https:// 로 시작하는 웹 주소를 넣어 주세요');
+        s.links.push(links[0]);
+      }
+      await persist(); renderSets();
+    });
+    $('sets').addEventListener('input', e => {
+      if (e.target.dataset.f !== 'rename') return;
+      const card = e.target.closest('.lb-card'), s = find(card.dataset.id); if (!s) return;
+      s.name = e.target.value.trim() || B.defaultName(new Date(s.createdAt));
+      card.querySelector('.lb-tt b').textContent = s.name;
+      persist();
+    });
+    $('sets').addEventListener('change', e => {
+      if (e.target.dataset.f !== 'qrSel') return;
+      qrChoice[e.target.closest('.lb-card').dataset.id] = e.target.value; renderSets();
+    });
+    $('sets').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.dataset.f === 'addUrl') e.target.closest('.lb-add').querySelector('button').click();
+    });
+
+    if (adapter.mode === 'full'){
+      $('exp').addEventListener('click', () => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([B.exportJson(sets)], { type: 'application/json' }));
+        a.download = `수업가방-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        say(`⬇ 세트 ${sets.length}개를 JSON 파일로 저장했어요`);
+      });
+      $('imp').addEventListener('click', () => $('file').click());
+      $('file').addEventListener('change', async e => {
+        const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+        try { await importText(await f.text()); } catch (err) { say('⚠ ' + (err.message || '읽을 수 없는 파일이에요')); }
+      });
+    } else {
+      $('full').addEventListener('click', () => adapter.openFull());
+    }
+    async function importText(text){
+      let r;
+      try { r = B.parseImport(text); } catch (err) { throw new Error(err instanceof SyntaxError ? 'JSON 형식이 아니에요' : err.message); }
+      sets = r.sets.concat(sets); await persist(); renderSets();
+      say(`⬆ 세트 ${r.sets.length}개를 가져왔어요${r.skipped ? ` (이상한 링크 ${r.skipped}개는 건너뜀)` : ''}`);
+      return r;
+    }
+
+    async function refresh(){
+      sets = (await adapter.load()) || [];
+      tabs = ((await adapter.getTabs()) || []).filter(t => B.normalizeUrl(t.url) && /^https?:/i.test(t.url));
+      const hi = tabs.map((t, i) => t.highlighted ? i : -1).filter(i => i >= 0);
+      picked = new Set(hi.length > 1 ? hi : tabs.map((_, i) => i));   // 탭을 여러 개 골라 두었으면 그것만
+      render();
+    }
+    const ready = refresh();
+    return { ready, refresh, importText, get sets(){ return sets; }, showQr(id){ view = { id, kind: 'qr' }; renderSets(); } };
+  }
+  return { mount };
+})();
+// ==ui:end==
+</script>
+<script>
+// ---------------- 체험 페이지 전용: 가짜 브라우저 탭 + localStorage 저장 ----------------
+(() => {
+  const $ = id => document.getElementById(id);
+  const STORE = 'lesson-bag-demo-v1';
+  const W = 'https://ko.wikipedia.org/wiki/';
+  // 지금 '열려 있다고 치는' 탭들 (새 탭 같은 웹페이지가 아닌 탭은 확장처럼 자동으로 빠짐)
+  const TABS = [
+    { title: '증발 - 위키백과', url: W + '증발' },
+    { title: '강수 - 위키백과', url: W + '강수' },
+    { title: '국립중앙과학관', url: 'https://www.science.go.kr/' },
+    { title: '에듀넷·티-클리어', url: 'https://www.edunet.net/' },
+    { title: '새 탭', url: 'chrome://newtab/' },
+  ];
+  const sample = () => {
+    const d = (m, day) => new Date(2026, m - 1, day, 9);
+    return [
+      BagCore.makeSet('3교시 과학 - 물의 순환', [
+        { title: '물의 순환 - 위키백과', url: W + '물의_순환' },
+        { title: '구름 - 위키백과', url: W + '구름' },
+        { title: '국립중앙과학관', url: 'https://www.science.go.kr/' },
+      ], d(11, 6)),
+      BagCore.makeSet('5교시 사회 - 우리 지역 문화유산', [
+        { title: '경주 역사유적지구 - 위키백과', url: W + '경주_역사유적지구' },
+        { title: '문화유산 - 위키백과', url: W + '문화유산' },
+        { title: '에듀넷·티-클리어', url: 'https://www.edunet.net/' },
+      ], d(11, 4)),
+      BagCore.makeSet('창체 - 디지털 시민성', [
+        { title: '저작권 - 위키백과', url: W + '저작권' },
+        { title: '개인정보 - 위키백과', url: W + '개인정보' },
+        { title: '에듀넷·티-클리어', url: 'https://www.edunet.net/' },
+      ], d(11, 2)),
+    ];
+  };
+
+  $('tabs').innerHTML = TABS.map((t, i) => `<div class="tab${i === 0 ? ' on' : ''}" title="${BagCore.esc(t.url)}">${BagCore.esc(t.title)}</div>`).join('');
+  $('addr').textContent = BagCore.displayUrl(BagCore.normalizeUrl(TABS[0].url));
+
+  const load = () => { try { const s = JSON.parse(localStorage.getItem(STORE) || 'null'); if (Array.isArray(s)) return s; } catch (_) {} return sample(); };
+  const ui = LessonBagUI.mount($('popup'), {
+    mode: 'full',
+    load: async () => load(),
+    save: async sets => { try { localStorage.setItem(STORE, JSON.stringify(sets)); } catch (_) {} },
+    getTabs: async () => TABS.map(t => ({ ...t, highlighted: false })),
+    // 확장은 새 창 하나에 탭들을 열지만, 웹페이지는 새 탭으로 하나씩 엶 (팝업 차단 시 개수 알려 줌)
+    async open(set){
+      let blocked = 0;
+      set.links.forEach(l => { const w = window.open(l.url, '_blank'); if (w) { try { w.opener = null; } catch (_) {} } else blocked++; });
+      return { blocked };
+    },
+    openFull(){},
+  });
+  ui.ready.then(() => {
+    const first = ui.sets[0];
+    $('miniQr').innerHTML = first ? BagCore.qrSvg(BagCore.qrText(first, 0)) : '';
+  });
+  $('reset').addEventListener('click', async () => { localStorage.removeItem(STORE); await ui.refresh(); });
+  window.__demo = { ui };
+})();
+</script>
+</body>
+</html>

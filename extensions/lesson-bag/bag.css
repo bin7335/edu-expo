@@ -1,0 +1,56 @@
+/* ==css:start== 수업 가방 화면 모양 (확장 팝업·편집 페이지·체험 페이지 공통) */
+.lb{--lb-ink:#1f2937;--lb-muted:#6b7280;--lb-line:#e5e7eb;--lb-brand:#c2410c;--lb-soft:#fff7ed;
+  font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--lb-ink);font-size:14px;line-height:1.45}
+.lb *{box-sizing:border-box}
+.lb-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.lb-logo{width:36px;height:36px;border-radius:10px;background:var(--lb-brand);display:grid;place-items:center;font-size:20px;flex:none}
+.lb-head b{font-size:17px;display:block}
+.lb-head small{color:var(--lb-muted);font-size:12px;display:block}
+.lb-save{background:var(--lb-soft);border:1px solid #fed7aa;border-radius:12px;padding:10px;display:grid;gap:8px}
+.lb-in{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid #d1d5db;border-radius:9px;background:#fff;color:var(--lb-ink)}
+.lb-in:focus{outline:2px solid #fdba74;border-color:transparent}
+.lb details{background:#fff;border:1px solid var(--lb-line);border-radius:9px;padding:6px 9px}
+.lb summary{cursor:pointer;font-size:13px}
+.lb summary span{color:var(--lb-muted);font-size:12px}
+.lb-tabs{max-height:150px;overflow:auto;margin-top:6px;display:grid;gap:2px}
+.lb-tabs label{display:flex;gap:7px;align-items:flex-start;font-size:13px;cursor:pointer;padding:3px 2px;border-radius:6px}
+.lb-tabs label:hover{background:#f9fafb}
+.lb-tabs input{margin-top:3px;accent-color:var(--lb-brand)}
+.lb-tabs span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-tabs small,.lb-tt small,.lb-lt small{display:block;color:var(--lb-muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-mini{display:flex;gap:6px;margin-top:6px}
+.lb-btn{font:inherit;font-weight:700;font-size:14px;border-radius:10px;border:1px solid var(--lb-line);background:#fff;color:var(--lb-ink);padding:8px 12px;cursor:pointer}
+.lb-btn:hover{filter:brightness(.96)}
+.lb-btn:disabled{opacity:.4;cursor:default}
+.lb-btn.on{background:#ffedd5;border-color:#fdba74}
+.lb-primary{background:var(--lb-brand);color:#fff;border:0}
+.lb-sm{font-size:12px;padding:5px 9px;border-radius:8px}
+.lb-danger{color:#b91c1c}
+.lb-sets-h{font-weight:800;margin:14px 0 6px}
+.lb-sets-h span{color:var(--lb-muted);font-weight:600;font-size:12px}
+.lb-sets{display:grid;gap:8px}
+.lb-card{border:1px solid var(--lb-line);border-radius:12px;padding:9px 10px;background:#fff}
+.lb-card.lb-open{border-color:#fdba74;box-shadow:0 2px 10px #c2410c1a}
+.lb-top{display:flex;gap:8px;align-items:center}
+.lb-tt{flex:1;min-width:0}
+.lb-tt b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-go{background:var(--lb-brand);color:#fff;border:0;flex:none;padding:7px 12px}
+.lb-acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.lb-edit,.lb-qr{margin-top:8px;padding-top:8px;border-top:1px dashed var(--lb-line);display:grid;gap:7px}
+.lb-edit ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.lb-edit li{display:flex;gap:4px;align-items:center;background:#f9fafb;border-radius:8px;padding:5px 6px}
+.lb-lt{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-ic{border:1px solid var(--lb-line);background:#fff;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:11px;color:var(--lb-ink);flex:none;padding:0}
+.lb-ic:disabled{opacity:.3;cursor:default}
+.lb-rm{color:#b91c1c;font-size:15px}
+.lb-add{display:flex;gap:6px}
+.lb-add .lb-in{flex:1;min-width:0;padding:6px 8px;font-size:13px}
+.lb-qrimg{width:190px;max-width:100%;margin:0 auto;border:1px solid var(--lb-line);border-radius:10px;overflow:hidden}
+.lb-qrimg svg{display:block;width:100%;height:auto}
+.lb-cap{margin:0;font-size:12px;color:var(--lb-muted);text-align:center}
+.lb-warn{margin:0;color:#b91c1c;font-size:13px;text-align:center}
+.lb-empty{color:var(--lb-muted);font-size:13px;margin:4px 0}
+.lb-foot{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.lb-msg{min-height:20px;margin-top:8px;font-size:13px;font-weight:600;color:var(--lb-brand)}
+.lb-full .lb-qrimg{width:240px}
+/* ==css:end== */

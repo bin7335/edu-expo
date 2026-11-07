@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "투명 판서판",
+  "short_name": "판서판",
+  "version": "1.0.0",
+  "description": "어떤 웹페이지 위에서든 펜·형광펜·레이저 포인터·도형·스포트라이트로 바로 판서하는 수업용 도구",
+  "permissions": ["activeTab", "scripting"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "투명 판서판 (Alt+Shift+D)",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+  "commands": {
+    "toggle-board": {
+      "suggested_key": { "default": "Alt+Shift+D", "mac": "Alt+Shift+D" },
+      "description": "판서 도구 켜기/끄기"
+    }
+  }
+}

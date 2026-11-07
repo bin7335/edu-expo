@@ -26,3 +26,11 @@
    `"/c/Program Files/Google/Chrome/Application/chrome.exe" --headless=new --disable-gpu --hide-scrollbars --window-size=1280,720 --screenshot="<scratch경로>/<slug>.png" "file:///D:/OneDrive - 경상북도교육청/0bin/dev/edu-expo/<slug>/index.html"`
 2. 375px 폭에서도 확인.
 3. 핵심 버튼을 실제로 눌러 동작하는지 (가능하면 `--dump-dom` 또는 간단한 자체 테스트).
+
+## 크롬 확장 (23번-)
+갤러리에서 확장은 바로 실행되지 않으므로 **확장 본체 + 체험 페이지** 두 가지를 만든다.
+- 본체: `extensions/<slug>/` — Manifest V3, 원격 코드·CDN·서버·외부 전송 0, 최소 권한(`activeTab`, `storage`, `scripting` 위주, `<all_urls>`는 꼭 필요할 때만). 아이콘 16/48/128 PNG(직접 생성), 한국어 이름·설명, `README.md`(설치법: zip 풀기 → chrome://extensions → 개발자 모드 → 압축해제된 확장 로드).
+- 배포 zip: `extensions/<slug>.zip` (폴더 내용을 루트로 압축, PowerShell `Compress-Archive` 사용 가능).
+- 체험 페이지: `ext-<slug>/index.html` — 확장을 설치하지 않아도 **같은 기능을 페이지 안에서 그대로 체험**(팝업 UI를 페이지에 띄우고, content script 로직을 예시 본문에 적용). 상단에 "크롬 확장" 배지, [zip 내려받기] 버튼(`../extensions/<slug>.zip`), 설치 3단계 안내. 첫 화면 1280×720이 썸네일.
+- 체험 페이지와 확장은 핵심 로직 JS를 같은 코드로 유지(복붙 허용, 단 동작 동일).
+- 검증: 체험 페이지는 위 검증 규칙 그대로. 확장은 manifest JSON 유효성, 모든 참조 파일 존재, JS 구문 검사(node --check). 가능하면 `--load-extension`으로 실제 로드해 보고, 크롬 정책상 막히면 그렇다고 보고.

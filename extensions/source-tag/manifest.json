@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "출처 꼬리표",
+  "version": "1.0.0",
+  "description": "웹페이지 글을 복사하면 「글 제목」, 사이트 이름, 주소, 확인한 날짜가 출처 한 줄로 따라붙어요. 디지털 시민성 연습용.",
+  "permissions": ["storage", "activeTab"],
+  "action": {
+    "default_title": "출처 꼬리표",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["cite-core.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

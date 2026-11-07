@@ -1,4 +1,4 @@
-# 패들렛 등록용 카드 문구 (22개)
+# 패들렛 등록용 카드 문구 (26개)
 
 - 썸네일: `thumbnails/` 폴더의 같은 번호 PNG (1280×720, 16:9)
 - 전체 갤러리 한 장 링크: https://bin7335.github.io/edu-expo/
@@ -122,6 +122,28 @@ https://bin7335.github.io/edu-expo/teacher-calendar/
 대상: 교사
 https://bin7335.github.io/edu-expo/ai-prompts/
 
+## 크롬 확장 (설치 없이 체험 페이지에서 시연, zip 내려받기 포함)
+
+**23. 투명 판서판**
+어떤 웹페이지 위에서든 펜·형광펜·레이저·도형·스포트라이트로 바로 판서
+대상: 교사 · 크롬 확장 (단축키 Alt+Shift+D)
+https://bin7335.github.io/edu-expo/ext-board-pen/
+
+**24. 술술 읽기**
+글자 크기·줄 간격·배경색을 바꾸고 줄 가리개와 소리 내어 읽기로 읽기를 돕는 확장
+대상: 학생·교사 · 크롬 확장 (단축키 Alt+Shift+R)
+https://bin7335.github.io/edu-expo/ext-easy-reader/
+
+**25. 출처 꼬리표**
+웹 글을 복사하면 제목·사이트·주소·확인 날짜가 출처 한 줄로 저절로 따라붙는 디지털 시민성 확장
+대상: 학생·교사 · 크롬 확장
+https://bin7335.github.io/edu-expo/ext-source-tag/
+
+**26. 수업 가방**
+열린 탭들을 수업 세트로 담아 두고, 다음 시간엔 클릭 한 번으로 새 창에 다시 여는 확장
+대상: 교사 · 크롬 확장
+https://bin7335.github.io/edu-expo/ext-lesson-bag/
+
 ---
 
 ## 부스 전 1회 실기기 확인 (헤드리스 테스트로는 못 본 것)
@@ -129,4 +151,4 @@ https://bin7335.github.io/edu-expo/ai-prompts/
 2. 쉿쉿 신호등: 마이크 켜고 실제 소리에 반응하는지 (안 맞으면 "지금이 조용한 상태" 보정)
 3. 척척 QR 이름표: 휴대폰 카메라로 QR 하나 찍어 보기
 4. 생각꽃밭: 워드클라우드가 상자 가운데에 놓이는지
-5. 클래스룸 for YouTube: 부스 PC 크롬에 미리 설치
+5. 클래스룸 for YouTube·투명 판서판·술술 읽기·출처 꼬리표·수업 가방: 부스 PC 크롬에 미리 설치해 실제 사이트에서 시연

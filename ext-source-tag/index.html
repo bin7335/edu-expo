@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>출처 꼬리표 - 복사하면 출처가 따라오는 크롬 확장 체험</title>
+<meta name="description" content="웹페이지 글을 복사하면 「글 제목」, 사이트 이름, 주소, 확인한 날짜가 출처 한 줄로 저절로 붙는 디지털 시민성 크롬 확장. 설치 없이 이 페이지에서 바로 체험해 보세요.">
+<style>
+  :root{--bg:#f1f7f6;--ink:#1f2937;--muted:#6b7280;--line:#e5e7eb;--brand:#0f766e;--brand2:#0e7490}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:14px;padding:12px 24px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff}
+  .logo{width:42px;height:42px;border-radius:11px;background:#fff;display:grid;place-items:center;font-size:24px;flex:none}
+  h1{margin:0;font-size:24px;letter-spacing:-.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;gap:4px;background:#042f2e;color:#5eead4;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px}
+  header p{margin:2px 0 0;font-size:14px;opacity:.92}
+  .dl{margin-left:auto;flex:none;background:#fff;color:var(--brand);font-weight:800;font-size:15px;text-decoration:none;padding:10px 16px;border-radius:12px;box-shadow:0 2px 0 #0002}
+  .dl:hover{filter:brightness(.96)}
+
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:18px;padding:14px 24px;max-width:1400px;margin:0 auto}
+  .how{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;margin-bottom:8px}
+  .how b{background:#ccfbf1;color:#115e59;border-radius:999px;padding:2px 9px;font-size:13px}
+  .btn{font:inherit;font-weight:700;font-size:14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 13px;cursor:pointer}
+  .btn:hover{filter:brightness(.96)}
+  .btn.main{background:var(--brand);color:#fff;border:0}
+  kbd{font:inherit;font-size:12px;border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#fff}
+
+  /* 가짜 브라우저 */
+  .browser{background:#fff;border:1px solid #d1d5db;border-radius:12px;overflow:hidden;box-shadow:0 6px 20px #0f766e14}
+  .tabs{display:flex;gap:4px;background:#e5e7eb;padding:6px 8px 0}
+  .tab{font:inherit;font-size:12px;border:0;background:#d1d5db;color:#374151;border-radius:8px 8px 0 0;padding:6px 12px;cursor:pointer;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tab.on{background:#fff;font-weight:700}
+  .addr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line)}
+  .addr span{flex:1;min-width:0;background:#f3f4f6;border-radius:999px;padding:4px 12px;font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .addr i{font-style:normal;font-size:16px}
+  .page{padding:16px 22px;height:300px;overflow:auto;line-height:1.75;font-size:15px}
+  .page .site{font-size:12px;color:#0e7490;font-weight:800;letter-spacing:.3px}
+  .page h2{margin:2px 0 4px;font-size:21px}
+  .page .by{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .page p{margin:0 0 10px}
+  .page mark{background:#fef08a;border-radius:3px;padding:0 2px}
+
+  .clip{margin-top:12px;background:#fff;border:2px dashed #5eead4;border-radius:12px;padding:10px 12px}
+  .clip-h{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;font-weight:800;font-size:14px}
+  .clip-h small{font-weight:600;color:var(--muted)}
+  .clip pre{margin:6px 0 0;white-space:pre-wrap;word-break:break-all;font:14px/1.6 system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f0fdfa;border-radius:8px;padding:8px 10px;min-height:64px;max-height:150px;overflow:auto}
+  .clip pre .c{color:#0f766e;font-weight:700}
+  .paste{display:block;width:100%;margin-top:8px;font:inherit;font-size:13px;border:1px solid #d1d5db;border-radius:8px;padding:6px 8px;resize:vertical;min-height:38px}
+
+  .side{display:grid;gap:12px;align-content:start}
+  .popup{background:#fff;border:1px solid #d1d5db;border-radius:14px;padding:14px;box-shadow:0 10px 30px #0f766e22;position:relative}
+  .popup::before{content:"확장 팝업 · 툴바의 🏷️ 아이콘을 누르면 열려요";position:absolute;top:-10px;left:12px;background:#334155;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.55}
+  .card h3{margin:0 0 6px;font-size:14px}
+  .card ol{margin:0;padding-left:20px}
+  .card code{background:#ecfdf5;color:#0f766e;border-radius:5px;padding:0 4px}
+  .card .safe{margin:8px 0 0;color:#115e59;background:#f0fdfa;border-radius:8px;padding:6px 8px}
+  footer{text-align:right;padding:0 24px 18px;font-size:13px}
+  footer a{color:var(--muted);text-decoration:none}
+  footer a:hover{color:var(--brand)}
+
+  @media (max-width:900px){
+    header{flex-wrap:wrap;padding:12px 14px}
+    h1{font-size:21px}
+    .dl{margin-left:0}
+    .wrap{grid-template-columns:minmax(0,1fr);padding:12px}
+    .page{height:260px;padding:12px 14px}
+    .popup{margin-top:6px}
+  }
+/* ==css:start== 출처 꼬리표 팝업 모양 (확장과 체험 페이지 공통) */
+.st{--st-ink:#1f2937;--st-muted:#6b7280;--st-line:#e5e7eb;--st-brand:#0f766e;--st-soft:#ecfdf5;
+  font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--st-ink);font-size:14px;line-height:1.45}
+.st *{box-sizing:border-box}
+.st-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.st-logo{width:36px;height:36px;border-radius:10px;background:var(--st-brand);display:grid;place-items:center;font-size:20px;flex:none}
+.st-head b{font-size:17px;display:block}
+.st-head small{color:var(--st-muted);font-size:12px}
+.st-switch{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--st-line);border-radius:12px;cursor:pointer;background:#fff}
+.st-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.st-knob{width:40px;height:22px;border-radius:11px;background:#cbd5e1;position:relative;flex:none;transition:.2s}
+.st-knob::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.st-switch input:checked+.st-knob{background:var(--st-brand)}
+.st-switch input:checked+.st-knob::after{left:21px}
+.st-switch input:focus-visible+.st-knob{outline:2px solid #5eead4;outline-offset:2px}
+.st-sw-text b{color:var(--st-brand)}
+.st-off .st-sw-text b{color:#b91c1c}
+.st-row{display:flex;align-items:center;gap:8px;margin:10px 0}
+.st-lab{font-weight:700;font-size:13px;flex:none}
+.st-seg{display:inline-flex;border:1px solid #d1d5db;border-radius:10px;overflow:hidden;flex:1;min-width:0}
+.st-seg button{flex:1;font:inherit;font-size:13px;border:0;background:#fff;padding:7px 6px;cursor:pointer;color:var(--st-ink);white-space:nowrap}
+.st-seg button+button{border-left:1px solid #d1d5db}
+.st-seg button.on{background:var(--st-brand);color:#fff;font-weight:700}
+.st-card{background:var(--st-soft);border:1px solid #a7f3d0;border-radius:12px;padding:10px}
+.st-card-h{font-weight:700;font-size:13px}
+.st-cite{margin:6px 0 8px;font-size:13px;word-break:break-all;background:#fff;border-radius:8px;padding:7px 9px;border:1px dashed #99f6e4}
+.st-btn{font:inherit;font-weight:700;font-size:14px;border-radius:10px;border:1px solid var(--st-line);background:#fff;color:var(--st-ink);padding:8px 12px;cursor:pointer}
+.st-btn:hover{filter:brightness(.96)}
+.st-btn:disabled{opacity:.45;cursor:default;filter:none}
+.st-primary{width:100%;background:var(--st-brand);color:#fff;border:0}
+.st-sm{font-size:12px;padding:5px 8px;border-radius:8px}
+.st-danger{color:#b91c1c}
+.st-hist{margin-top:12px}
+.st-hist-h{display:flex;align-items:center;gap:6px}
+.st-hist-h span{color:var(--st-muted);font-size:12px}
+.st-sp{flex:1}
+.st-hist ol{list-style:none;margin:6px 0 0;padding:0;max-height:210px;overflow:auto;border:1px solid var(--st-line);border-radius:10px;background:#fff}
+.st-hist li{display:flex;gap:6px;align-items:flex-start;padding:7px 8px;font-size:12px;word-break:break-all}
+.st-hist li+li{border-top:1px solid var(--st-line)}
+.st-hist li span{flex:1;min-width:0}
+.st-x{border:0;background:none;color:var(--st-muted);font-size:16px;line-height:1;cursor:pointer;padding:0 2px}
+.st-x:hover{color:#b91c1c}
+.st-empty{color:var(--st-muted)}
+.st-msg{min-height:20px;margin-top:8px;font-size:13px;font-weight:600;color:var(--st-brand)}
+/* ==css:end== */
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🏷️</div>
+  <div>
+    <h1>출처 꼬리표 <span class="badge">🧩 크롬 확장</span></h1>
+    <p>웹페이지 글을 복사하면 출처가 저절로 따라와요 — 디지털 시민성 연습</p>
+  </div>
+  <a class="dl" href="../extensions/source-tag.zip" download>⬇ zip 내려받기</a>
+</header>
+
+<div class="wrap">
+  <main>
+    <div class="how">
+      <b>체험</b> ① 아래 글을 마우스로 드래그해 고르고 ② <kbd>Ctrl</kbd>+<kbd>C</kbd> 또는
+      <button class="btn main" id="copyBtn">📋 복사하기</button>
+    </div>
+    <div class="browser">
+      <div class="tabs" id="tabs"></div>
+      <div class="addr"><i aria-hidden="true">🔒</i><span id="addr"></span><i title="출처 꼬리표 확장" aria-hidden="true">🏷️</i></div>
+      <article class="page" id="page"></article>
+    </div>
+    <div class="clip">
+      <div class="clip-h">📋 클립보드에 들어간 내용 <small id="clipNote">(예시)</small></div>
+      <pre id="clip"></pre>
+      <textarea class="paste" id="paste" placeholder="여기에 붙여넣기(Ctrl+V) 해 보세요 — 출처가 함께 들어와요"></textarea>
+    </div>
+  </main>
+
+  <aside class="side">
+    <div class="popup" id="popup"></div>
+    <div class="card">
+      <h3>⚙️ 내 크롬에 설치 (3단계)</h3>
+      <ol>
+        <li>위 <b>zip 내려받기</b> → 압축 풀기</li>
+        <li>주소창에 <code>chrome://extensions</code> → 오른쪽 위 <b>개발자 모드</b> 켜기</li>
+        <li><b>압축해제된 확장 프로그램 로드</b> → 푼 폴더 고르기</li>
+      </ol>
+      <p class="safe">🔐 복사하는 순간에만 움직이고, 어떤 정보도 밖으로 보내지 않아요. 출처 목록은 내 컴퓨터에만 저장돼요.</p>
+    </div>
+  </aside>
+</div>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<script>
+// ==core:start== 출처 꼬리표 핵심 로직 (확장 cite-core.js 와 체험 페이지가 같은 코드)
+// 이 코드는 어떤 데이터도 외부로 보내지 않습니다. 네트워크 요청이 전혀 없습니다.
+const SourceTag = (() => {
+  const MAX_HISTORY = 30;
+  const FORMATS = {
+    easy: { label: '초등 쉬운 형식', short: '쉬운 형식' },
+    apa:  { label: 'APA 비슷한 형식', short: 'APA 비슷' },
+  };
+  const clean = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+  const norm = s => clean(s).toLowerCase().replace(/[\s.\-_]/g, '');
+
+  // 'YYYY-MM-DD' 또는 Date → {y,m,d} (시간대 밀림 없이 그 지역 날짜 기준)
+  function ymdParts(date){
+    if (typeof date === 'string'){
+      const m = date.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m) return { y: +m[1], m: +m[2], d: +m[3] };
+    }
+    const dt = date instanceof Date ? date : new Date();
+    return { y: dt.getFullYear(), m: dt.getMonth() + 1, d: dt.getDate() };
+  }
+  function ymd(date){
+    const p = ymdParts(date);
+    return `${p.y}-${String(p.m).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`;
+  }
+  const koDate = date => { const p = ymdParts(date); return `${p.y}년 ${p.m}월 ${p.d}일`; };
+
+  // "글 제목 - 사이트" 처럼 끝(또는 앞)에 붙은 사이트 이름 떼기
+  function stripSite(title, site){
+    const parts = title.split(/\s+[-|·—–:]{1,2}\s+/);
+    if (parts.length < 2 || !site) return title;
+    const s = norm(site);
+    const same = p => { const n = norm(p); return n && (n === s || n.includes(s) || s.includes(n)); };
+    if (same(parts[parts.length - 1])) return parts.slice(0, -1).join(' - ');
+    if (same(parts[0])) return parts.slice(1).join(' - ');
+    return title;
+  }
+
+  // 지금 보고 있는 문서에서 제목·사이트 이름·주소 읽기
+  function readMeta(doc, loc){
+    const meta = sel => { const el = doc.querySelector(sel); return el ? clean(el.getAttribute('content')) : ''; };
+    const host = (loc && loc.hostname || '').replace(/^www\./, '');
+    const site = meta('meta[property="og:site_name"]') || meta('meta[name="application-name"]') || host || '이름 없는 사이트';
+    let title = meta('meta[property="og:title"]') || clean(doc.title);
+    if (!title){ const h1 = doc.querySelector('h1'); title = h1 ? clean(h1.textContent) : ''; }
+    title = stripSite(title || '제목 없음', site);
+    let author = meta('meta[name="author"]') || meta('meta[property="article:author"]');
+    if (/^https?:/i.test(author)) author = '';
+    const pub = meta('meta[property="article:published_time"]') || meta('meta[name="date"]') || meta('meta[itemprop="datePublished"]');
+    const ym = pub.match(/(19|20)\d{2}/);
+    let url = loc ? String(loc.href) : '';
+    url = url.replace(/#:~:.*$/, '');               // 크롬 '텍스트 조각' 꼬리 제거
+    return { title, site, url, author, year: ym ? ym[0] : '' };
+  }
+
+  const dot = s => /[.?!。]$/.test(s) ? s : s + '.';
+
+  function buildCitation(meta, format, date){
+    const title = clean(meta.title) || '제목 없음';
+    const site = clean(meta.site) || '이름 없는 사이트';
+    const url = clean(meta.url);
+    const when = koDate(date);
+    if (format === 'apa'){
+      const year = `(${meta.year || 'n.d.'}).`;
+      const head = meta.author ? `${dot(clean(meta.author))} ${year} ${dot(title)}` : `${dot(title)} ${year}`;
+      return `${head} ${dot(site)} ${when} 확인, ${url}`;
+    }
+    return `[출처] 「${title}」, ${site}, ${url}, ${when} 확인`;
+  }
+
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const composeText = (text, cite) => `${String(text).replace(/\s+$/, '')}\n\n${cite}`;
+  const composeHtml = (html, cite) => `${html}<p>${esc(cite)}</p>`;
+
+  function selectionHtml(sel){
+    if (!sel || !sel.rangeCount) return '';
+    const box = document.createElement('div');
+    for (let i = 0; i < sel.rangeCount; i++) box.appendChild(sel.getRangeAt(i).cloneContents());
+    return box.innerHTML;
+  }
+
+  function isEditableTarget(t){
+    let el = t && t.nodeType === 1 ? t : t && t.parentElement;
+    if (!el) return false;
+    return el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+  }
+
+  // copy 이벤트 하나를 처리: 클립보드에 '복사한 글 + 출처 한 줄'을 넣고 결과를 돌려줌
+  function handleCopy(e, o){
+    if (!o.enabled || e.defaultPrevented || !e.clipboardData) return null;   // 사이트가 직접 처리한 복사는 건드리지 않음
+    if (isEditableTarget(e.target)) return null;                           // 글쓰기 칸 안의 복사는 그대로
+    const sel = (o.win || window).getSelection();
+    const text = sel ? sel.toString() : '';
+    if (!text.trim()) return null;
+    const meta = o.getMeta();
+    const now = o.now || new Date();
+    const cite = buildCitation(meta, o.format, now);
+    const plain = composeText(text, cite);
+    e.clipboardData.setData('text/plain', plain);
+    e.clipboardData.setData('text/html', composeHtml(selectionHtml(sel), cite));
+    e.preventDefault();
+    return { meta, cite, plain, text, now };
+  }
+
+  const makeEntry = (meta, now) => ({
+    title: clean(meta.title), site: clean(meta.site), url: clean(meta.url),
+    author: clean(meta.author), year: clean(meta.year), checked: ymd(now),
+  });
+  function addHistory(list, entry){
+    const out = (Array.isArray(list) ? list : []).filter(x => x && x.url !== entry.url);
+    out.unshift(entry);
+    return out.slice(0, MAX_HISTORY);
+  }
+  const historyText = (list, format) =>
+    list.map((x, i) => `${i + 1}. ${buildCitation(x, format, x.checked)}`).join('\n');
+
+  // 페이지 위에 잠깐 뜨는 알림 (사이트 디자인에 영향받지 않게 Shadow DOM 사용)
+  function toast(doc, msg){
+    try {
+      const host = doc.createElement('div');
+      host.style.cssText = 'position:fixed;z-index:2147483647;right:18px;bottom:18px;pointer-events:none';
+      const root = host.attachShadow({ mode: 'closed' });
+      root.innerHTML = '<div style="font:600 14px system-ui,\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;background:#0f766e;color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 20px #0003;max-width:320px;line-height:1.4"></div>';
+      root.firstChild.textContent = msg;
+      (doc.body || doc.documentElement).appendChild(host);
+      setTimeout(() => host.remove(), 1800);
+    } catch (_) { /* 알림이 안 떠도 복사는 정상 */ }
+  }
+
+  return { FORMATS, MAX_HISTORY, ymd, koDate, stripSite, readMeta, buildCitation, composeText, composeHtml,
+    selectionHtml, isEditableTarget, handleCopy, makeEntry, addHistory, historyText, toast, esc };
+})();
+// ==core:end==
+</script>
+<script>
+// ==ui:start== 출처 꼬리표 팝업 화면 (확장 팝업과 체험 페이지가 같은 코드, 저장소만 adapter로 바꿔 끼움)
+// adapter: getState() → {enabled, format, history}, set(patch), getPageMeta() → meta|null, copyText(text) → bool
+const SourceTagPopup = (() => {
+  function mount(root, adapter){
+    const T = SourceTag;
+    let st = { enabled: true, format: 'easy', history: [] };
+    let pageMeta = null, clearArmed = 0;
+    root.classList.add('st');
+    root.innerHTML = `
+      <div class="st-head"><span class="st-logo">🏷️</span><div><b>출처 꼬리표</b><small>복사하면 출처가 따라와요</small></div></div>
+      <label class="st-switch"><input type="checkbox" data-r="enabled"><span class="st-knob" aria-hidden="true"></span><span class="st-sw-text">복사할 때 출처 붙이기 <b data-r="onoff"></b></span></label>
+      <div class="st-row"><span class="st-lab">형식</span><div class="st-seg" data-r="seg">
+        ${Object.entries(T.FORMATS).map(([k, f]) => `<button type="button" data-f="${k}">${f.label}</button>`).join('')}
+      </div></div>
+      <div class="st-card">
+        <div class="st-card-h">📄 지금 이 페이지</div>
+        <p class="st-cite" data-r="pageCite">읽는 중…</p>
+        <button type="button" class="st-btn st-primary" data-r="copyPage">📋 이 페이지 출처 복사</button>
+      </div>
+      <div class="st-hist">
+        <div class="st-hist-h"><b>🗂 출처 목록</b> <span data-r="count"></span>
+          <span class="st-sp"></span>
+          <button type="button" class="st-btn st-sm" data-r="copyAll">모두 복사</button>
+          <button type="button" class="st-btn st-sm st-danger" data-r="clear">지우기</button>
+        </div>
+        <ol data-r="list"></ol>
+      </div>
+      <div class="st-msg" data-r="msg" aria-live="polite"></div>`;
+    const $ = k => root.querySelector(`[data-r="${k}"]`);
+    let msgT;
+    const say = m => { $('msg').textContent = m; clearTimeout(msgT); msgT = setTimeout(() => { $('msg').textContent = ''; }, 2200); };
+
+    function render(){
+      $('enabled').checked = !!st.enabled;
+      $('onoff').textContent = st.enabled ? '켜짐' : '꺼짐';
+      root.classList.toggle('st-off', !st.enabled);
+      [...$('seg').children].forEach(b => b.classList.toggle('on', b.dataset.f === st.format));
+      $('pageCite').textContent = pageMeta ? T.buildCitation(pageMeta, st.format, new Date()) : '이 페이지에서는 출처를 읽을 수 없어요 (크롬 설정 화면 등)';
+      $('copyPage').disabled = !pageMeta;
+      $('count').textContent = `${st.history.length}/${T.MAX_HISTORY}`;
+      $('copyAll').disabled = $('clear').disabled = !st.history.length;
+      $('list').innerHTML = st.history.length
+        ? st.history.map((x, i) => `<li><span>${T.esc(T.buildCitation(x, st.format, x.checked))}</span><button type="button" class="st-x" data-del="${i}" title="목록에서 빼기" aria-label="목록에서 빼기">×</button></li>`).join('')
+        : '<li class="st-empty">아직 없어요. 웹페이지 글을 복사하면 여기에 쌓여요.</li>';
+    }
+    async function save(patch){ Object.assign(st, patch); render(); await adapter.set(patch); }
+
+    $('enabled').addEventListener('change', e => save({ enabled: e.target.checked }));
+    $('seg').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (b) save({ format: b.dataset.f }); });
+    $('copyPage').addEventListener('click', async () => {
+      if (!pageMeta) return;
+      const now = new Date();
+      const ok = await adapter.copyText(T.buildCitation(pageMeta, st.format, now));
+      await save({ history: T.addHistory(st.history, T.makeEntry(pageMeta, now)) });
+      say(ok ? '✅ 출처를 복사했어요. 붙여넣기(Ctrl+V) 해 보세요!' : '복사에 실패했어요. 다시 눌러 주세요.');
+    });
+    $('copyAll').addEventListener('click', async () => {
+      const ok = await adapter.copyText(T.historyText(st.history, st.format));
+      say(ok ? `✅ 출처 ${st.history.length}개를 번호 목록으로 복사했어요` : '복사에 실패했어요.');
+    });
+    $('clear').addEventListener('click', async () => {
+      if (Date.now() - clearArmed > 3000){ clearArmed = Date.now(); $('clear').textContent = '정말 지울까요?'; setTimeout(() => { $('clear').textContent = '지우기'; }, 3000); return; }
+      clearArmed = 0; $('clear').textContent = '지우기';
+      await save({ history: [] }); say('출처 목록을 비웠어요');
+    });
+    $('list').addEventListener('click', e => {
+      const b = e.target.closest('[data-del]'); if (!b) return;
+      const h = st.history.slice(); h.splice(+b.dataset.del, 1); save({ history: h });
+    });
+
+    async function refresh(){
+      st = Object.assign(st, await adapter.getState());
+      try { pageMeta = await adapter.getPageMeta(); } catch (_) { pageMeta = null; }
+      render();
+    }
+    const ready = refresh();
+    return { refresh, ready };
+  }
+  return { mount };
+})();
+// ==ui:end==
+</script>
+<script>
+// ---------------- 체험 페이지 전용: 가짜 웹페이지 + localStorage 저장 ----------------
+(() => {
+  const $ = id => document.getElementById(id);
+  const T = SourceTag;
+  const STORE = 'source-tag-demo-v1';
+  // 체험용 가상의 웹페이지 2개 (실제 사이트 아님). 확장의 readMeta가 읽는 것과 같은 <head> 정보를 가짐
+  const PAGES = [
+    { url: 'https://example.org/science/water-cycle',
+      head: '<title>물은 어떻게 지구를 돌고 돌까? - 햇살 과학 신문</title><meta property="og:site_name" content="햇살 과학 신문"><meta name="author" content="김햇살 기자"><meta property="article:published_time" content="2026-10-15">',
+      body: `<div class="site">햇살 과학 신문 · 과학</div><h2>물은 어떻게 지구를 돌고 돌까?</h2><div class="by">김햇살 기자 · 2026년 10월 15일</div>
+        <p>바다와 강의 물은 햇볕을 받으면 눈에 보이지 않는 수증기가 되어 하늘로 올라가요. 이것을 <b>증발</b>이라고 해요.</p>
+        <p><mark id="pick">하늘로 올라간 수증기는 차가운 공기를 만나 작은 물방울이 되고, 이 물방울이 모여 구름이 됩니다.</mark></p>
+        <p>구름 속 물방울이 점점 커지고 무거워지면 비나 눈이 되어 땅으로 떨어져요. 땅에 떨어진 물은 강을 따라 다시 바다로 흘러가지요.</p>
+        <p>이렇게 물이 모습을 바꾸며 끝없이 돌고 도는 것을 <b>물의 순환</b>이라고 불러요. 우리가 오늘 마신 물도 아주 오래전에는 공룡이 마신 물이었을지 몰라요!</p>` },
+    { url: 'https://example.org/kids-wiki/honeybee',
+      head: '<title>꿀벌 | 어린이 열린 백과</title><meta property="og:site_name" content="어린이 열린 백과">',
+      body: `<div class="site">어린이 열린 백과</div><h2>꿀벌</h2><div class="by">누구나 고칠 수 있는 어린이 백과사전</div>
+        <p><mark id="pick">꿀벌은 꽃의 꿀과 꽃가루를 모으며, 이 과정에서 꽃가루를 옮겨 열매가 맺히도록 돕는다.</mark></p>
+        <p>한 무리에는 알을 낳는 여왕벌 한 마리와 수많은 일벌, 그리고 수벌이 함께 산다.</p>
+        <p>일벌은 엉덩이춤으로 꽃이 있는 방향과 거리를 동료에게 알려 준다고 알려져 있다.</p>` },
+  ];
+  let cur = 0;
+  const docs = PAGES.map(p => new DOMParser().parseFromString(`<html><head>${p.head}</head><body></body></html>`, 'text/html'));
+  const metaOf = i => T.readMeta(docs[i], new URL(PAGES[i].url));   // ← 확장과 같은 함수로 출처 정보 읽기
+
+  const SAMPLE = {
+    enabled: true, format: 'easy',
+    history: [
+      { title: '꿀벌', site: '어린이 열린 백과', url: 'https://example.org/kids-wiki/honeybee', author: '', year: '', checked: '2026-11-05' },
+      { title: '우리 동네 하천 지도', site: '햇살시 열린 지도', url: 'https://example.org/map/stream', author: '', year: '', checked: '2026-11-03' },
+    ],
+  };
+  let state;
+  try { state = Object.assign({}, SAMPLE, JSON.parse(localStorage.getItem(STORE) || 'null') || {}); } catch (_) { state = Object.assign({}, SAMPLE); }
+  const persist = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (_) {} };
+
+  // 클립보드 미리보기
+  let isExample = true;
+  function showClip(text, note){
+    const lines = text.split('\n');
+    const last = lines.pop();
+    $('clip').innerHTML = (lines.length ? T.esc(lines.join('\n')) + '\n' : '') + `<span class="c">${T.esc(last)}</span>`;
+    $('clipNote').textContent = note;
+  }
+  function exampleClip(){
+    const pick = $('pick');
+    showClip(T.composeText(pick.textContent, T.buildCitation(metaOf(cur), state.format, new Date())), '(예시 — 노란 문장을 복사하면 이렇게 들어가요)');
+    isExample = true;
+  }
+
+  function renderPage(){
+    $('tabs').innerHTML = PAGES.map((p, i) => `<button class="tab${i === cur ? ' on' : ''}" data-i="${i}">${T.esc(docs[i].title)}</button>`).join('');
+    $('addr').textContent = PAGES[cur].url;
+    $('page').innerHTML = PAGES[cur].body;
+  }
+  $('tabs').addEventListener('click', e => {
+    const b = e.target.closest('.tab'); if (!b) return;
+    cur = +b.dataset.i; renderPage(); ui.refresh(); if (isExample) exampleClip();
+  });
+
+  async function copyText(text){
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; }
+    catch (_) {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch (_) {}
+      ta.remove();
+    }
+    showClip(text, ok ? '(팝업 버튼으로 복사됨)' : '(브라우저가 복사를 막았어요 — 내용은 위와 같아요)');
+    isExample = false;
+    return true;
+  }
+
+  const ui = SourceTagPopup.mount($('popup'), {
+    getState: async () => ({ enabled: state.enabled, format: state.format, history: state.history.slice() }),
+    set: async patch => { Object.assign(state, patch); persist(); if (isExample && 'format' in patch) exampleClip(); },
+    getPageMeta: async () => metaOf(cur),
+    copyText,
+  });
+
+  function afterTag(r){
+    showClip(r.plain, '(방금 복사한 내용)');
+    isExample = false;
+    state.history = T.addHistory(state.history, T.makeEntry(r.meta, r.now)); persist();
+    ui.refresh();
+    T.toast(document, '🏷️ 출처 꼬리표를 붙여 복사했어요');
+  }
+  const inPage = sel => sel && sel.rangeCount && $('page').contains(sel.getRangeAt(0).commonAncestorContainer);
+
+  // 확장의 content.js와 같은 방식: copy 이벤트에서 SourceTag.handleCopy 호출 (가상 페이지 안에서만)
+  document.addEventListener('copy', e => {
+    const sel = window.getSelection();
+    if (!inPage(sel)) return;
+    const r = T.handleCopy(e, { enabled: state.enabled, format: state.format, getMeta: () => metaOf(cur) });
+    if (r) afterTag(r);
+    else if (!state.enabled && sel.toString().trim()){ showClip(sel.toString() + '\n(꼬리표 꺼짐 — 출처 없이 글만 복사됐어요)', '(꼬리표 꺼짐)'); isExample = false; }
+  });
+
+  // [복사하기] 버튼: 고른 글이 없으면 노란 문장을 골라서 복사
+  $('copyBtn').addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!inPage(sel) || !sel.toString().trim()){
+      const r = document.createRange(); r.selectNodeContents($('pick'));
+      sel.removeAllRanges(); sel.addRange(r);
+    }
+    let fired = false;
+    const spy = () => { fired = true; };
+    document.addEventListener('copy', spy, { once: true });
+    try { document.execCommand('copy'); } catch (_) {}
+    document.removeEventListener('copy', spy);
+    if (!fired){
+      // 브라우저가 copy 이벤트를 허용하지 않을 때: 같은 함수로 결과만 계산해 보여 줌
+      const fake = { clipboardData: { setData(){} }, preventDefault(){}, defaultPrevented: false, target: $('pick') };
+      const r = T.handleCopy(fake, { enabled: state.enabled, format: state.format, getMeta: () => metaOf(cur) });
+      if (r){ afterTag(r); navigator.clipboard && navigator.clipboard.writeText(r.plain).catch(() => {}); }
+    }
+  });
+
+  renderPage();
+  exampleClip();
+  window.__demo = { ui, state: () => state, metaOf };
+})();
+</script>
+</body>
+</html>

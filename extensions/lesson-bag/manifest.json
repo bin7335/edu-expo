@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "수업 가방",
+  "version": "1.0.0",
+  "description": "지금 창에 열린 탭들을 '3교시 과학 - 물의 순환' 같은 수업 세트로 담아 두고, 한 번에 새 창으로 다시 열어요. QR·JSON 백업 지원.",
+  "permissions": ["tabs", "storage"],
+  "action": {
+    "default_title": "수업 가방",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+}

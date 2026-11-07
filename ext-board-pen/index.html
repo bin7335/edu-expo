@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>투명 판서판 - 어떤 웹페이지 위에서든 판서하는 크롬 확장</title>
+<meta name="description" content="웹페이지 위에 투명한 판서막을 씌워 펜·형광펜·레이저 포인터·화살표·네모·스포트라이트로 바로 설명하는 교사용 크롬 확장. 설치 없이 이 페이지에서 체험해 보세요.">
+<style>
+  :root{--bg:#eef6f2;--card:#fff;--ink:#1d2a25;--sub:#5d6d66;--line:#d8e7df;--pri:#1f7a5a;--pri2:#e2f3eb;--top:2147483647}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:radial-gradient(circle at 10% 0%,#fff6d6 0,transparent 38%),radial-gradient(circle at 95% 90%,#dff0ff 0,transparent 40%),var(--bg);color:var(--ink);min-height:100vh}
+  .raise{position:relative;z-index:var(--top)}
+  header{display:flex;align-items:center;gap:12px;padding:10px 22px;flex-wrap:wrap}
+  .logo{width:42px;height:42px;border-radius:12px;display:block}
+  header h1{margin:0;font-size:22px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  header small{display:block;color:var(--sub);font-size:13px}
+  .badge{display:inline-flex;align-items:center;gap:4px;background:#1d2a25;color:#ffd84d;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.2px}
+  .dl{margin-left:auto;display:inline-flex;align-items:center;gap:6px;text-decoration:none;background:var(--pri);color:#fff;font-weight:800;font-size:15px;padding:10px 16px;border-radius:12px;box-shadow:0 3px 0 #145a41}
+  .dl:active{transform:translateY(2px);box-shadow:0 1px 0 #145a41}
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;padding:2px 22px 90px;align-items:start}
+  article{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px 30px 26px;box-shadow:0 10px 30px rgba(31,122,90,.08);line-height:1.75;font-size:17px}
+  article .unit{display:inline-block;background:var(--pri2);color:var(--pri);font-weight:800;font-size:12.5px;padding:3px 10px;border-radius:999px}
+  article h2{margin:6px 0 4px;font-size:27px;letter-spacing:-.5px}
+  article h3{margin:16px 0 2px;font-size:19px}
+  article p{margin:4px 0}
+  .fig{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:center;margin:8px 0}
+  .fig svg{width:100%;height:auto;display:block;border-radius:16px;background:linear-gradient(#cfeaff,#eef8ff 62%,#fff)}
+  .terms{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:15.5px;line-height:1.5}
+  .terms b{display:inline-block;min-width:44px;color:var(--pri)}
+  .quiz{margin-top:14px;background:#fff8df;border:1px dashed #e5c860;border-radius:14px;padding:10px 14px;font-size:16px}
+  aside{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;box-shadow:0 6px 18px rgba(31,122,90,.06)}
+  .card h4{margin:0 0 8px;font-size:14px;color:var(--sub);display:flex;align-items:center;gap:6px}
+  .pop{background:#f6f7fb;border:1px solid #dfe2ea;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .pop .t{display:flex;align-items:center;gap:8px;font-weight:800}
+  .pop .t img{width:24px;height:24px}
+  .pop button{border:0;font:inherit;font-size:15px;font-weight:800;padding:10px;border-radius:11px;background:var(--pri);color:#fff;cursor:pointer;box-shadow:0 3px 0 #145a41}
+  .pop button:active{transform:translateY(2px);box-shadow:0 1px 0 #145a41}
+  kbd{background:#fff;border:1px solid #d6d9e3;border-bottom-width:2px;border-radius:5px;padding:0 5px;font-size:12px;font-family:inherit}
+  .small{font-size:12.5px;color:var(--sub);margin:0;line-height:1.55}
+  ol{margin:0;padding-left:20px;font-size:13.5px;line-height:1.6}
+  ol li+li{margin-top:3px}
+  code{background:#eef1f5;border-radius:5px;padding:0 4px;font-size:12.5px}
+  .try{margin:0;padding:0;list-style:none;font-size:13.5px;line-height:1.6}
+  footer{position:fixed;right:14px;bottom:8px}
+  footer a{color:var(--sub);font-size:13px;text-decoration:none;background:rgba(255,255,255,.85);padding:3px 8px;border-radius:8px}
+  @media (max-width:900px){
+    .wrap{grid-template-columns:minmax(0,1fr);padding:2px 12px 150px}
+    header{padding:10px 12px}
+    article{padding:16px 16px 20px;font-size:16px}
+    article h2{font-size:23px}
+    .fig{grid-template-columns:minmax(0,1fr)}
+    footer{position:static;text-align:right;padding:0 12px 130px}
+  }
+  @media (max-width:520px){ .dl{margin-left:0;width:100%;justify-content:center} }
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="../extensions/board-pen/icon128.png" alt="">
+  <div>
+    <h1>투명 판서판 <span class="badge">🧩 크롬 확장</span></h1>
+    <small>어떤 웹페이지든 그 위에 바로 펜으로 쓰고, 레이저로 짚고, 조명으로 비춰요</small>
+  </div>
+  <a class="dl raise" href="../extensions/board-pen.zip" download>⬇ zip 내려받기</a>
+</header>
+
+<div class="wrap">
+  <article id="art">
+    <span class="unit">4학년 과학 · 물의 여행 (예시 수업 자료)</span>
+    <h2>물은 어떻게 돌고 돌까요? — 물의 순환</h2>
+    <p>바다와 강의 물은 사라지지 않아요. <span id="k1">모습을 바꾸며 바다 → 하늘 → 땅 → 바다로 끊임없이 여행</span>하는데, 이것을 <b>물의 순환</b>이라고 해요.</p>
+    <div class="fig">
+      <svg viewBox="0 0 520 300" role="img" aria-label="물의 순환 그림: 증발, 응결, 강수, 흐름">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3a6ea5"/></marker></defs>
+        <circle cx="64" cy="58" r="30" fill="#ffd34d"/><g stroke="#ffd34d" stroke-width="4" stroke-linecap="round"><path d="M64 14v-8M64 110v-6M20 58h-8M116 58h-8M33 27l-6-6M101 95l-5-5M101 21l-6 6"/></g>
+        <path d="M0 230 Q60 222 120 230 T240 230 L240 300 L0 300Z" fill="#3d8fd6"/>
+        <path d="M0 246 Q40 240 80 246 T160 246" stroke="#bfe0ff" stroke-width="3" fill="none"/>
+        <path d="M230 300 L360 150 L410 200 L450 160 L520 230 L520 300Z" fill="#7cb66b"/>
+        <path d="M360 150 L380 173 L370 178 L352 160Z" fill="#fff"/>
+        <path d="M470 240 C420 262 330 248 240 268" stroke="#4fa3e8" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <g id="cloud"><ellipse cx="330" cy="70" rx="58" ry="26" fill="#fff"/><ellipse cx="300" cy="58" rx="30" ry="24" fill="#fff"/><ellipse cx="350" cy="50" rx="34" ry="28" fill="#fff"/></g>
+        <g stroke="#7fb4e6" stroke-width="3" stroke-linecap="round"><path d="M320 108l-6 16M345 108l-6 16M370 104l-6 16M395 118l-6 16"/></g>
+        <g stroke="#3a6ea5" stroke-width="3" fill="none" marker-end="url(#ah)" stroke-dasharray="7 5">
+          <path d="M120 215 C130 160 170 110 245 82"/>
+          <path d="M440 245 C470 260 260 262 200 236"/>
+        </g>
+        <g font-family="system-ui,Malgun Gothic,sans-serif" font-weight="800" font-size="17" fill="#173a5e">
+          <text x="96" y="150">① 증발</text><text x="260" y="22">② 응결</text><text x="410" y="130">③ 강수</text><text x="290" y="292" fill="#fff">④ 흐름</text>
+        </g>
+      </svg>
+      <ul class="terms">
+        <li><b>증발</b> 햇볕을 받은 물이 수증기가 되어 하늘로 올라가요.</li>
+        <li><b>응결</b> 높은 곳에서 식은 수증기가 물방울이 되어 <span id="k2" style="white-space:nowrap">구름</span>이 돼요.</li>
+        <li><b>강수</b> 물방울이 무거워지면 비나 눈으로 내려요.</li>
+        <li><b>흐름</b> 땅에 내린 물은 강을 따라 다시 바다로 가요.</li>
+      </ul>
+    </div>
+    <h3>생활 속에서 찾아봐요</h3>
+    <p>빨래가 마르는 것, 차가운 컵 바깥에 물방울이 맺히는 것도 물의 순환과 같은 원리예요. 빨래의 물은 <b>증발</b>하고, 컵 겉면의 물방울은 공기 속 수증기가 <b>응결</b>한 거예요.</p>
+    <h3>물이 소중한 까닭</h3>
+    <p>지구의 물은 계속 돌고 돌지만, 우리가 바로 마실 수 있는 물은 아주 적어요. 물을 아껴 쓰고 깨끗하게 지키는 일이 중요해요.</p>
+    <div class="quiz">❓ <b>생각 열기</b> 비 온 뒤 운동장의 웅덩이는 어디로 사라졌을까요? 그림에서 찾아 펜으로 표시해 보세요.</div>
+  </article>
+
+  <aside>
+    <div class="card raise">
+      <h4>🧩 확장 팝업 미리보기</h4>
+      <div class="pop">
+        <div class="t"><img src="../extensions/board-pen/icon48.png" alt="">투명 판서판</div>
+        <button id="toggle">✏️ 판서 켜기 / 끄기</button>
+        <p class="small">단축키 <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> · 지금 이 페이지에 켜져 있어요</p>
+      </div>
+    </div>
+    <div class="card raise">
+      <h4>👆 30초 체험</h4>
+      <ul class="try">
+        <li>✏️ <b>펜</b>으로 그림의 구름에 동그라미</li>
+        <li>🔴 <b>레이저</b>로 화살표를 따라 짚기 — 금방 사라져요</li>
+        <li>🔦 <b>조명</b>을 켜고 마우스를 움직여 보기</li>
+        <li>🖱️ <b>통과</b>를 누르면 필기는 남고 스크롤·클릭 가능</li>
+      </ul>
+    </div>
+    <div class="card raise">
+      <h4>⚙️ 내 크롬에 설치 (3단계)</h4>
+      <ol>
+        <li>위 <b>zip 내려받기</b> → 압축 풀기</li>
+        <li>주소창에 <code>chrome://extensions</code> → 오른쪽 위 <b>개발자 모드</b> 켜기</li>
+        <li><b>압축해제된 확장 프로그램을 로드합니다</b> → 풀어 둔 폴더 선택</li>
+      </ol>
+      <p class="small" style="margin-top:6px">권한: 지금 탭(activeTab)·주입(scripting)만 · 외부 전송 없음</p>
+    </div>
+  </aside>
+</div>
+<footer class="raise"><a href="../">← 전체 데모 보기</a></footer>
+
+<script>
+/* ↓ extensions/board-pen/overlay.js 와 동일한 코드 */
+/* 투명 판서판 - 투명 판서 오버레이 (확장 content script · 체험 페이지 공용 코드)
+ * 한 번 주입되면 window.__boardPen 에 남고, 다시 주입하면 켜기/끄기만 바꾼다.
+ * 외부 전송·저장 없음. 필기는 페이지(문서) 좌표로 저장되어 스크롤해도 글자에 붙어 있다. */
+(() => {
+  'use strict';
+  if (window.__boardPen) { window.__boardPen.toggle(); return; }
+
+  const COLORS = [['#e53935', '빨강'], ['#1e66f5', '파랑'], ['#1b1b1b', '검정']];
+  const SIZES = [[2, '가늘게'], [5, '보통'], [10, '굵게']];
+  const SPOT_R = [90, 140, 210];
+  const HL_COLOR = '#ffd400';
+  const LASER_LIFE = 750;
+  const TOOLS = [
+    ['pass', '🖱️', '통과', 'V'], ['pen', '✏️', '펜', 'P'], ['hl', '🖍️', '형광펜', 'H'],
+    ['erase', '🧽', '지우개', 'E'], ['laser', '🔴', '레이저', 'L'], ['arrow', '↗️', '화살표', 'A'],
+    ['rect', '⬜', '네모', 'R'], ['spot', '🔦', '조명', 'S']
+  ];
+
+  const S = {
+    on: false, tool: 'pen', color: COLORS[0][0], sizeIdx: 1,
+    strokes: [], history: [], laser: [], cur: null,
+    ptr: { x: -9999, y: -9999, inside: false }, raf: 0, inkDirty: false
+  };
+
+  const host = document.createElement('div');
+  host.id = 'board-pen-host';
+  host.setAttribute('style', 'all:initial;position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:2147483646;pointer-events:none;display:none;');
+  const root = host.attachShadow({ mode: 'open' });
+  root.innerHTML = `
+<style>
+  :host{all:initial}
+  *{box-sizing:border-box;font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+  canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;display:block}
+  .ink{pointer-events:auto;touch-action:none;cursor:crosshair}
+  .ink.pass{pointer-events:none}
+  .ink.spot,.ink.laser{cursor:none}
+  .ink.erase{cursor:cell}
+  .fx{pointer-events:none}
+  .bar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);pointer-events:auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px;
+    width:max-content;max-width:calc(100vw - 12px);padding:6px 8px;border-radius:18px;background:rgba(28,30,38,.94);color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.35);user-select:none;-webkit-user-select:none;touch-action:none}
+  .grip{cursor:grab;color:#9aa0ad;font-size:16px;padding:0 4px;align-self:stretch;display:flex;align-items:center}
+  .sep{width:1px;align-self:stretch;background:rgba(255,255,255,.15);margin:2px 3px}
+  button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:44px;height:46px;padding:0 3px;border-radius:12px;color:#e9ebf1;font-size:10.5px;font-weight:700;line-height:1.1;text-align:center}
+  button .i{font-size:19px;line-height:1}
+  button:hover{background:rgba(255,255,255,.1)}
+  button.on{background:#ffd84d;color:#1c1e26}
+  button:focus-visible{outline:2px solid #8ab4ff}
+  .sw{min-width:30px}
+  .sw .dot{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.55)}
+  .sw.on{background:rgba(255,255,255,.18);color:#fff}
+  .sw.on .dot{border-color:#fff;box-shadow:0 0 0 2px #ffd84d}
+  .sz{min-width:30px}
+  .sz .ln{width:20px;border-radius:9px;background:#fff}
+  .sz.on{background:rgba(255,255,255,.18);color:#fff}
+  .tip{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:rgba(28,30,38,.9);color:#fff;padding:7px 14px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+  .tip.show{opacity:1}
+  @media (max-width:560px){
+    button{min-width:36px;height:36px}
+    button .t{display:none}
+    button .i{font-size:18px}
+    .sw,.sz{min-width:30px}
+    .sep{display:none}
+    .bar{bottom:8px;gap:2px;padding:5px}
+  }
+</style>
+<canvas class="ink"></canvas>
+<canvas class="fx"></canvas>
+<div class="tip"></div>
+<div class="bar" role="toolbar" aria-label="판서 도구">
+  <span class="grip" title="끌어서 옮기기">⠿</span>
+  ${TOOLS.map(([id, ic, label, key]) => `<button data-tool="${id}" title="${label} (${key})"><span class="i">${ic}</span><span class="t">${label}</span></button>`).join('')}
+  <span class="sep"></span>
+  ${COLORS.map(([c, n]) => `<button class="sw" data-color="${c}" title="${n}"><span class="dot" style="background:${c}"></span><span class="t">${n}</span></button>`).join('')}
+  <span class="sep"></span>
+  ${SIZES.map(([w, n], i) => `<button class="sz" data-size="${i}" title="${n}"><span class="ln" style="height:${Math.max(2, w * .8)}px"></span><span class="t">${n}</span></button>`).join('')}
+  <span class="sep"></span>
+  <button data-act="undo" title="되돌리기 (Ctrl+Z)"><span class="i">↶</span><span class="t">되돌리기</span></button>
+  <button data-act="clear" title="전체 지우기"><span class="i">🗑️</span><span class="t">전체</span></button>
+  <button data-act="close" title="판서 끄기 (Alt+Shift+D)"><span class="i">✕</span><span class="t">끄기</span></button>
+</div>`;
+
+  const ink = root.querySelector('.ink');
+  const fx = root.querySelector('.fx');
+  const bar = root.querySelector('.bar');
+  const tip = root.querySelector('.tip');
+  const ictx = ink.getContext('2d');
+  const fctx = fx.getContext('2d');
+  let dpr = 1, W = 0, H = 0;
+
+  /* ---------- 캔버스 크기 · 다시 그리기 ---------- */
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth; H = window.innerHeight;
+    for (const c of [ink, fx]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+    redrawInk(); drawFx();
+  }
+  function redrawInk() {
+    S.inkDirty = false;
+    ictx.setTransform(1, 0, 0, 1, 0, 0);
+    ictx.clearRect(0, 0, ink.width, ink.height);
+    ictx.setTransform(dpr, 0, 0, dpr, -window.scrollX * dpr, -window.scrollY * dpr);
+    for (const s of S.strokes) drawItem(ictx, s);
+  }
+  function drawItem(ctx, s) {
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = s.color; ctx.lineWidth = s.w;
+    if (s.type === 'hl') ctx.globalAlpha = .38;
+    if (s.type === 'arrow') {
+      const [x1, y1, x2, y2] = s.box;
+      const ang = Math.atan2(y2 - y1, x2 - x1), head = 12 + s.w * 2.4;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2 - head * Math.cos(ang - .45), y2 - head * Math.sin(ang - .45));
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(ang + .45), y2 - head * Math.sin(ang + .45));
+      ctx.stroke();
+    } else if (s.type === 'rect') {
+      const [x1, y1, x2, y2] = s.box;
+      ctx.strokeRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
+    } else {
+      const p = s.pts;
+      ctx.beginPath();
+      if (p.length < 3) {
+        ctx.moveTo(p[0][0], p[0][1]);
+        ctx.lineTo(p[p.length - 1][0] + .01, p[p.length - 1][1]);
+      } else {
+        ctx.moveTo(p[0][0], p[0][1]);
+        for (let i = 1; i < p.length - 1; i++) {
+          const mx = (p[i][0] + p[i + 1][0]) / 2, my = (p[i][1] + p[i + 1][1]) / 2;
+          ctx.quadraticCurveTo(p[i][0], p[i][1], mx, my);
+        }
+        ctx.lineTo(p[p.length - 1][0], p[p.length - 1][1]);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* 효과 레이어: 그리는 중인 획, 레이저 꼬리, 스포트라이트, 지우개 커서 */
+  function drawFx() {
+    fctx.setTransform(1, 0, 0, 1, 0, 0);
+    fctx.clearRect(0, 0, fx.width, fx.height);
+    fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (S.cur && (S.cur.pts || S.cur.box)) {
+      fctx.save(); fctx.translate(-window.scrollX, -window.scrollY); drawItem(fctx, S.cur); fctx.restore();
+    }
+    const now = performance.now();
+    S.laser = S.laser.filter(p => now - p.t < LASER_LIFE);
+    if (S.laser.length) {
+      const base = 3 + SIZES[S.sizeIdx][0] * .9;
+      fctx.lineCap = 'round';
+      for (let i = 1; i < S.laser.length; i++) {
+        const a = S.laser[i - 1], b = S.laser[i], k = 1 - (now - b.t) / LASER_LIFE;
+        fctx.strokeStyle = `rgba(255,40,40,${k * .85})`;
+        fctx.lineWidth = base * (.35 + .65 * k);
+        fctx.shadowColor = 'rgba(255,0,0,.8)'; fctx.shadowBlur = 10 * k;
+        fctx.beginPath(); fctx.moveTo(a.x, a.y); fctx.lineTo(b.x, b.y); fctx.stroke();
+      }
+      fctx.shadowBlur = 0;
+    }
+    if (S.tool === 'laser' && S.ptr.inside) {
+      const r = 5 + SIZES[S.sizeIdx][0] * .5;
+      fctx.fillStyle = '#ff2a2a'; fctx.shadowColor = '#ff0000'; fctx.shadowBlur = 14;
+      fctx.beginPath(); fctx.arc(S.ptr.x, S.ptr.y, r, 0, Math.PI * 2); fctx.fill();
+      fctx.shadowBlur = 0;
+    }
+    if (S.tool === 'spot') {
+      const r = SPOT_R[S.sizeIdx];
+      const x = S.ptr.inside ? S.ptr.x : W / 2, y = S.ptr.inside ? S.ptr.y : H / 2;
+      fctx.fillStyle = 'rgba(0,0,0,.72)';
+      fctx.fillRect(0, 0, W, H);
+      fctx.globalCompositeOperation = 'destination-out';
+      const g = fctx.createRadialGradient(x, y, r * .82, x, y, r);
+      g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      fctx.fillStyle = g;
+      fctx.beginPath(); fctx.arc(x, y, r, 0, Math.PI * 2); fctx.fill();
+      fctx.globalCompositeOperation = 'source-over';
+    }
+    if (S.tool === 'erase' && S.ptr.inside) {
+      fctx.strokeStyle = 'rgba(0,0,0,.55)'; fctx.lineWidth = 1.5; fctx.setLineDash([4, 3]);
+      fctx.beginPath(); fctx.arc(S.ptr.x, S.ptr.y, eraseR(), 0, Math.PI * 2); fctx.stroke();
+      fctx.setLineDash([]);
+    }
+  }
+  function loop() {
+    S.raf = 0;
+    if (S.inkDirty) redrawInk();
+    drawFx();
+    if (S.on && S.laser.length) S.raf = requestAnimationFrame(loop);
+  }
+  function kick() { if (!S.raf) S.raf = requestAnimationFrame(loop); }
+
+  /* ---------- 기록 / 되돌리기 ---------- */
+  function commit(next) {
+    S.history.push(S.strokes);
+    if (S.history.length > 200) S.history.shift();
+    S.strokes = next;
+    S.inkDirty = true; kick();
+  }
+  function undo() {
+    if (!S.history.length) { toast('되돌릴 필기가 없어요'); return; }
+    S.strokes = S.history.pop(); S.inkDirty = true; kick();
+  }
+  function clearAll() {
+    if (!S.strokes.length) { toast('지울 필기가 없어요'); return; }
+    commit([]); toast('전체 지움 · 되돌리기로 살릴 수 있어요');
+  }
+
+  /* ---------- 지우개 (획 단위) ---------- */
+  const eraseR = () => 8 + SIZES[S.sizeIdx][0] * 1.6;
+  function segDist(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy;
+    let t = l ? ((px - ax) * dx + (py - ay) * dy) / l : 0;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - ax - t * dx, py - ay - t * dy);
+  }
+  function hits(s, x, y, r) {
+    const rr = r + s.w / 2;
+    let segs = [];
+    if (s.type === 'arrow') segs = [s.box];
+    else if (s.type === 'rect') {
+      const [a, b, c, d] = s.box;
+      segs = [[a, b, c, b], [c, b, c, d], [c, d, a, d], [a, d, a, b]];
+    } else {
+      if (s.pts.length === 1) return Math.hypot(s.pts[0][0] - x, s.pts[0][1] - y) < rr;
+      for (let i = 1; i < s.pts.length; i++) segs.push([s.pts[i - 1][0], s.pts[i - 1][1], s.pts[i][0], s.pts[i][1]]);
+    }
+    return segs.some(g => segDist(x, y, g[0], g[1], g[2], g[3]) < rr);
+  }
+  function eraseAt(x, y) {
+    const keep = S.strokes.filter(s => !hits(s, x, y, eraseR()));
+    if (keep.length !== S.strokes.length) {
+      if (!S.cur.committed) { commit(keep); S.cur.committed = true; }
+      else { S.strokes = keep; S.inkDirty = true; kick(); }
+    }
+  }
+
+  /* ---------- 포인터 ---------- */
+  const docPt = e => [e.clientX + window.scrollX, e.clientY + window.scrollY];
+  ink.addEventListener('pointerdown', e => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    e.preventDefault();
+    try { ink.setPointerCapture(e.pointerId); } catch (_) {}
+    S.ptr = { x: e.clientX, y: e.clientY, inside: true };
+    const [x, y] = docPt(e), w = SIZES[S.sizeIdx][0];
+    if (S.tool === 'pen') S.cur = { type: 'pen', color: S.color, w, pts: [[x, y]] };
+    else if (S.tool === 'hl') S.cur = { type: 'hl', color: HL_COLOR, w: w * 3 + 10, pts: [[x, y]] };
+    else if (S.tool === 'arrow' || S.tool === 'rect') S.cur = { type: S.tool, color: S.color, w: Math.max(3, w), box: [x, y, x, y] };
+    else if (S.tool === 'erase') { S.cur = { erasing: true, committed: false, type: 'none' }; eraseAt(x, y); }
+    else if (S.tool === 'laser') S.laser.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+    kick();
+  });
+  ink.addEventListener('pointermove', e => {
+    S.ptr = { x: e.clientX, y: e.clientY, inside: true };
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    if (S.tool === 'laser') {
+      for (const c of (evs.length ? evs : [e])) S.laser.push({ x: c.clientX, y: c.clientY, t: performance.now() });
+    } else if (S.cur && S.cur.pts) {
+      for (const c of (evs.length ? evs : [e])) {
+        const [x, y] = docPt(c), last = S.cur.pts[S.cur.pts.length - 1];
+        if (Math.hypot(x - last[0], y - last[1]) > .8) S.cur.pts.push([x, y]);
+      }
+    } else if (S.cur && S.cur.box) {
+      const [x, y] = docPt(e); S.cur.box[2] = x; S.cur.box[3] = y;
+    } else if (S.cur && S.cur.erasing) {
+      const [x, y] = docPt(e); eraseAt(x, y);
+    }
+    kick();
+  });
+  function endStroke() {
+    const c = S.cur; S.cur = null;
+    if (c && (c.pts || c.box)) {
+      const tiny = c.box && Math.hypot(c.box[2] - c.box[0], c.box[3] - c.box[1]) < 6;
+      if (!tiny) commit(S.strokes.concat([c]));
+    }
+    kick();
+  }
+  ink.addEventListener('pointerup', endStroke);
+  ink.addEventListener('pointercancel', endStroke);
+  ink.addEventListener('pointerleave', e => { if (e.pointerType !== 'mouse' || !S.cur) { S.ptr.inside = false; kick(); } });
+
+  /* ---------- 도구 모음 ---------- */
+  function setTool(t) {
+    S.tool = t;
+    ink.className = 'ink ' + t;
+    root.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+    const label = TOOLS.find(x => x[0] === t)[2];
+    if (t === 'pass') toast('통과 모드: 필기는 남기고 페이지를 그대로 클릭·스크롤해요');
+    else if (t === 'spot') toast('조명: 굵기 버튼으로 동그라미 크기를 바꿔요');
+    else toast(label);
+    kick();
+  }
+  function setColor(c) {
+    S.color = c;
+    root.querySelectorAll('[data-color]').forEach(b => b.classList.toggle('on', b.dataset.color === c));
+    if (['pass', 'erase', 'laser', 'spot', 'hl'].includes(S.tool)) setTool('pen');
+  }
+  function setSize(i) {
+    S.sizeIdx = i;
+    root.querySelectorAll('[data-size]').forEach(b => b.classList.toggle('on', +b.dataset.size === i));
+    kick();
+  }
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.tool) setTool(b.dataset.tool);
+    else if (b.dataset.color) setColor(b.dataset.color);
+    else if (b.dataset.size) setSize(+b.dataset.size);
+    else if (b.dataset.act === 'undo') undo();
+    else if (b.dataset.act === 'clear') clearAll();
+    else if (b.dataset.act === 'close') hide();
+  });
+  // 도구 모음 끌어 옮기기
+  const grip = root.querySelector('.grip');
+  grip.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const r = bar.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top;
+    grip.setPointerCapture(e.pointerId);
+    const mv = ev => {
+      const x = Math.max(0, Math.min(window.innerWidth - r.width, ev.clientX - ox));
+      const y = Math.max(0, Math.min(window.innerHeight - r.height, ev.clientY - oy));
+      Object.assign(bar.style, { left: x + 'px', top: y + 'px', bottom: 'auto', transform: 'none' });
+    };
+    const up = () => { grip.removeEventListener('pointermove', mv); grip.removeEventListener('pointerup', up); };
+    grip.addEventListener('pointermove', mv); grip.addEventListener('pointerup', up);
+  });
+
+  let tipTimer = 0;
+  function toast(msg) {
+    tip.textContent = msg; tip.classList.add('show');
+    clearTimeout(tipTimer); tipTimer = setTimeout(() => tip.classList.remove('show'), 1600);
+  }
+
+  /* ---------- 키보드 ---------- */
+  const KEYMAP = Object.fromEntries(TOOLS.map(t => [t[3].toLowerCase(), t[0]]));
+  function onKey(e) {
+    if (!S.on) return;
+    const t = e.composedPath()[0];
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Escape') { if (S.tool === 'pass') hide(); else setTool('pass'); return; }
+    const k = KEYMAP[e.key.toLowerCase()];
+    if (k) { setTool(k); e.preventDefault(); }
+    else if (e.key === '[' || e.key === ']') setSize(Math.max(0, Math.min(2, S.sizeIdx + (e.key === ']' ? 1 : -1))));
+  }
+
+  /* ---------- 켜기 / 끄기 ---------- */
+  function onScroll() { if (S.on) { S.inkDirty = true; kick(); } }
+  function show() {
+    if (!host.isConnected) (document.body || document.documentElement).appendChild(host);
+    host.style.display = 'block'; S.on = true; resize();
+    toast('판서 켜짐 · 끄기: Alt+Shift+D 또는 ✕');
+  }
+  function hide() { S.on = false; S.laser = []; S.cur = null; host.style.display = 'none'; }
+  function toggle() { S.on ? hide() : show(); }
+
+  window.addEventListener('resize', () => { if (S.on) resize(); });
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('keydown', onKey);
+
+  setTool('pen'); setColor(S.color); setSize(1);
+  window.__boardPen = {
+    toggle, show, hide, setTool, setColor, setSize, undo, clear: clearAll,
+    add(item) { commit(S.strokes.concat([item])); },
+    get state() { return S; }
+  };
+  show();
+})();
+
+</script>
+<script>
+// 체험 페이지 전용: 예시 필기 미리 그려 두기 + 도구 모음 위치 맞추기
+(() => {
+  const bp = window.__boardPen;
+  const bar = document.getElementById('board-pen-host').shadowRoot.querySelector('.bar');
+  document.getElementById('toggle').addEventListener('click', () => bp.toggle());
+  const doc = el => { const r = el.getBoundingClientRect(); return { l: r.left + scrollX, t: r.top + scrollY, r: r.right + scrollX, b: r.bottom + scrollY, w: r.width, h: r.height }; };
+  function seed() {
+    for (const r of document.getElementById('k1').getClientRects()) // 줄마다 형광펜
+      bp.add({ type: 'hl', color: '#ffd400', w: 22, pts: [[r.left + scrollX, r.bottom + scrollY - 9], [r.right + scrollX, r.bottom + scrollY - 9]] });
+    const c = doc(document.getElementById('cloud'));
+    const cx = c.l + c.w / 2, cy = c.t + c.h / 2, rx = c.w * .68, ry = c.h * .78, pts = [];
+    for (let a = -0.4; a <= Math.PI * 2 + .25; a += .12) pts.push([cx + Math.cos(a) * rx * (1 + .04 * Math.sin(a * 3)), cy + Math.sin(a) * ry]);
+    bp.add({ type: 'pen', color: '#e53935', w: 4, pts });
+    const k2 = doc(document.getElementById('k2'));
+    const wave = [];
+    for (let x = k2.l - 2; x <= k2.r + 2; x += 3) wave.push([x, k2.b + 2 + Math.sin((x - k2.l) / 4) * 2]);
+    bp.add({ type: 'pen', color: '#1e66f5', w: 3, pts: wave });
+    if (innerWidth > 900) bp.add({ type: 'arrow', color: '#1e66f5', w: 4, box: [k2.l - 30, k2.b + 40, c.r - 10, c.b + 4] });
+    bp.state.history.length = 0;
+  }
+  function placeBar() {
+    if (bar.style.top) return; // 사용자가 옮겼으면 그대로
+    const a = document.getElementById('art').getBoundingClientRect();
+    bar.style.left = innerWidth > 900 ? (a.left + a.width / 2) + 'px' : '';
+  }
+  seed(); placeBar();
+  addEventListener('resize', placeBar);
+  if (matchMedia('(pointer:coarse)').matches) bp.setTool('pass'); // 터치 화면은 스크롤부터 되게
+})();
+</script>
+</body>
+</html>
