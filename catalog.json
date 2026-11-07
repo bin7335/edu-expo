@@ -63,6 +63,16 @@
     {"no":58,"slug":"balloon-math","name":"풍선 계산 팡팡","kind":"게임","desc":"떠오르는 풍선 중 문제의 답이 적힌 풍선을 터뜨리는 연산 게임","who":"학생","path":"balloon-math/"},
     {"no":59,"slug":"slide-puzzle","name":"밀어 퍼즐","kind":"게임","desc":"빈칸으로 조각을 밀어 숫자·그림을 맞추는 3×3·4×4 슬라이딩 퍼즐","who":"학생·누구나","path":"slide-puzzle/"},
     {"no":60,"slug":"recycle-sort","name":"분리배출 챔피언","kind":"게임","desc":"쓰레기 29종을 종이팩·스티로폼·음식물까지 9개 통에 나누고 배출 팁을 배우는 환경 게임","who":"학생·누구나","path":"recycle-sort/"},
-    {"no":61,"slug":"ten-seconds","name":"딱 10초","kind":"게임","desc":"시계를 보지 않고 마음속으로 10초를 세어 멈추는 시간 감각 게임","who":"누구나","path":"ten-seconds/"}
+    {"no":61,"slug":"ten-seconds","name":"딱 10초","kind":"게임","desc":"시계를 보지 않고 마음속으로 10초를 세어 멈추는 시간 감각 게임","who":"누구나","path":"ten-seconds/"},
+    {"no":62,"slug":"paper-plane","name":"슝 종이비행기","kind":"게임","desc":"끌어서 각도·힘을 정하고 바람을 읽어 종이비행기를 멀리 날리는 조작 게임","who":"학생·누구나","path":"paper-plane/"},
+    {"no":63,"slug":"lunch-catch","name":"급식 바구니","kind":"게임","desc":"좌우로 바구니를 움직여 골고루 음식을 받고 불량 간식은 피하는 받기 게임","who":"학생","path":"lunch-catch/"},
+    {"no":64,"slug":"jump-run","name":"폴짝 달리기","kind":"게임","desc":"누르는 길이만큼 높이 뛰어 장애물을 넘는 운동장 달리기 게임","who":"학생·누구나","path":"jump-run/"},
+    {"no":65,"slug":"marble-maze","name":"구슬 미로","kind":"게임","desc":"관성 있는 구슬을 굴려 구멍을 피해 깃발까지 가는 기울기 미로","who":"학생·누구나","path":"marble-maze/"},
+    {"no":66,"slug":"brick-bounce","name":"통통 벽돌깨기","kind":"게임","desc":"패들을 밀어 공을 튕겨 벽돌을 깨는 반사각 게임","who":"학생·누구나","path":"brick-bounce/"},
+    {"no":67,"slug":"star-pilot","name":"별똥별 비행","kind":"게임","desc":"우주선을 조종해 운석을 피하고 별을 모으는 비행 게임","who":"학생·누구나","path":"star-pilot/"},
+    {"no":68,"slug":"stack-tower","name":"차곡차곡 탑","kind":"게임","desc":"움직이는 블록을 딱 맞춰 떨어뜨려 높이 쌓는 2.5D 타이밍 게임","who":"누구나","path":"stack-tower/"},
+    {"no":69,"slug":"ice-curling","name":"얼음 과녁","kind":"게임","desc":"튕겨 밀어 낸 스톤을 과녁 한가운데 세우는 힘 조절 게임","who":"누구나","path":"ice-curling/"},
+    {"no":70,"slug":"basket-shot","name":"교실 농구","kind":"게임","desc":"위로 쓸어 던져 포물선으로 골대에 넣는 슛 게임","who":"학생·누구나","path":"basket-shot/"},
+    {"no":71,"slug":"mini-driver","name":"꼬마 운전 연습","kind":"게임","desc":"핸들과 페달로 신호를 지키며 주차 칸에 차를 세우는 교통안전 운전 게임","who":"학생","path":"mini-driver/"}
   ]
 }

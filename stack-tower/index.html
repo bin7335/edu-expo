@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>차곡차곡 탑 - 블록을 딱 맞춰 쌓는 2.5D 타이밍 게임</title>
+<meta name="description" content="좌우로 미끄러지는 블록을 딱 맞춰 떨어뜨려 높이 쌓는 2.5D 타이밍 게임. 삐져나온 부분은 잘려 떨어지고, 딱 맞추면 연속 보너스로 블록이 다시 커져요.">
+<style>
+  :root{--ink:#1d2745;--sub:#5d6a8a}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#7cc8ff;color:#fff;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  button{font:inherit;cursor:pointer;touch-action:manipulation}
+  #stage{position:fixed;inset:0;overflow:hidden;touch-action:none;cursor:pointer}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:12px 16px;flex-wrap:wrap;pointer-events:none}
+  .top>*{pointer-events:auto}
+  .brand{display:flex;align-items:center;gap:10px;margin-right:auto;pointer-events:none}
+  .logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#ffcf5c,#ff6b8b);display:grid;place-items:center;font-size:27px;box-shadow:0 4px 0 rgba(0,0,0,.2);flex-shrink:0}
+  .brand h1{margin:0;font-size:28px;letter-spacing:-.5px;text-shadow:0 2px 0 rgba(0,40,90,.35)}
+  .brand small{display:block;font-size:14px;font-weight:700;text-shadow:0 1px 0 rgba(0,40,90,.4)}
+  .pill{background:rgba(255,255,255,.93);color:var(--ink);border-radius:99px;padding:5px 14px;font-weight:800;font-size:14px;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+  .pill b{font-size:22px;margin-left:4px;display:inline-block}
+  .pill b.bump{animation:bump .25s}
+  @keyframes bump{50%{transform:scale(1.4)}}
+  .ib{border:0;background:rgba(255,255,255,.93);color:var(--ink);border-radius:99px;min-width:44px;height:42px;padding:0 12px;font-size:17px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+  .ib:disabled{opacity:.45;cursor:default}
+  .ov{position:absolute;inset:0;display:none;align-items:center;justify-content:flex-end;padding:86px 7vw 50px;pointer-events:none}
+  .ov.on{display:flex}
+  .ov.dim{background:rgba(10,20,50,.35)}
+  .card{display:none;pointer-events:auto;cursor:default;width:min(390px,100%);background:rgba(255,255,255,.96);color:var(--ink);border-radius:26px;padding:22px 24px;box-shadow:0 10px 0 rgba(0,0,0,.15),0 24px 50px rgba(0,30,80,.25);text-align:center}
+  .card.on{display:block;animation:pop .4s cubic-bezier(.2,1.5,.4,1)}
+  @keyframes pop{from{transform:scale(.85);opacity:0}}
+  .card h2{margin:0 0 6px;font-size:28px}
+  .card p{margin:0 0 12px;color:var(--sub);font-weight:700;line-height:1.45}
+  .how{list-style:none;margin:0 0 16px;padding:0;text-align:left;display:grid;gap:7px}
+  .how li{background:#f2f5fc;border-radius:12px;padding:8px 12px;font-weight:700;font-size:15px}
+  .how b{color:#ff5d7a}
+  .big{border:0;background:linear-gradient(#ff7a95,#ff5277);color:#fff;font-weight:900;font-size:22px;padding:13px 34px;border-radius:99px;box-shadow:0 6px 0 #c83a5a;min-height:56px}
+  .big:active{transform:translateY(4px);box-shadow:0 2px 0 #c83a5a}
+  .rscore{font-size:54px;font-weight:900;color:#ff5277;line-height:1.1;margin:4px 0}
+  .newrec{display:inline-block;background:#fff3c4;color:#8a5a00;font-weight:900;border-radius:99px;padding:6px 16px;margin-bottom:14px;animation:pop .5s .2s both}
+  .newrec[hidden]{display:none}
+  .kbd{display:inline-block;border:2px solid #cfd6e8;border-bottom-width:4px;border-radius:7px;padding:0 6px;font-size:13px;background:#fff}
+  .back{position:absolute;right:12px;bottom:10px;color:#fff;font-size:13px;font-weight:700;text-decoration:none;background:rgba(0,0,0,.25);padding:5px 10px;border-radius:99px}
+  @media (max-width:700px){
+    .top{padding:10px 10px;gap:6px}
+    .brand small{display:none}
+    .brand h1{font-size:19px}
+    .logo{display:none}
+    .pill{padding:4px 10px;font-size:12px}
+    .pill b{font-size:18px}
+    .ib{min-width:40px;height:38px;padding:0 9px;font-size:15px}
+    .ov{justify-content:center;align-items:flex-end;padding:0 12px 46px}
+    .card{padding:16px 16px}
+    .card h2{font-size:23px}
+    .how li{font-size:14px;padding:6px 10px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="차곡차곡 탑">
+<meta property="og:description" content="움직이는 블록을 딱 맞춰 떨어뜨려 높이 쌓는 2.5D 타이밍 게임">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/68-stack-tower.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/stack-tower/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv" aria-label="탑 쌓기 놀이판"></canvas>
+  <div class="top">
+    <div class="brand"><div class="logo">🧱</div><div><h1>차곡차곡 탑</h1><small>딱 맞춰 떨어뜨리면 더 높이!</small></div></div>
+    <div class="pill">높이<b id="score">0</b></div>
+    <div class="pill">🏆<b id="best">0</b></div>
+    <button class="ib" id="pauseBtn" aria-label="잠깐 멈춤" disabled>⏸</button>
+    <button class="ib" id="snd" aria-pressed="true" aria-label="소리 켜기/끄기">🔊</button>
+  </div>
+  <div class="ov on" id="ov">
+    <div class="card on" id="ready">
+      <h2>🧱 차곡차곡 탑</h2>
+      <p>움직이는 블록을 아래에 맞춰 떨어뜨려요</p>
+      <ul class="how">
+        <li>👆 화면 터치 · <span class="kbd">스페이스</span> = 떨어뜨리기</li>
+        <li>✂️ 삐져나온 부분은 <b>잘려 나가요</b></li>
+        <li>✨ 딱 맞추면 <b>“딱!”</b> 3연속부터 블록이 다시 커져요</li>
+      </ul>
+      <button class="big" id="start">▶ 시작하기</button>
+    </div>
+    <div class="card" id="paused">
+      <h2>⏸ 잠깐 멈췄어요</h2>
+      <p>준비되면 계속 쌓아요</p>
+      <button class="big" id="resume">▶ 계속하기</button>
+    </div>
+    <div class="card" id="result">
+      <h2>와르르! 🏗️</h2>
+      <div class="rscore" id="rScore">0층</div>
+      <p id="rStat"></p>
+      <div class="newrec" id="newrec" hidden>🏆 새 최고 기록!</div>
+      <div><button class="big" id="again">🔁 다시 하기</button></div>
+    </div>
+  </div>
+  <a class="back" href="../">← 전체 데모 보기</a>
+</div>
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const KEY = 'edu-expo-stack-tower-v1';
+const stage = $('#stage'), cv = $('#cv'), ctx = cv.getContext('2d');
+const H = 20, BASE = 100, PERF = 3.2, GROW = 5, RANGE = 118, K = 0.866;
+const rec = { best: 0, sound: true };
+try { const o = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; rec.best = Math.max(0, Math.floor(Number(o.best)) || 0); rec.sound = o.sound !== false; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+let rng = Math.random;
+
+// ---------- 소리: 첫 터치 때 AudioContext 생성 ----------
+let AC = null, master = null, nbuf = null;
+const ensureAC = () => {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = .45; master.connect(AC.destination); } catch (e) { AC = null; return; } }
+  if (AC.state === 'suspended') AC.resume().catch(() => {});
+};
+const canPlay = () => AC && rec.sound && phase !== 'attract';
+function tone(f, d, type = 'sine', v = .3, f2 = 0, delay = 0) {
+  if (!canPlay()) return;
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(v, t + .008); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + d + .03);
+}
+function noise(d, v = .2, fq = 1200) {
+  if (!canPlay()) return;
+  if (!nbuf) { nbuf = AC.createBuffer(1, AC.sampleRate * .5 | 0, AC.sampleRate); const a = nbuf.getChannelData(0); for (let i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1; }
+  const t = AC.currentTime, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = nbuf; f.type = 'bandpass'; f.frequency.value = fq; f.Q.value = .8;
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + d + .03);
+}
+const sndThud = () => { tone(150, .16, 'sine', .45, 70); noise(.08, .18, 500); };
+const sndPerfect = c => { const b = 523 * Math.pow(1.122, Math.min(c - 1, 10)); tone(b, .18, 'triangle', .3); tone(b * 1.5, .22, 'sine', .2, 0, .06); };
+const sndSlice = () => { noise(.14, .3, 2600); tone(220, .12, 'square', .08, 110); };
+const sndOver = () => { tone(330, .5, 'sawtooth', .12, 80); noise(.5, .25, 300); };
+
+// ---------- 상태 ----------
+let phase = 'attract', tick = 0;
+let tower = [], cur = null, debris = [], parts = [], pops = [], rings = [];
+let combo = 0, maxCombo = 0, perfects = 0, overT = 0, newBest = false;
+let camY = 0, zoom = 1, shake = 0, cxF = .5, botErr = 0;
+let W = 1280, Hh = 720, sc0 = 2;
+const height = () => tower.length - 1;
+const topB = () => tower[tower.length - 1];
+const hueOf = i => (205 + i * 11) % 360;
+const speedFor = h => Math.min(235, 92 + h * 5.5);
+
+function resetTower() {
+  tower = [{ x: 0, z: 0, w: BASE, d: BASE, y: -H, hue: 220, sq: 99 }];
+  debris = []; parts = []; pops = []; rings = []; combo = 0; maxCombo = 0; perfects = 0;
+  newCur();
+}
+function newCur() {
+  const top = topB(), axis = tower.length % 2 ? 'x' : 'z';
+  const s = rng() < .5 ? -1 : 1;
+  cur = { x: top.x, z: top.z, w: top.w, d: top.d, y: top.y + H, axis, o: s * RANGE, dir: -s, hue: hueOf(tower.length) };
+  cur[axis] = top[axis] + cur.o;
+  botErr = rng() < .35 ? 0 : (rng() - .5) * 16;
+}
+function addParts(x, y, z, hue, n, sp) {
+  for (let i = 0; i < n && parts.length < 60; i++) {
+    const a = rng() * Math.PI * 2;
+    parts.push({ x, y, z, vx: Math.cos(a) * sp * (.5 + rng()), vz: Math.sin(a) * sp * (.5 + rng()), vy: 60 + rng() * 120, life: 40 + rng() * 20, hue });
+  }
+}
+function drop() {
+  if (!cur || (phase !== 'play' && phase !== 'attract')) return;
+  const top = topB(), ax = cur.axis, sz = ax === 'x' ? 'w' : 'd';
+  const delta = cur[ax] - top[ax], ad = Math.abs(delta);
+  if (ad >= top[sz]) { // 완전히 빗나감
+    debris.push({ ...cur, vx: ax === 'x' ? Math.sign(delta) * 50 : 0, vz: ax === 'z' ? Math.sign(delta) * 50 : 0, vy: 0, rot: 0, vr: Math.sign(delta || 1) * 2.5 });
+    cur = null;
+    if (phase === 'attract') { collapse(); return; }
+    gameOver(); return;
+  }
+  const b = { x: cur.x, z: cur.z, w: cur.w, d: cur.d, y: cur.y, hue: cur.hue, sq: 0 };
+  const mid = cur.y + H / 2;
+  if (ad <= PERF) {
+    b[ax] = top[ax]; combo++; perfects++; maxCombo = Math.max(maxCombo, combo);
+    if (combo >= 3) { const gs = b.w < b.d ? 'w' : 'd'; b[gs] = Math.min(BASE, b[gs] + GROW); } // 작은 쪽부터 다시 커짐
+    rings.push({ x: b.x, y: b.y + H, z: b.z, w: b.w, d: b.d, t: 0 });
+    addParts(b.x, b.y + H, b.z, b.hue, 10, 70);
+    pops.push({ x: b.x, y: b.y + H + 10, z: b.z, txt: combo > 1 ? '딱! ×' + combo : '딱!', big: 1, t: 0 });
+    sndPerfect(combo); shake = Math.max(shake, 2);
+  } else {
+    const keep = top[sz] - ad, sgn = Math.sign(delta);
+    b[sz] = keep; b[ax] = top[ax] + delta / 2;
+    const piece = { x: b.x, z: b.z, w: b.w, d: b.d, y: cur.y, hue: cur.hue, vy: 0, rot: 0, vr: sgn * (2 + rng() * 2), vx: 0, vz: 0 };
+    piece[sz] = ad; piece[ax] = b[ax] + sgn * (keep / 2 + ad / 2);
+    piece[ax === 'x' ? 'vx' : 'vz'] = sgn * (40 + ad);
+    debris.push(piece);
+    addParts(piece.x, mid, piece.z, cur.hue, 6, 50);
+    combo = 0; sndSlice(); sndThud(); shake = Math.max(shake, Math.min(9, 3 + ad / 6));
+    pops.push({ x: b.x, y: b.y + H + 10, z: b.z, txt: '+1', big: 0, t: 0 });
+  }
+  tower.push(b);
+  if (phase === 'play') setScore();
+  newCur();
+}
+function collapse() { // 시연 모드: 탑이 와르르 무너지고 다시 쌓기
+  for (let i = 1; i < tower.length; i++) { const t = tower[i]; debris.push({ ...t, vx: (rng() - .5) * 80, vz: (rng() - .5) * 80, vy: rng() * 60, rot: 0, vr: (rng() - .5) * 5 }); }
+  tower = [tower[0]]; combo = 0; newCur();
+}
+function gameOver() {
+  phase = 'over'; overT = 0; shake = 10; sndOver();
+  $('#pauseBtn').disabled = true;
+  newBest = height() > rec.best;
+  if (newBest) { rec.best = height(); save(); }
+}
+function showResult() {
+  phase = 'result';
+  $('#rScore').textContent = height() + '층';
+  $('#rStat').textContent = '딱! ' + perfects + '번 · 최대 ' + maxCombo + '연속';
+  $('#newrec').hidden = !newBest;
+  $('#best').textContent = rec.best;
+  showCard('result');
+}
+function showCard(id) {
+  for (const c of ['ready', 'paused', 'result']) $('#' + c).classList.toggle('on', c === id);
+  $('#ov').classList.toggle('on', !!id);
+  $('#ov').classList.toggle('dim', id === 'paused' || id === 'result');
+}
+function setScore() { const e = $('#score'); e.textContent = height(); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
+function start() {
+  ensureAC(); phase = 'play'; resetTower(); setScore(); showCard(null);
+  $('#pauseBtn').disabled = false; tone(392, .1, 'triangle', .25); tone(587, .14, 'triangle', .25, 0, .08);
+}
+function pause() { if (phase !== 'play') return; phase = 'paused'; showCard('paused'); }
+function resume() { if (phase !== 'paused') return; phase = 'play'; showCard(null); }
+function initAttract() {
+  phase = 'attract'; resetTower();
+  for (let i = 0; i < 9; i++) { cur.o = botErr; cur[cur.axis] = topB()[cur.axis] + botErr; drop(); }
+  for (const t of tower) t.sq = 99;
+  debris = []; parts = []; pops = []; rings = [];
+  camY = camTarget(); cur.o = cur.o * .35; cur[cur.axis] = topB()[cur.axis] + cur.o;
+}
+const camTarget = () => Math.max(0, height() * H - 50);
+
+// ---------- 시뮬레이션 (고정 1/60초) ----------
+function stepSim() {
+  if (phase === 'paused') return;
+  tick++;
+  if (cur && (phase === 'play' || phase === 'attract')) {
+    const sp = speedFor(height()) / 60;
+    cur.o += cur.dir * sp;
+    if (cur.o > RANGE) { cur.o = RANGE; cur.dir = -1; } else if (cur.o < -RANGE) { cur.o = -RANGE; cur.dir = 1; }
+    cur[cur.axis] = topB()[cur.axis] + cur.o;
+    if (phase === 'attract') {
+      if (height() >= 15 || topB().w < 34 || topB().d < 34) { if (tick % 60 === 0) collapse(); }
+      else if (Math.abs(cur.o - botErr) <= sp * .6) drop();
+    }
+  }
+  for (let i = debris.length - 1; i >= 0; i--) {
+    const d = debris[i]; d.vy -= 15; d.x += d.vx / 60; d.z += d.vz / 60; d.y += d.vy / 60; d.rot += d.vr / 60;
+    if (d.y < camY - 700) debris.splice(i, 1);
+  }
+  for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.vy -= 6; p.x += p.vx / 60; p.y += p.vy / 60; p.z += p.vz / 60; if (--p.life <= 0) parts.splice(i, 1); }
+  for (let i = pops.length - 1; i >= 0; i--) if (++pops[i].t > 55) pops.splice(i, 1);
+  for (let i = rings.length - 1; i >= 0; i--) if (++rings[i].t > 30) rings.splice(i, 1);
+  for (const t of tower) if (t.sq < 99) t.sq++;
+  let ty = camTarget(), tz = 1;
+  if (phase === 'over' || phase === 'result') { const tall = height() * H + 120; tz = Math.min(1, (Hh * .62) / (tall * sc0)); ty = Math.max(0, height() * H / 2 - 40); }
+  camY += (ty - camY) * .07; zoom += (tz - zoom) * .05;
+  cxF += ((phase === 'attract' && W > 760 ? .36 : .5) - cxF) * .06;
+  shake *= .86;
+  if (phase === 'over' && ++overT === 75) showResult();
+}
+
+// ---------- 그리기 ----------
+let cx = 640, cy = 400, sc = 2;
+const P = (x, y, z) => [cx + (x - z) * K * sc, cy + ((x + z) * .5 - (y - camY)) * sc];
+function poly(pts, fill) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); }
+function box(x, y, z, w, d, h, hue, sat = 72, lit = 0) {
+  const x0 = x - w / 2, x1 = x + w / 2, z0 = z - d / 2, z1 = z + d / 2, y1 = y + h;
+  const a = P(x0, y1, z0), b = P(x1, y1, z0), c = P(x1, y1, z1), e = P(x0, y1, z1), f = P(x1, y, z1), g = P(x1, y, z0), k = P(x0, y, z1);
+  poly([e, c, f, k], `hsl(${hue},${sat}%,${55 + lit}%)`);
+  poly([b, c, f, g], `hsl(${hue},${sat - 6}%,${43 + lit}%)`);
+  poly([a, b, c, e], `hsl(${hue},${sat + 5}%,${68 + lit}%)`);
+  ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(e[0], e[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+}
+const SKY = [[0, [205, 88, 68], [192, 90, 88]], [20, [268, 62, 70], [335, 88, 84]], [40, [252, 50, 34], [322, 62, 62]], [60, [236, 62, 11], [252, 50, 28]]];
+const STARS = Array.from({ length: 50 }, (_, i) => [(i * 137.5 % 100) / 100, (i * 61.8 % 100) / 100, (i % 3) + 1]);
+const hslL = (a, b, t) => `hsl(${a[0] + (b[0] - a[0]) * t},${a[1] + (b[1] - a[1]) * t}%,${a[2] + (b[2] - a[2]) * t}%)`;
+function sky() {
+  const lv = camY / H; let i = 0; while (i < SKY.length - 2 && lv > SKY[i + 1][0]) i++;
+  const A = SKY[i], B = SKY[i + 1], t = Math.max(0, Math.min(1, (lv - A[0]) / (B[0] - A[0])));
+  const g = ctx.createLinearGradient(0, 0, 0, Hh); g.addColorStop(0, hslL(A[1], B[1], t)); g.addColorStop(1, hslL(A[2], B[2], t));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, Hh);
+  const night = Math.max(0, Math.min(1, (lv - 30) / 25));
+  if (night > 0) { ctx.fillStyle = `rgba(255,255,255,${night * .9})`; for (const s of STARS) ctx.fillRect(s[0] * W, (s[1] * Hh + camY * .05) % Hh, s[2], s[2]); }
+  const day = 1 - night;
+  if (day > .05) { // 구름(시차)
+    ctx.fillStyle = `rgba(255,255,255,${.75 * day})`;
+    for (let j = 0; j < 4; j++) {
+      const x = ((j * 331 + tick * (.15 + j * .05)) % (W + 300)) - 150, y = ((j * 173 + camY * sc * (.25 + j * .08)) % (Hh + 200)) - 100;
+      ctx.beginPath(); for (const c of [[0, 0, 70, 22], [40, -12, 45, 22], [-38, -6, 38, 18]]) { ctx.moveTo(x + c[0] + c[2], y + c[1]); ctx.ellipse(x + c[0], y + c[1], c[2], c[3], 0, 0, Math.PI * 2); } ctx.fill();
+    }
+  }
+}
+function render() {
+  sc = sc0 * zoom; cx = W * cxF; cy = Hh * .6;
+  ctx.save();
+  sky();
+  if (shake > .3) ctx.translate((Math.random() - .5) * shake * 2, (Math.random() - .5) * shake * 2);
+  // 땅과 받침
+  box(0, -150, 0, 340, 340, 36, 110, 45, -8);
+  box(0, -400, 0, BASE, BASE, 400, 225, 25, -6);
+  const topSum = cur ? cur.x + cur.z : 0;
+  for (const d of debris) if (d.x + d.z < topSum) drawDebris(d);
+  const minY = camY - Hh / sc * .6, maxY = camY + Hh / sc;
+  for (let i = 1; i < tower.length; i++) {
+    const t = tower[i]; if (t.y < minY || t.y > maxY) continue;
+    const k = t.sq < 16 ? Math.sin(t.sq / 16 * Math.PI) * (1 - t.sq / 16) : 0;
+    box(t.x, t.y, t.z, t.w * (1 + k * .1), t.d * (1 + k * .1), H * (1 - k * .32), t.hue);
+  }
+  for (const r of rings) {
+    const g = 1 + r.t / 30 * .35, a = 1 - r.t / 30, w = r.w * g / 2, d = r.d * g / 2;
+    const pts = [P(r.x - w, r.y, r.z - d), P(r.x + w, r.y, r.z - d), P(r.x + w, r.y, r.z + d), P(r.x - w, r.y, r.z + d)];
+    ctx.strokeStyle = `rgba(255,255,255,${a})`; ctx.lineWidth = 3; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke();
+  }
+  if (cur) {
+    // 착지 위치 그림자 안내
+    const top = topB();
+    const sh = [P(cur.x - cur.w / 2, top.y + H, cur.z - cur.d / 2), P(cur.x + cur.w / 2, top.y + H, cur.z - cur.d / 2), P(cur.x + cur.w / 2, top.y + H, cur.z + cur.d / 2), P(cur.x - cur.w / 2, top.y + H, cur.z + cur.d / 2)];
+    poly(sh, 'rgba(0,0,40,.12)');
+    const bob = phase === 'play' || phase === 'attract' ? 7 : 0;
+    box(cur.x, cur.y + bob, cur.z, cur.w, cur.d, H, cur.hue, 72, 4);
+  }
+  for (const d of debris) if (d.x + d.z >= topSum) drawDebris(d);
+  for (const p of parts) { const [x, y] = P(p.x, p.y, p.z); ctx.fillStyle = `hsla(${p.hue},90%,75%,${Math.min(1, p.life / 20)})`; const s = 3 + p.life / 20; ctx.fillRect(x - s / 2, y - s / 2, s, s); }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const p of pops) {
+    const [x, y] = P(p.x, p.y, p.z), t = p.t / 55, s = p.big ? (t < .2 ? .6 + t * 3 : 1.2) : 1;
+    ctx.globalAlpha = 1 - Math.max(0, t - .6) / .4;
+    ctx.font = `900 ${Math.round((p.big ? 30 : 20) * s)}px system-ui,"Malgun Gothic",sans-serif`;
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(30,30,70,.55)'; ctx.fillStyle = p.big ? '#fff36b' : '#fff';
+    ctx.strokeText(p.txt, x, y - t * 50); ctx.fillText(p.txt, x, y - t * 50);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+function drawDebris(d) {
+  const [x, y] = P(d.x, d.y + H / 2, d.z);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(d.rot); ctx.translate(-x, -y);
+  box(d.x, d.y, d.z, d.w, d.d, H, d.hue, 60, -4);
+  ctx.restore();
+}
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = stage.clientWidth || 1280; Hh = stage.clientHeight || 720;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(Hh * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  sc0 = Math.min(W * .5, Hh * .42) / (BASE * 2 * K);
+  render();
+}
+
+// ---------- 입력 ----------
+stage.addEventListener('pointerdown', e => {
+  ensureAC();
+  if (e.target.closest('button, .card, a')) return;
+  if (phase === 'play') { e.preventDefault(); drop(); }
+}, { passive: false });
+document.addEventListener('keydown', e => {
+  ensureAC();
+  const k = e.key, onBtn = e.target && e.target.closest && e.target.closest('button, a');
+  if (k === ' ' || k === 'Spacebar' || k === 'Enter' || k === 'ArrowDown') {
+    if (phase === 'play') { e.preventDefault(); if (!e.repeat) drop(); }
+    else if ((phase === 'attract' || phase === 'result') && !onBtn) { e.preventDefault(); start(); }
+  } else if (k === 'p' || k === 'P' || k === 'Escape') { if (phase === 'play') pause(); else if (phase === 'paused') resume(); }
+});
+$('#start').addEventListener('click', start);
+$('#again').addEventListener('click', start);
+$('#resume').addEventListener('click', resume);
+$('#pauseBtn').addEventListener('click', () => phase === 'play' ? pause() : resume());
+const sndUI = () => { $('#snd').textContent = rec.sound ? '🔊' : '🔇'; $('#snd').setAttribute('aria-pressed', String(rec.sound)); };
+$('#snd').addEventListener('click', () => { rec.sound = !rec.sound; save(); sndUI(); ensureAC(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+window.addEventListener('resize', resize);
+
+// ---------- 루프 ----------
+let last = performance.now(), acc = 0;
+function frame(now) {
+  acc += Math.min(.1, (now - last) / 1000); last = now;
+  let n = 0; while (acc >= 1 / 60 && n < 6) { stepSim(); acc -= 1 / 60; n++; }
+  if (n === 6) acc = 0;
+  render(); requestAnimationFrame(frame);
+}
+$('#best').textContent = rec.best; sndUI();
+initAttract(); resize(); requestAnimationFrame(frame);
+
+window.__test = {
+  seed(n) { rng = mulberry(n); },
+  step(n = 1) { for (let i = 0; i < n; i++) stepSim(); render(); },
+  aim(d) { if (cur) { cur.o = d; cur[cur.axis] = topB()[cur.axis] + d; } },
+  drop, start, pause, resume,
+  state() {
+    const t = topB(), c = cur;
+    return { phase, height: height(), best: rec.best, combo, maxCombo, perfects, debris: debris.map(d => ({ x: d.x, y: d.y, z: d.z })),
+      axis: c ? c.axis : null, top: { x: t.x, z: t.z, w: t.w, d: t.d, y: t.y }, cur: c ? { x: c.x, z: c.z, w: c.w, d: c.d, o: c.o } : null, camY, sound: rec.sound };
+  }
+};
+})();
+</script>
+</body>
+</html>

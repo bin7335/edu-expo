@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>급식 바구니 - 골고루 받고 불량 간식은 피하는 받기 게임</title>
+<meta name="description" content="바구니를 좌우로 움직여 곡류·채소·단백질·과일을 골고루 받고 불량 간식은 피하는 60초 조작 게임. 5연속 콤보, 제철 과일 보너스, 식판 요약, 최고 기록.">
+<style>
+:root{--ink:#3a2a1c;--sub:#7a6450;--pri:#ff8a3d;--line:#f0dcc6}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#fff5e8;color:var(--ink);display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+header{display:flex;align-items:center;gap:10px;padding:8px 16px;background:#fff;border-bottom:2px solid #ffe6c8}
+.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#ffb347,#ff7a59);display:grid;place-items:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 0 #d8653f}
+header h1{margin:0;font-size:22px;letter-spacing:-.5px;white-space:nowrap}
+header small{display:block;color:var(--sub);font-size:12px}
+.snd{margin-left:auto;border:0;background:#fbf1e4;border-radius:12px;padding:8px 12px;font-weight:800;color:var(--sub);white-space:nowrap}
+.hud{display:flex;align-items:center;gap:8px;padding:6px 16px}
+.pill{background:#fff;border:2px solid var(--line);border-radius:99px;padding:4px 12px;font-weight:800;color:var(--sub);font-size:13px;white-space:nowrap}
+.pill b{color:var(--ink);font-size:18px;margin-left:3px;display:inline-block}
+.pill b.bump{animation:bump .25s}
+@keyframes bump{50%{transform:scale(1.4)}}
+#hearts{letter-spacing:1px;font-size:16px}
+.timebar{flex:1;height:18px;border-radius:99px;background:#f3e6d6;position:relative;overflow:hidden;min-width:50px}
+.timebar i{position:absolute;inset:0;background:linear-gradient(90deg,#5cc27a,#a6e05a);transform-origin:left;border-radius:99px}
+.timebar.low i{background:linear-gradient(90deg,#ff5d5d,#ffa04a)}
+.timebar span{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;font-size:12px}
+.ib{border:2px solid var(--line);background:#fff;border-radius:99px;width:40px;height:34px;font-size:15px;flex-shrink:0}
+.stage{flex:1;position:relative;min-height:260px;margin:0 12px;border-radius:22px;overflow:hidden;background:#ffe9cf;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.ov{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:flex-start;padding:20px}
+.card{pointer-events:auto;display:none;background:rgba(255,255,255,.96);border-radius:24px;padding:22px 24px;box-shadow:0 8px 0 rgba(140,80,30,.15),0 16px 40px rgba(120,60,20,.18);max-width:430px;width:100%}
+.card.on{display:block;animation:pop .25s}
+@keyframes pop{from{transform:scale(.92);opacity:.4}}
+.card h2{margin:0 0 4px;font-size:34px;letter-spacing:-1px}
+.card h2 em{font-style:normal;color:var(--pri)}
+.card p{margin:4px 0;color:var(--sub)}
+.tut{list-style:none;padding:0;margin:12px 0;display:grid;gap:7px}
+.tut li{display:flex;gap:10px;align-items:center;background:#fff4e6;border-radius:14px;padding:8px 12px;font-weight:700;font-size:15px}
+.tut li span{font-size:22px;flex-shrink:0}
+.modes{display:flex;gap:6px;margin:10px 0}
+.md{flex:1;border:2px solid var(--line);background:#fff;border-radius:14px;padding:8px;font-weight:800}
+.md.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.go{width:100%;border:0;border-radius:18px;padding:14px;font-size:22px;font-weight:900;background:linear-gradient(135deg,#ffa43d,#ff6a4a);color:#fff;box-shadow:0 5px 0 #d4502f}
+.go:active{transform:translateY(3px);box-shadow:0 2px 0 #d4502f}
+.big{font-size:40px;font-weight:900;margin:2px 0}
+.nb{display:inline-block;background:#ffd23f;color:#5a3d00;border-radius:99px;padding:2px 10px;font-weight:900;font-size:14px;margin-left:6px;animation:pop .4s infinite alternate}
+.plate{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#eef4f7;border:4px solid #d4e2ea;border-radius:22px;padding:8px;margin:10px 0}
+.plate div{background:#fff;border-radius:14px;padding:6px 8px;display:flex;align-items:center;gap:6px;font-weight:800}
+.plate div span{font-size:24px}.plate div b{margin-left:auto;font-size:22px}
+.plate div.low{background:#fff0ec;color:#c4472c}
+.verdict{font-weight:900;font-size:17px;color:var(--ink)!important}
+footer{padding:4px 16px 6px;text-align:right;font-size:13px}
+footer a{color:var(--sub)}
+@media (max-width:640px){
+ header{padding:6px 10px}header h1{font-size:18px}header small{display:none}.logo{width:36px;height:36px;font-size:20px}
+ .hud{padding:5px 8px;gap:5px}.pill{padding:3px 8px;font-size:12px}.pill b{font-size:15px}.pill.bp{display:none}
+ .stage{margin:0 6px}.ov{align-items:flex-end;padding:10px}.card{padding:16px}.card h2{font-size:26px}.tut li{font-size:13px;padding:6px 10px}.big{font-size:32px}
+ .snd .t{display:none}
+}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="급식 바구니">
+<meta property="og:description" content="좌우로 바구니를 움직여 골고루 음식을 받고 불량 간식은 피하는 받기 게임">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/63-lunch-catch.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/lunch-catch/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">🧺</div>
+  <div><h1>급식 바구니</h1><small>골고루 받고, 불량 간식은 쏙 피하기!</small></div>
+  <button class="snd" id="snd" aria-pressed="true" aria-label="소리 켜기/끄기"><span id="sndI">🔊</span><span class="t" id="sndT"> 소리 켬</span></button>
+</header>
+<div class="hud">
+  <span class="pill">점수<b id="score">0</b></span>
+  <span class="pill">콤보<b id="combo">0</b></span>
+  <span class="pill" id="hearts" aria-label="생명">❤️❤️❤️</span>
+  <div class="timebar" id="tb"><i id="tbI"></i><span id="tbT">60초</span></div>
+  <span class="pill bp">최고<b id="best">0</b></span>
+  <button class="ib" id="pauseBtn" aria-label="일시정지">⏸</button>
+</div>
+<div class="stage" id="stage">
+  <canvas id="cv"></canvas>
+  <div class="ov">
+    <section class="card on" id="titleCard">
+      <h2>급식 <em>바구니</em></h2>
+      <p>60초 동안 골고루 받아 멋진 식판을 만들어요!</p>
+      <ul class="tut">
+        <li><span>👆</span><div>화면 어디든 <b>좌우로 끌기</b> 또는 ← → 키로 바구니 이동</div></li>
+        <li><span>🥦</span><div>밥·채소·단백질·과일은 <b>받기</b>, 5개 연속이면 콤보!</div></li>
+        <li><span>🍭</span><div>불량 간식을 받으면 <b>❤️ 하나 잃어요</b></div></li>
+        <li><span>🍑</span><div>반짝이는 <b>제철 과일</b>은 +50점과 ❤️ 회복</div></li>
+      </ul>
+      <div class="modes" id="modes"><button class="md on" data-m="easy">🐣 천천히</button><button class="md" data-m="hard">🔥 빠르게</button></div>
+      <button class="go" id="start">🧺 받기 시작</button>
+    </section>
+    <section class="card" id="pauseCard">
+      <h2>잠깐 멈춤</h2><p>급식은 식지 않아요. 준비되면 계속해요.</p>
+      <button class="go" id="resume" style="margin-top:12px">▶ 계속하기</button>
+    </section>
+    <section class="card" id="resultCard">
+      <h2>오늘의 식판</h2>
+      <div class="big"><span id="rScore">0</span>점<span id="rNew"></span></div>
+      <div class="plate" id="plate"></div>
+      <p class="verdict" id="verdict"></p>
+      <p id="rInfo"></p>
+      <div class="modes" id="modes2"><button class="md" data-m="easy">🐣 천천히</button><button class="md" data-m="hard">🔥 빠르게</button></div>
+      <button class="go" id="again">🔁 다시 하기</button>
+    </section>
+  </div>
+</div>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const DT = 1 / 60, ROUND = 60, RIM = 84, BH = 12, FR = 5;
+const MODES = { easy: { name: '천천히', fall: 34, spawn: 1.0, junk: .25 }, hard: { name: '빠르게', fall: 46, spawn: .78, junk: .32 } };
+const CATS = { grain: { n: '곡류', e: '🍚' }, veg: { n: '채소', e: '🥦' }, protein: { n: '단백질', e: '🍗' }, fruit: { n: '과일', e: '🍎' } };
+const GOOD = [['🍚', 'grain'], ['🍞', 'grain'], ['🌽', 'grain'], ['🍙', 'grain'], ['🥦', 'veg'], ['🥕', 'veg'], ['🥬', 'veg'], ['🍅', 'veg'],
+  ['🐟', 'protein'], ['🥚', 'protein'], ['🍗', 'protein'], ['🍤', 'protein'], ['🍎', 'fruit'], ['🍌', 'fruit'], ['🍇', 'fruit'], ['🍊', 'fruit']];
+const JUNK = ['🍭', '🍩', '🥤', '🍬', '🍟'];
+const KEY = 'lunchCatch.v1';
+
+let rs = (Date.now() % 100000) + 1;
+const rnd = () => { rs |= 0; rs = rs + 0x6D2B79F5 | 0; let t = Math.imul(rs ^ rs >>> 15, 1 | rs); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const rr = (a, b) => a + (b - a) * rnd();
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+// ---- 기록 ----
+const rec = { easy: 0, hard: 0, sound: true };
+try {
+  const o = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+  for (const m in MODES) { const v = Math.floor(Number(o[m])); rec[m] = v > 0 && v < 1e6 ? v : 0; }
+  rec.sound = o.sound !== false;
+} catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+
+// ---- 소리 ----
+let AC = null;
+function ac() {
+  if (!rec.sound) return null;
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (AC.state === 'suspended') AC.resume().catch(() => {});
+  return AC;
+}
+function tone(f1, f2, d, type, v, delay) {
+  const a = AC && rec.sound ? AC : null; if (!a) return;
+  const t = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + .02);
+}
+const sfx = {
+  good: c => { const f = 520 * Math.pow(1.06, Math.min(c, 14)); tone(f, f * 1.5, .1, 'triangle', .2); },
+  combo: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, .1, 'square', .07, i * .06)),
+  gold: () => [880, 1109, 1319, 1760].forEach((f, i) => tone(f, f * 1.02, .14, 'triangle', .16, i * .07)),
+  junk: () => { tone(200, 90, .3, 'sawtooth', .12); tone(140, 70, .3, 'square', .06, .05); },
+  miss: () => tone(330, 220, .12, 'sine', .07),
+  end: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f * 1.01, .18, 'triangle', .16, i * .12))
+};
+document.addEventListener('pointerdown', ac, { capture: true });
+document.addEventListener('keydown', ac, { capture: true });
+
+// ---- 상태 ----
+const G = {
+  phase: 'title', mode: 'easy', paused: false, manual: false, auto: true,
+  score: 0, lives: 3, combo: 0, bestCombo: 0, time: ROUND, el: 0, spawnT: .5,
+  counts: { grain: 0, veg: 0, protein: 0, fruit: 0, junk: 0, gold: 0, miss: 0 },
+  bx: 0, bv: 0, tilt: 0, sq: 0, target: null, keys: {}, shake: 0, t: 0, flash: 0, recent: []
+};
+const foods = [], fx = [], pops = [];
+let W = 800, H = 500, DPR = 1, U = 5, FW = 100, OX = 0;
+const BW = () => clamp(FW * .2, 16, 24);
+
+function resize() {
+  const r = stage.getBoundingClientRect();
+  W = Math.max(200, r.width); H = Math.max(200, r.height);
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  U = H / 100; FW = Math.min(W / U, 150); OX = (W - FW * U) / 2;
+  G.bx = clamp(G.bx || FW / 2, BW() / 2, FW - BW() / 2);
+  ecache.clear();
+  if (G.manual) render();
+}
+window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+
+// 이모지는 미리 그려 둔 그림을 재사용 (저사양 태블릿 대비)
+const ecache = new Map();
+function emo(e, px) {
+  const k = e + px; let c = ecache.get(k);
+  if (!c) {
+    c = document.createElement('canvas'); const s = Math.ceil(px * 1.3 * DPR); c.width = c.height = s;
+    const g = c.getContext('2d'); g.font = (px * DPR) + 'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e, s / 2, s / 2 + px * DPR * .06); ecache.set(k, c);
+  }
+  return c;
+}
+
+// ---- 음식 ----
+function spawn(kind, x, cat) {
+  let e, c;
+  if (kind === 'junk') { e = JUNK[Math.floor(rnd() * JUNK.length)]; c = 'junk'; }
+  else if (kind === 'gold') { e = '🍑'; c = 'fruit'; }
+  else { const pick = cat ? GOOD.filter(g => g[1] === cat) : GOOD; const g = pick[Math.floor(rnd() * pick.length)]; e = g[0]; c = g[1]; }
+  const sp = MODES[G.mode].fall * (1 + Math.min(1, G.el / ROUND) * .8) * (kind === 'gold' ? 1.15 : 1);
+  const f = { kind, e, cat: c, x: x == null ? rr(FR + 2, FW - FR - 2) : x, y: -FR, vy: sp, sw: rr(0, 6.28), rot: rr(-.3, .3), vr: rr(-1.5, 1.5), done: false };
+  foods.push(f); return f;
+}
+function autoSpawn(dt) {
+  G.spawnT -= dt; if (G.spawnT > 0) return;
+  const m = MODES[G.mode], k = Math.min(1, G.el / ROUND);
+  G.spawnT = m.spawn * (1 - k * .45) * rr(.75, 1.2);
+  const r = rnd();
+  spawn(r < .035 ? 'gold' : r < .035 + m.junk + k * .08 ? 'junk' : 'good');
+}
+function catchFood(f) {
+  f.done = true; G.sq = 1;
+  const px = f.x, py = RIM - 4;
+  if (f.kind === 'junk') {
+    G.counts.junk++; G.combo = 0; G.lives--; G.shake = 12; G.flash = .35; sfx.junk();
+    pops.push({ x: px, y: py - 8, t: 0, s: '으악! ❤️-1', c: '#d23c3c' });
+    for (let i = 0; i < 8; i++) fx.push({ x: px, y: py, vx: rr(-30, 30), vy: rr(-40, -10), life: .6, max: .6, c: '#8d8d8d', s: rr(1, 2) });
+    bump('#combo'); hud();
+    if (G.lives <= 0 && G.phase === 'play') finish();
+    return;
+  }
+  G.combo++; G.bestCombo = Math.max(G.bestCombo, G.combo);
+  G.counts[f.cat]++;
+  const mult = 1 + Math.min(3, Math.floor(G.combo / 5));
+  let add = 10 * mult, label = '+' + add;
+  if (f.kind === 'gold') { G.counts.gold++; add += 50; label = '제철 과일 +' + add; G.lives = Math.min(3, G.lives + 1); sfx.gold(); G.shake = 4; }
+  else sfx.good(G.combo);
+  if (G.combo % 5 === 0) { add += 20; pops.push({ x: px, y: py - 18, t: 0, s: G.combo + '콤보! +20', c: '#ff6a00', big: true }); sfx.combo(); G.shake = Math.max(G.shake, 5); for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; fx.push({ x: px, y: py, vx: Math.cos(a) * 45, vy: Math.sin(a) * 45 - 10, life: .7, max: .7, c: i % 2 ? '#ffd23f' : '#ff7a45', s: 1.6 }); } }
+  G.score += add;
+  pops.push({ x: px, y: py - 6, t: 0, s: label, c: f.kind === 'gold' ? '#e0a100' : '#2f9e55' });
+  for (let i = 0; i < 6; i++) fx.push({ x: px, y: py, vx: rr(-25, 25), vy: rr(-45, -15), life: .5, max: .5, c: ['#ffd23f', '#6fd08c', '#ff9f68'][i % 3], s: rr(1, 1.8) });
+  G.recent.push(f.e); if (G.recent.length > 4) G.recent.shift();
+  bump('#score'); hud();
+}
+function missFood(f) {
+  f.done = true;
+  if (f.kind === 'junk') return;
+  G.counts.miss++;
+  if (G.combo >= 3) pops.push({ x: f.x, y: 92, t: 0, s: '아까워요!', c: '#a57a52' });
+  G.combo = 0; sfx.miss(); hud();
+}
+
+// ---- 진행 ----
+function startGame(mode) {
+  if (mode && MODES[mode]) G.mode = mode;
+  Object.assign(G, { phase: 'play', paused: false, score: 0, lives: 3, combo: 0, bestCombo: 0, time: ROUND, el: 0, spawnT: .6, bv: 0, target: null, keys: {}, recent: [] });
+  G.counts = { grain: 0, veg: 0, protein: 0, fruit: 0, junk: 0, gold: 0, miss: 0 };
+  G.bx = FW / 2; foods.length = 0; fx.length = 0; pops.length = 0;
+  showCard(null); setModes(); hud();
+}
+function finish() {
+  if (G.phase !== 'play') return;
+  G.phase = 'over'; G.keys = {}; G.target = null;
+  const isNew = G.score > rec[G.mode]; if (isNew) rec[G.mode] = G.score;
+  save(); sfx.end();
+  $('#rScore').textContent = G.score;
+  $('#rNew').innerHTML = isNew && G.score > 0 ? '<span class="nb">새 기록!</span>' : '';
+  const plate = $('#plate'); plate.textContent = '';
+  let low = null;
+  for (const k in CATS) {
+    const d = document.createElement('div'), n = G.counts[k];
+    const i = document.createElement('span'); i.textContent = CATS[k].e;
+    const t = document.createElement('em'); t.style.fontStyle = 'normal'; t.textContent = CATS[k].n;
+    const b = document.createElement('b'); b.textContent = n;
+    d.append(i, t, b); d.dataset.cat = k;
+    if (n < 3) d.className = 'low';
+    if (!low || n < G.counts[low]) low = k;
+    plate.append(d);
+  }
+  const all = Object.keys(CATS).every(k => G.counts[k] >= 3);
+  $('#verdict').textContent = all ? '🎉 골고루 식판 완성! 영양 만점이에요.' : '🥄 ' + CATS[low].n + '이(가) 조금 부족해요. 다음엔 골고루!';
+  $('#rInfo').textContent = '최고 콤보 ' + G.bestCombo + ' · 불량 간식 ' + G.counts.junk + '개 · 제철 과일 ' + G.counts.gold + '개 · [' + MODES[G.mode].name + '] 최고 ' + rec[G.mode] + '점';
+  setModes(); showCard('resultCard'); hud();
+}
+function update(dt) {
+  G.t += dt;
+  if (G.paused) return;
+  G.shake *= .85; if (G.shake < .2) G.shake = 0;
+  G.flash = Math.max(0, G.flash - dt);
+  G.sq += (0 - G.sq) * Math.min(1, dt * 10);
+  for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.life -= dt; f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 90 * dt; if (f.life <= 0) fx.splice(i, 1); }
+  for (let i = pops.length - 1; i >= 0; i--) { pops[i].t += dt; if (pops[i].t > 1) pops.splice(i, 1); }
+  const play = G.phase === 'play', bw = BW();
+  // 바구니: 가속·마찰(키보드) / 스프링(끌기) — 순간이동 없음
+  let a = 0;
+  if (play) {
+    const dir = (G.keys.right ? 1 : 0) - (G.keys.left ? 1 : 0);
+    if (dir) { a = dir * 900; if (Math.sign(G.bv) !== dir) a += dir * 600; G.target = null; }
+    else if (G.target != null) a = 150 * (G.target - G.bx) - 24 * G.bv;
+    else a = -G.bv * 9;
+  } else if (G.phase === 'title') {
+    let best = null;
+    for (const f of foods) if (f.kind !== 'junk' && !f.done && f.y < RIM && (!best || f.y > best.y)) best = f;
+    const tx = best ? best.x : FW / 2 + Math.sin(G.t) * FW * .2;
+    a = 60 * (tx - G.bx) - 14 * G.bv;
+  } else a = -G.bv * 9;
+  G.bv = clamp(G.bv + a * dt, -190, 190);
+  G.bx += G.bv * dt;
+  if (G.bx < bw / 2) { G.bx = bw / 2; G.bv = -G.bv * .3; }
+  if (G.bx > FW - bw / 2) { G.bx = FW - bw / 2; G.bv = -G.bv * .3; }
+  G.tilt += (clamp(G.bv / 190, -1, 1) * .22 - G.tilt) * Math.min(1, dt * 12);
+  if (play) {
+    G.el += dt; G.time = Math.max(0, ROUND - G.el);
+    if (G.auto) autoSpawn(dt);
+  } else if (G.phase === 'title') { G.mode = G.mode || 'easy'; G.el = 20; autoSpawn(dt); }
+  for (const f of foods) {
+    if (f.done) continue;
+    const py = f.y;
+    f.y += f.vy * dt; f.sw += dt * 3; f.rot += f.vr * dt;
+    if (py < RIM && f.y >= RIM && Math.abs(f.x - G.bx) < bw / 2 + 2) { if (play) catchFood(f); else if (G.phase === 'title' && f.kind !== 'junk') { f.done = true; G.sq = 1; G.recent.push(f.e); if (G.recent.length > 4) G.recent.shift(); } }
+    else if (f.y > 100 + FR * 2) { if (play) missFood(f); else f.done = true; }
+  }
+  for (let i = foods.length - 1; i >= 0; i--) if (foods[i].done) foods.splice(i, 1);
+  if (play && G.time <= 0) finish();
+  if (play && (G.t * 60 | 0) % 6 === 0) { $('#tbI').style.transform = 'scaleX(' + (G.time / ROUND) + ')'; $('#tbT').textContent = Math.ceil(G.time) + '초'; $('#tb').classList.toggle('low', G.time < 10); }
+}
+
+// ---- 그리기 ----
+const X = x => OX + x * U, Y = y => y * U;
+function rrect(x, y, w, h, r) { const c = ctx; c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function render() {
+  const c = ctx;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  // 바깥 벽
+  c.fillStyle = '#f6d7b0'; c.fillRect(0, 0, W, H);
+  c.save();
+  if (G.shake) c.translate((Math.random() - .5) * G.shake, (Math.random() - .5) * G.shake);
+  // 급식실 벽·창문·메뉴판
+  c.fillStyle = '#fff3e0'; c.fillRect(OX, 0, FW * U, H);
+  c.fillStyle = '#ffe2bf'; for (let i = 0; i < FW; i += 12) c.fillRect(X(i), 0, 6 * U, H * .6);
+  c.fillStyle = '#bfe6ff'; rrect(X(FW * .08), Y(8), FW * .22 * U, 22 * U, 10); c.fill();
+  c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(X(FW * .19), Y(8)); c.lineTo(X(FW * .19), Y(30)); c.moveTo(X(FW * .08), Y(19)); c.lineTo(X(FW * .3), Y(19)); c.stroke();
+  if (FW > 90) {
+    c.fillStyle = '#2f5d50'; rrect(X(FW * .66), Y(7), FW * .26 * U, 20 * U, 8); c.fill();
+    c.fillStyle = '#fff'; c.font = '800 ' + Math.round(3.2 * U) + 'px system-ui,sans-serif'; c.textAlign = 'center';
+    c.fillText('오늘의 급식', X(FW * .79), Y(14)); c.font = '700 ' + Math.round(2.6 * U) + 'px system-ui,sans-serif'; c.fillStyle = '#d6f5e6';
+    c.fillText('잡곡밥 · 생선구이', X(FW * .79), Y(19.5)); c.fillText('나물 · 제철 과일', X(FW * .79), Y(24));
+  }
+  // 바닥(배식대)
+  c.fillStyle = '#c9d6dd'; c.fillRect(OX, Y(RIM + BH * .55), FW * U, H);
+  c.fillStyle = '#e3ecf1'; c.fillRect(OX, Y(RIM + BH * .55), FW * U, 1.6 * U);
+  // 음식
+  const px = Math.round(FR * 2.1 * U);
+  for (const f of foods) {
+    const x = X(f.x + Math.sin(f.sw) * .6), y = Y(f.y);
+    if (f.kind === 'gold') { c.fillStyle = 'rgba(255,214,64,' + (.35 + .2 * Math.sin(G.t * 10)) + ')'; c.beginPath(); c.arc(x, y, FR * 1.5 * U, 0, 6.283); c.fill(); }
+    if (f.kind === 'junk') { c.fillStyle = 'rgba(120,60,160,.16)'; c.beginPath(); c.arc(x, y, FR * 1.25 * U, 0, 6.283); c.fill(); }
+    const im = emo(f.e, px), s = im.width / DPR;
+    c.save(); c.translate(x, y); c.rotate(f.rot); c.drawImage(im, -s / 2, -s / 2, s, s); c.restore();
+  }
+  basket();
+  for (const f of fx) { c.globalAlpha = Math.max(0, f.life / f.max); c.fillStyle = f.c; const s = f.s * U; c.fillRect(X(f.x) - s / 2, Y(f.y) - s / 2, s, s); }
+  c.globalAlpha = 1; c.textAlign = 'center';
+  for (const o of pops) {
+    c.globalAlpha = 1 - o.t * o.t; const fs = Math.round((o.big ? 6 : 4.4) * U * (1 + Math.max(0, .2 - o.t)));
+    c.font = '900 ' + fs + 'px system-ui,sans-serif'; c.lineWidth = 5; c.strokeStyle = '#fff';
+    c.strokeText(o.s, X(o.x), Y(o.y - o.t * 8)); c.fillStyle = o.c; c.fillText(o.s, X(o.x), Y(o.y - o.t * 8));
+  }
+  c.globalAlpha = 1;
+  c.restore();
+  if (G.flash) { c.fillStyle = 'rgba(255,60,60,' + G.flash * .5 + ')'; c.fillRect(0, 0, W, H); }
+  if (G.combo >= 5 && G.phase === 'play') {
+    c.fillStyle = '#ff6a00'; c.font = '900 ' + Math.round(5 * U) + 'px system-ui,sans-serif'; c.textAlign = 'center';
+    c.fillText('x' + (1 + Math.min(3, Math.floor(G.combo / 5))) + ' 콤보 중!', X(FW / 2), Y(44));
+  }
+}
+function basket() {
+  const c = ctx, bw = BW() * U, bh = BH * U, x = X(G.bx), y = Y(RIM), sq = G.sq;
+  c.save(); c.translate(x, y + bh * .5); c.rotate(G.tilt); c.scale(1 + sq * .18, 1 - sq * .22); c.translate(0, -bh * .5);
+  c.fillStyle = 'rgba(0,0,0,.12)'; c.beginPath(); c.ellipse(0, bh * 1.05, bw * .5, bh * .16, 0, 0, 6.283); c.fill();
+  // 바구니 안 음식
+  const im = G.recent.map(e => emo(e, Math.round(FR * 1.7 * U)));
+  im.forEach((m, i) => { const s = m.width / DPR; c.drawImage(m, -bw * .3 + i * bw * .2 - s / 2, -s * .45, s, s); });
+  c.fillStyle = '#d9954a'; c.beginPath(); c.moveTo(-bw / 2, 0); c.lineTo(bw / 2, 0); c.lineTo(bw * .4, bh); c.lineTo(-bw * .4, bh); c.closePath(); c.fill();
+  c.strokeStyle = '#b8742f'; c.lineWidth = Math.max(2, U * .5);
+  for (let i = 1; i < 3; i++) { c.beginPath(); c.moveTo(-bw / 2 + bw * .03 * i, bh * i / 3); c.lineTo(bw / 2 - bw * .03 * i, bh * i / 3); c.stroke(); }
+  for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * bw / 8, 0); c.lineTo(i * bw / 8 * .8, bh); c.stroke(); }
+  c.fillStyle = '#f0b46b'; rrect(-bw / 2 - 3, -3, bw + 6, Math.max(6, U * 1.4), 4); c.fill();
+  c.restore();
+}
+
+// ---- 화면 ----
+function hud() {
+  $('#score').textContent = G.score; $('#combo').textContent = G.combo;
+  $('#hearts').textContent = '❤️'.repeat(Math.max(0, G.lives)) + '🤍'.repeat(Math.max(0, 3 - G.lives));
+  $('#best').textContent = rec[G.mode];
+  $('#tbI').style.transform = 'scaleX(' + (G.phase === 'title' ? 1 : G.time / ROUND) + ')'; $('#tbT').textContent = Math.ceil(G.phase === 'title' ? ROUND : G.time) + '초';
+}
+function bump(s) { const e = $(s); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
+function showCard(id) { for (const c of $$('.card')) c.classList.toggle('on', c.id === id); }
+function setModes() { for (const b of $$('.md')) b.classList.toggle('on', b.dataset.m === G.mode); $('#best').textContent = rec[G.mode]; }
+function pause() { if (G.paused || G.phase !== 'play') return; G.paused = true; G.keys = {}; G.target = null; showCard('pauseCard'); }
+function resume() { if (!G.paused) return; G.paused = false; showCard(null); }
+function setSound() { $('#sndI').textContent = rec.sound ? '🔊' : '🔇'; $('#sndT').textContent = rec.sound ? ' 소리 켬' : ' 소리 끔'; $('#snd').setAttribute('aria-pressed', String(rec.sound)); }
+
+// ---- 입력 ----
+const toX = e => { const r = cv.getBoundingClientRect(); return clamp((e.clientX - r.left - OX) / U, 0, FW); };
+let ptr = null;
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault(); if (G.phase !== 'play' || G.paused) return;
+  try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+  ptr = e.pointerId; G.target = toX(e);
+});
+cv.addEventListener('pointermove', e => {
+  if (G.phase !== 'play' || G.paused) return;
+  if (ptr === e.pointerId || e.pointerType === 'mouse' && G.target != null) { e.preventDefault(); G.target = toX(e); }
+});
+const up = e => { if (ptr === e.pointerId) ptr = null; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('contextmenu', e => e.preventDefault());
+const KM = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right' };
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') { G.paused ? resume() : pause(); return; }
+  if (G.phase !== 'play' || G.paused) return;
+  if (KM[e.key]) { G.keys[KM[e.key]] = true; e.preventDefault(); }
+  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+});
+document.addEventListener('keyup', e => { if (KM[e.key]) G.keys[KM[e.key]] = false; });
+$('#start').addEventListener('click', () => startGame());
+$('#again').addEventListener('click', () => startGame());
+$('#resume').addEventListener('click', resume);
+$('#pauseBtn').addEventListener('click', () => G.paused ? resume() : pause());
+for (const b of $$('.md')) b.addEventListener('click', () => { if (G.phase === 'play') return; G.mode = b.dataset.m; setModes(); });
+$('#snd').addEventListener('click', () => { rec.sound = !rec.sound; save(); setSound(); if (rec.sound) { ac(); tone(660, 880, .1, 'sine', .12); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+window.addEventListener('blur', () => { G.keys = {}; });
+
+// ---- 루프 ----
+let last = performance.now(), acc = 0;
+function frame(now) {
+  acc += Math.min(.1, (now - last) / 1000); last = now;
+  if (!G.manual) while (acc >= DT) { update(DT); acc -= DT; } else acc = 0;
+  render(); requestAnimationFrame(frame);
+}
+resize();
+// 첫 화면: 음식이 떨어지고 바구니가 받는 시연 장면
+G.recent = ['🍚', '🥦', '🍎'];
+[[.2, 20, 'good'], [.38, 44, 'junk'], [.55, 30, 'gold'], [.72, 12, 'good'], [.86, 52, 'good'], [.47, 62, 'good']].forEach(([fx_, y, k]) => { const f = spawn(k, FW * fx_); f.y = y; });
+G.bx = FW * .5;
+setSound(); setModes(); hud();
+requestAnimationFrame(frame);
+
+// ---- 테스트 훅 ----
+window.__test = {
+  seed(n) { rs = (n >>> 0) || 1; G.manual = true; },
+  step(n) { for (let i = 0; i < (n || 1); i++) update(DT); render(); },
+  start(mode) { startGame(mode); },
+  auto(on) { G.auto = !!on; if (!on) foods.length = 0; },
+  spawn(kind, x, cat, y) { const f = spawn(kind || 'good', x == null ? G.bx : x, cat); if (y != null) f.y = y; return foods.length; },
+  input(o) { for (const k of ['left', 'right']) if (k in o) G.keys[k] = !!o[k]; if ('target' in o) G.target = o.target; },
+  end() { finish(); },
+  state() {
+    return { phase: G.paused ? 'paused' : G.phase, mode: G.mode, score: G.score, lives: G.lives, combo: G.combo, time: G.time, counts: { ...G.counts },
+      bx: G.bx, bv: G.bv, fw: FW, bw: BW(), foods: foods.length, best: rec[G.mode], shake: G.shake };
+  }
+};
+})();
+</script>
+</body>
+</html>

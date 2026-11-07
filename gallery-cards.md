@@ -1,4 +1,4 @@
-# 패들렛·작품 등록용 카드 문구 (61개)
+# 패들렛·작품 등록용 카드 문구 (71개)
 
 - catalog.json에서 생성(tools/build-catalog.js). 직접 고치지 말고 catalog.json을 고친 뒤 다시 실행.
 - 썸네일: `thumbnails/` 같은 번호 PNG (1280×720)
@@ -316,4 +316,54 @@ https://bin7335.github.io/edu-expo/recycle-sort/
 시계를 보지 않고 마음속으로 10초를 세어 멈추는 시간 감각 게임
 대상: 누구나 · 게임
 https://bin7335.github.io/edu-expo/ten-seconds/
+
+**62. 슝 종이비행기**
+끌어서 각도·힘을 정하고 바람을 읽어 종이비행기를 멀리 날리는 조작 게임
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/paper-plane/
+
+**63. 급식 바구니**
+좌우로 바구니를 움직여 골고루 음식을 받고 불량 간식은 피하는 받기 게임
+대상: 학생 · 게임
+https://bin7335.github.io/edu-expo/lunch-catch/
+
+**64. 폴짝 달리기**
+누르는 길이만큼 높이 뛰어 장애물을 넘는 운동장 달리기 게임
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/jump-run/
+
+**65. 구슬 미로**
+관성 있는 구슬을 굴려 구멍을 피해 깃발까지 가는 기울기 미로
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/marble-maze/
+
+**66. 통통 벽돌깨기**
+패들을 밀어 공을 튕겨 벽돌을 깨는 반사각 게임
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/brick-bounce/
+
+**67. 별똥별 비행**
+우주선을 조종해 운석을 피하고 별을 모으는 비행 게임
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/star-pilot/
+
+**68. 차곡차곡 탑**
+움직이는 블록을 딱 맞춰 떨어뜨려 높이 쌓는 2.5D 타이밍 게임
+대상: 누구나 · 게임
+https://bin7335.github.io/edu-expo/stack-tower/
+
+**69. 얼음 과녁**
+튕겨 밀어 낸 스톤을 과녁 한가운데 세우는 힘 조절 게임
+대상: 누구나 · 게임
+https://bin7335.github.io/edu-expo/ice-curling/
+
+**70. 교실 농구**
+위로 쓸어 던져 포물선으로 골대에 넣는 슛 게임
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/basket-shot/
+
+**71. 꼬마 운전 연습**
+핸들과 페달로 신호를 지키며 주차 칸에 차를 세우는 교통안전 운전 게임
+대상: 학생 · 게임
+https://bin7335.github.io/edu-expo/mini-driver/
 

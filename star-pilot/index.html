@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>별똥별 비행 - 우주선을 조종해 운석을 피하는 비행 게임</title>
+<meta name="description" content="관성이 있는 우주선을 조종해 쏟아지는 운석을 피하고 별을 모으는 60초 비행 게임. 가상 조이스틱·키보드, 부스터, 방어막, 아슬아슬 보너스, 최고 기록.">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#0b0f2a;background:radial-gradient(ellipse at 50% 120%,#3a2a78 0,#141a46 45%,#070a1e 100%);color:#fff;display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+  button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+  header{display:flex;align-items:center;gap:10px;padding:8px 16px;flex-wrap:wrap}
+  .logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#ff9a4d,#ff4f8b);display:grid;place-items:center;font-size:24px;box-shadow:0 4px 0 #b8335f;flex-shrink:0}
+  h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  h1 small{display:block;font-size:12px;color:#a9b4e0;font-weight:600;letter-spacing:0}
+  .hud{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .pill{background:rgba(255,255,255,.1);border-radius:99px;padding:5px 12px;font-weight:800;color:#a9b4e0;font-size:13px;white-space:nowrap}
+  .pill b{color:#fff;font-size:18px;margin-left:3px}
+  .pill b.low{color:#ff7a9c}
+  #lives{color:#ff6f9a;letter-spacing:1px}
+  .ib{border:0;background:rgba(255,255,255,.12);border-radius:12px;padding:8px 11px;font-weight:800;font-size:14px}
+  main{flex:1;display:flex;gap:16px;padding:4px 16px 0;min-height:0;justify-content:center}
+  aside{width:300px;flex-shrink:1;display:flex;flex-direction:column;gap:12px;padding-top:6px}
+  .card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px 16px;font-size:14px;line-height:1.6;color:#d6dcf7}
+  .card h3{margin:0 0 6px;font-size:16px;color:#fff}
+  kbd{display:inline-block;min-width:26px;text-align:center;background:#fff;color:#1d2450;border-radius:6px;padding:0 6px;font-weight:900;box-shadow:0 2px 0 #9aa3d0;font-family:inherit;font-size:13px}
+  #stage{flex:1 1 auto;max-width:720px;position:relative;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;min-width:0}
+  #wrap{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 0 2px rgba(255,255,255,.08)}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  #boost{position:absolute;right:4%;bottom:3.5%;width:84px;height:84px;border-radius:50%;border:0;padding:0;font-weight:900;font-size:15px;color:#3a1600;
+    background:conic-gradient(#ffb03a calc(var(--p,1)*360deg),rgba(255,255,255,.18) 0);box-shadow:0 5px 0 rgba(0,0,0,.35);display:none}
+  #boost i{position:absolute;inset:7px;border-radius:50%;background:linear-gradient(180deg,#ffd27a,#ff8a2a);display:grid;place-items:center;font-style:normal;line-height:1.1}
+  #boost.cd i{background:#4a4f78;color:#c8cdf0}
+  #boost.on{display:block}
+  #boost:active{transform:translateY(3px)}
+  .ov{position:absolute;left:50%;transform:translateX(-50%);width:min(92%,430px);background:rgba(16,20,56,.9);border:2px solid rgba(255,255,255,.16);border-radius:20px;padding:16px;text-align:center;display:none}
+  .ov.on{display:block}
+  #ready{top:60%}
+  #paused,#result{top:50%;transform:translate(-50%,-50%)}
+  .ov h2{margin:0 0 6px;font-size:24px}
+  .ov p{margin:4px 0;color:#c8d0f5;font-size:14px}
+  .modes{display:flex;gap:8px;justify-content:center;margin:8px 0}
+  .mode{border:2px solid rgba(255,255,255,.25);background:transparent;border-radius:14px;padding:6px 14px;font-weight:800;font-size:14px}
+  .mode.on{background:#fff;color:#1d2450;border-color:#fff}
+  .mode span{display:block;font-size:11px;opacity:.75}
+  .go{border:0;background:linear-gradient(180deg,#ffd27a,#ff9a2a);color:#3a1600;font-weight:900;font-size:20px;border-radius:16px;padding:11px 34px;box-shadow:0 5px 0 #c25e00;margin-top:6px}
+  .go:active{transform:translateY(3px);box-shadow:0 2px 0 #c25e00}
+  .sub{border:0;background:rgba(255,255,255,.14);font-weight:800;border-radius:14px;padding:11px 16px;margin-left:6px}
+  .tips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;font-size:12.5px;color:#c8d0f5}
+  .tips span{background:rgba(255,255,255,.08);border-radius:99px;padding:3px 10px}
+  #rScore{font-size:44px;font-weight:900;color:#ffd27a;margin:4px 0}
+  #newrec{display:inline-block;background:#ff5d8f;border-radius:99px;padding:2px 12px;font-weight:900;font-size:14px}
+  #newrec[hidden]{display:none}
+  footer{text-align:right;padding:4px 16px 8px;font-size:13px}
+  footer a{color:#a9b4e0}
+  @media (max-width:1060px){aside{display:none}}
+  @media (max-width:600px){
+    header{padding:6px 10px;gap:6px}
+    .logo{width:34px;height:34px;font-size:19px;border-radius:10px}
+    h1{font-size:18px} h1 small{display:none}
+    .hud{width:100%;order:3;margin:0;justify-content:space-between;gap:4px}
+    .pill{padding:3px 8px;font-size:11px} .pill b{font-size:15px}
+    .ib{padding:6px 8px;font-size:12px}
+    .tools{margin-left:auto}
+    main{padding:2px 8px 0}
+    .ov{padding:10px;border-radius:16px} .ov h2{font-size:19px}
+    #ready .tips{display:none}
+    .go{font-size:17px;padding:9px 24px}
+    #boost{width:70px;height:70px;font-size:13px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="별똥별 비행">
+<meta property="og:description" content="우주선을 조종해 운석을 피하고 별을 모으는 비행 게임">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/67-star-pilot.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/star-pilot/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🚀</div>
+  <h1>별똥별 비행<small>운석을 피하고 별을 모아요 · 60초 비행</small></h1>
+  <div class="hud">
+    <div class="pill">점수<b id="score">0</b></div>
+    <div class="pill">생명<b id="lives">♥♥♥</b></div>
+    <div class="pill">시간<b id="time">60</b></div>
+    <div class="pill">최고<b id="best">0</b></div>
+  </div>
+  <div class="tools"><button class="ib" id="snd" aria-pressed="true">🔊 소리</button> <button class="ib" id="pauseBtn" aria-label="일시정지">⏸</button></div>
+</header>
+<main>
+  <aside>
+    <div class="card"><h3>🎮 조종법</h3>
+      <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> 또는 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 비행<br>
+      <kbd>스페이스</kbd> 부스터 · <kbd>P</kbd> 멈춤<br>
+      📱 화면을 누른 채 끌면 <b>조이스틱</b>이 나타나요. 오른쪽 아래 <b>부스터</b> 버튼!</div>
+    <div class="card"><h3>🛸 관성 비행</h3>우주선은 바로 멈추지 않고 <b>미끄러져요</b>. 미리 방향을 바꾸고, 반대로 밀어 브레이크를 걸어 보세요. 부스터를 쓰는 동안은 무적!</div>
+  </aside>
+  <div id="stage">
+    <div id="wrap">
+      <canvas id="cv" aria-label="우주 비행 게임 화면"></canvas>
+      <button id="boost" aria-label="부스터"><i>부스터</i></button>
+      <div class="ov on" id="ready">
+        <div class="tips"><span>방향키 / 끌기: 비행</span><span>스페이스: 부스터</span><span>60초 · 생명 3</span></div>
+        <div class="modes">
+          <button class="mode on" data-m="normal">보통<span>최고 <i id="bN">0</i></span></button>
+          <button class="mode" data-m="hard">운석 폭풍<span>최고 <i id="bH">0</i></span></button>
+        </div>
+        <button class="go" id="start">▶ 출발</button>
+      </div>
+      <div class="ov" id="paused"><h2>잠깐 멈춤</h2><p>준비되면 다시 날아요.</p><button class="go" id="resume">계속하기</button></div>
+      <div class="ov" id="result">
+        <h2 id="rTitle">비행 끝!</h2>
+        <div id="rScore">0점</div>
+        <div id="newrec" hidden>🏆 새 최고 기록!</div>
+        <p id="rStat"></p>
+        <button class="go" id="again">다시 하기</button><button class="sub" id="home">처음으로</button>
+      </div>
+    </div>
+  </div>
+  <aside>
+    <div class="card"><h3>⭐ 점수</h3>별 <b>+10</b> (연속으로 모으면 더!)<br>운석을 스치듯 피하면 <b>아슬아슬 +5</b><br>버틴 시간 1초마다 <b>+1</b></div>
+    <div class="card"><h3>🛡️ 방어막</h3>파란 방패를 먹으면 운석 한 번을 막아 줘요.</div>
+    <div class="card"><h3>☄️ 운석</h3>크기와 속도가 제각각! 3번 부딪히면 비행 끝. 시간이 지날수록 더 많이 쏟아져요.</div>
+  </aside>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+<script>
+(() => {
+'use strict';
+const W = 600, H = 720, DT = 1 / 60, TOTAL = 60, SR = 16;
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const KEY = 'edu-expo-star-pilot-v1';
+const rec = { best: { normal: 0, hard: 0 }, sound: true };
+try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && typeof r === 'object') { rec.sound = r.sound !== false; if (r.best && typeof r.best === 'object') for (const m of ['normal', 'hard']) rec.best[m] = Math.max(0, Math.floor(Number(r.best[m]) || 0)); } } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+let sd = 1;
+const rnd = () => { sd = sd + 0x6D2B79F5 | 0; let t = Math.imul(sd ^ sd >>> 15, 1 | sd); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const rr = (a, b) => a + rnd() * (b - a);
+
+// ---- 소리 ----
+let AC = null;
+function ac(create) {
+  if (!rec.sound) return null;
+  if (!AC && create) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (AC && AC.state === 'suspended') AC.resume().catch(() => {});
+  return AC;
+}
+function tone(f1, f2, dur, type, vol, delay) {
+  if (phase === 'ready') return;
+  const a = ac(false); if (!a) return;
+  const t = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  star: c => { const f = 880 * Math.pow(1.06, Math.min(c, 12)); tone(f, f * 1.5, 0.09, 'triangle', 0.13); },
+  near: () => tone(1400, 2200, 0.07, 'sine', 0.08),
+  hit: () => { tone(160, 50, 0.4, 'sawtooth', 0.14); tone(90, 40, 0.3, 'square', 0.1); },
+  shieldHit: () => tone(600, 200, 0.25, 'triangle', 0.14),
+  shield: () => [523, 784, 1047].forEach((f, i) => tone(f, f, 0.1, 'sine', 0.13, i * 0.06)),
+  boost: () => { tone(120, 520, 0.35, 'sawtooth', 0.08); tone(240, 900, 0.3, 'sine', 0.06); },
+  end: () => [784, 659, 523, 392].forEach((f, i) => tone(f, f, 0.2, 'triangle', 0.14, i * 0.13))
+};
+function setSound() { $('#snd').textContent = rec.sound ? '🔊 소리' : '🔇 소리'; $('#snd').setAttribute('aria-pressed', String(rec.sound)); }
+const unlock = () => ac(true);
+
+// ---- 상태 ----
+let phase = 'ready', mode = 'normal', manual = false, spawnOn = true, tick = 0;
+let score = 0, lives = 3, time = TOTAL, elapsed = 0, starsN = 0, nearN = 0, chain = 0, chainT = 0, surv = 0;
+let meteors = [], stars = [], shields = [], parts = [], pops = [];
+let mT = 0, sT = 0, shT = 8, shake = 0, hitstop = 0, banner = 0, bannerTxt = '', scrollV = 230, flash = 0;
+const S = { x: W / 2, y: H - 140, vx: 0, vy: 0, bank: 0, inv: 0, shield: false, boostT: 0, cd: 0, thrust: 0 };
+const keys = { l: 0, r: 0, u: 0, d: 0 }, joy = { on: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 };
+let forced = null;
+const layers = [0.15, 0.4, 0.9].map((f, li) => ({ f, pts: Array.from({ length: 34 }, (_, i) => [(i * 173 + li * 59) % W, (i * 311 + li * 97) % H]) }));
+
+function mkMeteor(o) {
+  const r = o.r || 24, n = 9, v = [];
+  for (let i = 0; i < n; i++) v.push(0.78 + ((i * 37 + Math.round(r) * 13) % 10) / 40);
+  return Object.assign({ x: W / 2, y: -50, r, vx: 0, vy: scrollV, rot: 0, va: 0.8, v, min: 1e9, nm: false, hot: r < 20 }, o);
+}
+function spawnMeteor() {
+  const big = rnd() < 0.25, r = big ? rr(34, 46) : rr(14, 28), sp = mode === 'hard' ? 1.15 : 1;
+  let x = rr(r, W - r);
+  if (phase === 'play' && rnd() < 0.35) x = clamp(S.x + rr(-60, 60), r, W - r); // 가끔 우주선 쪽으로
+  meteors.push(mkMeteor({ x, y: -r - 10, r, vx: rr(-45, 45), vy: scrollV * rr(0.85, 1.35) * sp * (big ? 0.8 : 1), va: rr(-2, 2) }));
+}
+function spawnStars() {
+  const x = rr(60, W - 60), n = rnd() < 0.4 ? 3 : 1, dx = rr(-50, 50);
+  for (let i = 0; i < n; i++) stars.push({ x: clamp(x + dx * i, 20, W - 20), y: -20 - i * 46, ph: rnd() * 6 });
+}
+const pop = (x, y, t, c, big) => { pops.push({ x, y, t, c: c || '#fff', l: 1, big: !!big }); if (pops.length > 14) pops.shift(); };
+function burst(x, y, n, c, sp) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = (sp || 260) * (0.3 + Math.random()); parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, l: 1, c, s: 2 + Math.random() * 4 }); } if (parts.length > 160) parts.splice(0, parts.length - 160); }
+
+function axis() {
+  if (forced) return forced;
+  let x = (keys.r ? 1 : 0) - (keys.l ? 1 : 0), y = (keys.d ? 1 : 0) - (keys.u ? 1 : 0);
+  if (joy.on) { x = (joy.x - joy.ox) / 56; y = (joy.y - joy.oy) / 56; }
+  const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+  return { x, y };
+}
+function boost() {
+  if (phase !== 'play' || S.cd > 0) return false;
+  const a = axis(); let dx = a.x, dy = a.y; const m = Math.hypot(dx, dy);
+  if (m < 0.2) { dx = 0; dy = -1; } else { dx /= m; dy /= m; }
+  S.vx += dx * 620; S.vy += dy * 620; S.boostT = 0.6; S.cd = 3; shake = Math.max(shake, 5); flash = 0.4;
+  burst(S.x, S.y + 20, 14, '#ffb03a', 340); sfx.boost(); return true;
+}
+function ai() {
+  // 첫 화면 시연: 가까운 운석은 피하고 별 쪽으로
+  let tx = W / 2 + Math.sin(tick * 0.02) * 160, ty = 345 + Math.sin(tick * 0.033) * 22;
+  const st = stars.find(s => s.y > 100 && s.y < S.y); if (st) tx = st.x;
+  for (const m of meteors) { const dx = S.x - m.x, dy = S.y - m.y; if (dy > -60 && dy < 220 && Math.abs(dx) < m.r + 70) tx = S.x + (dx >= 0 ? 1 : -1) * 140; }
+  return { x: clamp((tx - S.x) / 90, -1, 1), y: clamp((ty - S.y) / 90, -1, 1) };
+}
+function update() {
+  if (phase !== 'play' && phase !== 'ready') return;
+  const demo = phase === 'ready'; tick++;
+  if (hitstop > 0) { hitstop--; return; }
+  if (!demo) {
+    time -= DT; elapsed += DT; surv += DT; if (surv >= 1) { surv -= 1; score += 1; }
+    if (time <= 0) { time = 0; return endGame(); }
+  }
+  const lv = demo ? 0.6 : Math.min(1, elapsed / 50), hard = mode === 'hard' ? 1.4 : 1;
+  scrollV = (230 + lv * 170) * (S.boostT > 0 ? 1.8 : 1);
+  // 우주선: 가속 + 감쇠(관성)
+  const a = demo ? ai() : axis();
+  S.vx += a.x * 2600 * DT; S.vy += a.y * 2600 * DT;
+  const drag = Math.exp(-(a.x || a.y ? 2.6 : 3.6) * DT); S.vx *= drag; S.vy *= drag;
+  const mx = S.boostT > 0 ? 1100 : 560, sp = Math.hypot(S.vx, S.vy); if (sp > mx) { S.vx *= mx / sp; S.vy *= mx / sp; }
+  S.x += S.vx * DT; S.y += S.vy * DT;
+  if (S.x < 26) { S.x = 26; S.vx *= -0.3; } if (S.x > W - 26) { S.x = W - 26; S.vx *= -0.3; }
+  if (S.y < 120) { S.y = 120; S.vy *= -0.3; } if (S.y > H - 40) { S.y = H - 40; S.vy *= -0.3; }
+  S.bank += (clamp(S.vx / 560, -1, 1) - S.bank) * 0.15;
+  S.thrust += ((a.y < -0.2 ? 1 : a.x || a.y ? 0.6 : 0.3) + (S.boostT > 0 ? 1 : 0) - S.thrust) * 0.2;
+  if (S.inv > 0) S.inv -= DT; if (S.boostT > 0) S.boostT -= DT; if (S.cd > 0) S.cd -= DT; if (chainT > 0) chainT -= DT; else chain = 0;
+  if (flash > 0) flash -= DT;
+  // 생성
+  if (spawnOn) {
+    mT -= DT; if (mT <= 0) { spawnMeteor(); mT = Math.max(0.22, (0.85 - lv * 0.5) / hard) * rr(0.7, 1.3); }
+    sT -= DT; if (sT <= 0) { spawnStars(); sT = rr(0.7, 1.2); }
+    shT -= DT; if (shT <= 0) { if (!S.shield && !shields.length) shields.push({ x: rr(60, W - 60), y: -30 }); shT = rr(13, 18); }
+  }
+  for (const L of layers) for (const p of L.pts) { p[1] += scrollV * L.f * DT; if (p[1] > H) { p[1] -= H; p[0] = (p[0] + 211) % W; } }
+  // 운석
+  const inv = S.inv > 0 || S.boostT > 0;
+  for (const m of meteors) {
+    m.x += m.vx * DT; m.y += (m.vy + (S.boostT > 0 ? scrollV * 0.4 : 0)) * DT; m.rot += m.va * DT;
+    if (m.x < m.r || m.x > W - m.r) m.vx = -m.vx;
+    const d = Math.hypot(m.x - S.x, m.y - S.y) - (m.r * 0.85 + SR);
+    if (!m.dead && d < 0) {
+      if (inv) { if (S.boostT > 0 && m.r < 30) { m.dead = true; burst(m.x, m.y, 10, '#b98b6a'); pop(m.x, m.y, '부숴라! +3', '#ffb03a'); if (!demo) score += 3; shake = Math.max(shake, 6); } }
+      else if (S.shield) { S.shield = false; S.inv = 1; m.dead = true; burst(m.x, m.y, 16, '#8fd6ff'); shake = 10; sfx.shieldHit(); pop(S.x, S.y - 40, '방어막!', '#8fd6ff'); }
+      else if (!demo) { m.dead = true; hit(m); }
+      else { m.dead = true; burst(m.x, m.y, 10, '#b98b6a'); }
+    }
+    if (!m.dead && !inv) m.min = Math.min(m.min, d);
+    if (!m.dead && !m.nm && m.y - m.r > S.y + SR) { m.nm = true; if (m.min < 24 && m.min >= 0 && !demo) { score += 5; nearN++; pop(S.x, S.y - 46, '아슬아슬 +5', '#7ef0dc'); sfx.near(); } }
+  }
+  meteors = meteors.filter(m => !m.dead && m.y - m.r < H + 20);
+  if (phase !== 'play' && phase !== 'ready') return;
+  // 별·방어막
+  for (const s of stars) {
+    s.y += scrollV * DT; s.ph += DT * 6;
+    const dx = s.x - S.x, dy = s.y - S.y, d = Math.hypot(dx, dy);
+    if (d < 90 && d > 0) { s.x -= dx / d * 160 * DT; s.y -= dy / d * 160 * DT; } // 살짝 끌려옴
+    if (d < SR + 18) { s.got = true; chain++; chainT = 1.4; const p = 10 + (chain - 1) * 2; if (!demo) { score += p; starsN++; } pop(s.x, s.y - 20, '+' + p, '#ffe27a'); burst(s.x, s.y, 6, '#ffe27a', 180); sfx.star(chain); }
+  }
+  stars = stars.filter(s => !s.got && s.y < H + 30);
+  for (const s of shields) { s.y += scrollV * 0.8 * DT; if (Math.hypot(s.x - S.x, s.y - S.y) < SR + 22) { s.got = true; S.shield = true; pop(S.x, S.y - 46, '방어막 장착!', '#8fd6ff'); sfx.shield(); } }
+  shields = shields.filter(s => !s.got && s.y < H + 40);
+  for (const p of parts) { p.x += p.vx * DT; p.y += p.vy * DT; p.vx *= 0.97; p.vy *= 0.97; p.l -= DT * 1.5; }
+  parts = parts.filter(p => p.l > 0);
+  for (const p of pops) { p.y -= 40 * DT; p.l -= DT * (p.big ? 0.6 : 1.2); }
+  pops = pops.filter(p => p.l > 0);
+  shake *= 0.86; if (banner > 0) banner -= DT;
+}
+function hit(m) {
+  lives--; S.inv = 1.6; shake = 18; hitstop = 5; chain = 0; flash = 0.25;
+  S.vx += (S.x - m.x) * 6; S.vy += (S.y - m.y) * 6;
+  burst(m.x, m.y, 18, '#c9946c', 320); burst(S.x, S.y, 10, '#ff6f9a', 240); sfx.hit();
+  pop(S.x, S.y - 46, lives > 0 ? '쿵! 생명 -1' : '쿵!', '#ff8fb1');
+  if (lives <= 0) { lives = 0; endGame(); }
+}
+function show(id) { for (const o of $$('.ov')) o.classList.toggle('on', o.id === id); $('#boost').classList.toggle('on', phase === 'play' || phase === 'paused'); }
+function reset() { meteors = []; stars = []; shields = []; parts = []; pops = []; S.x = W / 2; S.y = H - 140; S.vx = S.vy = 0; S.bank = 0; S.inv = 0; S.shield = false; S.boostT = 0; S.cd = 0; mT = 0.6; sT = 0.2; shT = 8; }
+function start(m) {
+  if (m) mode = m;
+  score = 0; lives = 3; time = TOTAL; elapsed = 0; starsN = 0; nearN = 0; chain = 0; surv = 0; hitstop = 0;
+  keys.l = keys.r = keys.u = keys.d = 0; joy.on = false; forced = null; reset();
+  phase = 'play'; bannerTxt = '출발!'; banner = 1.2; show(''); unlock(); hud();
+}
+function endGame() {
+  phase = 'result'; joy.on = false;
+  const nr = score > rec.best[mode];
+  if (nr) { rec.best[mode] = score; save(); }
+  $('#rTitle').textContent = lives <= 0 ? '💥 비행 끝!' : '🌟 60초 완주!';
+  $('#rScore').textContent = score + '점';
+  $('#newrec').hidden = !nr;
+  $('#rStat').textContent = `별 ${starsN}개 · 아슬아슬 ${nearN}번 · 남은 생명 ${lives}`;
+  show('result'); sfx.end(); hud(); bestLabels();
+}
+function home() { phase = 'ready'; reset(); S.y = 345; show('ready'); hud(); }
+function pause() { if (phase !== 'play') return; phase = 'paused'; joy.on = false; keys.l = keys.r = keys.u = keys.d = 0; show('paused'); }
+function resume() { if (phase !== 'paused') return; phase = 'play'; show(''); }
+
+const hv = {};
+const setT = (id, v) => { if (hv[id] !== v) { hv[id] = v; $(id).textContent = v; } };
+function hud() {
+  setT('#score', String(score)); setT('#lives', lives > 0 ? '♥'.repeat(lives) : '-');
+  setT('#time', String(Math.ceil(time))); $('#time').classList.toggle('low', time < 10 && phase === 'play'); setT('#best', String(rec.best[mode]));
+  const b = $('#boost'), p = S.cd > 0 ? 1 - S.cd / 3 : 1; b.style.setProperty('--p', p.toFixed(2)); b.classList.toggle('cd', S.cd > 0);
+}
+function bestLabels() { $('#bN').textContent = rec.best.normal; $('#bH').textContent = rec.best.hard; }
+
+// ---- 그리기 ----
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let SC = 1;
+const BG = ctx.createLinearGradient(0, 0, 0, H); BG.addColorStop(0, '#070a22'); BG.addColorStop(0.7, '#1a1d52'); BG.addColorStop(1, '#33246a');
+const FONT = 'system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+let planetY = 160;
+function resize() {
+  const st = $('#stage'), aw = st.clientWidth, ah = st.clientHeight - 6;
+  const s = Math.max(0.2, Math.min(aw / W, ah / H)), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.floor(W * s), h = Math.floor(H * s);
+  $('#wrap').style.width = w + 'px'; $('#wrap').style.height = h + 'px';
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); SC = cv.width / W;
+}
+function drawShip(c, t) {
+  c.save(); c.translate(S.x, S.y);
+  const sx = 1 - Math.abs(S.bank) * 0.38;
+  c.rotate(S.bank * 0.18);
+  // 불꽃
+  const fl = 16 + S.thrust * 22 + Math.sin(t * 60) * 4;
+  c.fillStyle = S.boostT > 0 ? '#9fe8ff' : '#ffb03a'; c.beginPath(); c.moveTo(-7 * sx, 14); c.lineTo(0, 14 + fl); c.lineTo(7 * sx, 14); c.fill();
+  c.fillStyle = '#fff6c8'; c.beginPath(); c.moveTo(-3.5 * sx, 14); c.lineTo(0, 14 + fl * 0.55); c.lineTo(3.5 * sx, 14); c.fill();
+  c.scale(sx, 1);
+  // 날개 (기울어진 쪽은 어둡게)
+  c.fillStyle = S.bank > 0 ? '#c23a6a' : '#ff6f9a'; c.beginPath(); c.moveTo(-6, -2); c.lineTo(-24, 14); c.lineTo(-20, 18); c.lineTo(-4, 12); c.fill();
+  c.fillStyle = S.bank < 0 ? '#c23a6a' : '#ff6f9a'; c.beginPath(); c.moveTo(6, -2); c.lineTo(24, 14); c.lineTo(20, 18); c.lineTo(4, 12); c.fill();
+  // 몸통
+  const g = c.createLinearGradient(-10, 0, 10, 0); g.addColorStop(0, S.bank > 0 ? '#9aa3d0' : '#ffffff'); g.addColorStop(1, S.bank < 0 ? '#9aa3d0' : '#e8ecff');
+  c.fillStyle = g; c.beginPath(); c.moveTo(0, -24); c.quadraticCurveTo(12, -6, 9, 16); c.lineTo(-9, 16); c.quadraticCurveTo(-12, -6, 0, -24); c.fill();
+  c.fillStyle = '#4ad3ff'; c.beginPath(); c.ellipse(0 - S.bank * 3, -6, 4.5, 7, 0, 0, 6.283); c.fill();
+  c.restore();
+  if (S.shield) { c.strokeStyle = `rgba(143,214,255,${0.6 + 0.3 * Math.sin(t * 7)})`; c.lineWidth = 3; c.beginPath(); c.arc(S.x, S.y, 32, 0, 6.283); c.stroke(); c.fillStyle = 'rgba(143,214,255,.12)'; c.fill(); }
+}
+function render(now) {
+  const c = ctx, t = now / 1000;
+  c.setTransform(SC, 0, 0, SC, 0, 0); c.fillStyle = BG; c.fillRect(0, 0, W, H);
+  // 멀리 있는 행성
+  planetY += scrollV * 0.02 * 0.016; if (planetY > H + 140) planetY = -140;
+  c.fillStyle = 'rgba(160,120,255,.16)'; c.beginPath(); c.arc(470, planetY, 90, 0, 6.283); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.06)'; c.beginPath(); c.arc(445, planetY - 25, 50, 0, 6.283); c.fill();
+  const streak = S.boostT > 0;
+  layers.forEach((L, li) => {
+    c.fillStyle = c.strokeStyle = `rgba(220,230,255,${0.3 + li * 0.25})`; const s = 1 + li;
+    if (streak && li) { c.lineWidth = s; c.beginPath(); for (const p of L.pts) { c.moveTo(p[0], p[1]); c.lineTo(p[0], p[1] - 30 * li); } c.stroke(); }
+    else for (const p of L.pts) c.fillRect(p[0], p[1], s, s);
+  });
+  if (shake > 0.3) c.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  for (const s of stars) {
+    const k = 1 + Math.sin(s.ph) * 0.15; c.save(); c.translate(s.x, s.y); c.rotate(s.ph * 0.2); c.scale(k, k);
+    c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,200,80,.22)'; c.beginPath(); c.arc(0, 0, 17, 0, 6.283); c.fill(); c.globalCompositeOperation = 'source-over';
+    c.fillStyle = '#ffe27a'; c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 5 : 12, a = i * 0.628 - 1.571; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.fill(); c.restore();
+  }
+  for (const s of shields) { c.fillStyle = 'rgba(143,214,255,.3)'; c.beginPath(); c.arc(s.x, s.y, 22, 0, 6.283); c.fill(); c.font = '24px ' + FONT; c.fillText('🛡️', s.x, s.y + 1); }
+  for (const m of meteors) {
+    c.save(); c.translate(m.x, m.y);
+    c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,120,40,.3)'; c.beginPath(); c.moveTo(-m.r * 0.75, -m.r * 0.2); c.lineTo(0, -m.r * 2.6); c.lineTo(m.r * 0.75, -m.r * 0.2); c.fill(); c.fillStyle = 'rgba(255,220,140,.25)'; c.beginPath(); c.moveTo(-m.r * 0.4, -m.r * 0.3); c.lineTo(0, -m.r * 1.6); c.lineTo(m.r * 0.4, -m.r * 0.3); c.fill(); c.globalCompositeOperation = 'source-over';
+    c.rotate(m.rot); c.fillStyle = '#8a6a55'; c.beginPath();
+    m.v.forEach((k, i) => { const a = i / m.v.length * 6.283; c.lineTo(Math.cos(a) * m.r * k, Math.sin(a) * m.r * k); }); c.closePath(); c.fill();
+    c.fillStyle = '#b08a6c'; c.beginPath(); c.arc(-m.r * 0.2, -m.r * 0.2, m.r * 0.55, 0, 6.283); c.fill();
+    c.fillStyle = '#6e5242'; c.beginPath(); c.arc(m.r * 0.3, m.r * 0.15, m.r * 0.2, 0, 6.283); c.arc(-m.r * 0.35, m.r * 0.35, m.r * 0.12, 0, 6.283); c.fill();
+    c.restore();
+  }
+  if (!(S.inv > 0 && Math.floor(t * 14) % 2)) drawShip(c, t);
+  for (const p of parts) { c.globalAlpha = Math.max(0, p.l); c.fillStyle = p.c; c.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); }
+  c.globalAlpha = 1;
+  for (const p of pops) {
+    c.globalAlpha = Math.min(1, p.l * 2); c.font = `900 ${p.big ? 30 : 20}px ` + FONT; c.lineWidth = 4; c.strokeStyle = 'rgba(10,12,40,.85)';
+    c.strokeText(p.t, p.x, p.y); c.fillStyle = p.c; c.fillText(p.t, p.x, p.y);
+  }
+  c.globalAlpha = 1; c.setTransform(SC, 0, 0, SC, 0, 0);
+  if (flash > 0) { c.fillStyle = `rgba(255,255,255,${flash * 0.5})`; c.fillRect(0, 0, W, H); }
+  if (joy.on) {
+    const r = cv.getBoundingClientRect(), k = W / r.width, ox = (joy.ox - r.left) * k, oy = (joy.oy - r.top) * k, a = axis();
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 3; c.beginPath(); c.arc(ox, oy, 56 * k, 0, 6.283); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.arc(ox + a.x * 56 * k, oy + a.y * 56 * k, 24 * k, 0, 6.283); c.fill();
+  }
+  if (phase === 'play' && S.shield) { c.font = '800 15px ' + FONT; c.textAlign = 'left'; c.fillStyle = '#8fd6ff'; c.fillText('🛡️ 방어막', 14, 22); c.textAlign = 'center'; }
+  if (phase === 'ready') {
+    c.fillStyle = 'rgba(8,10,34,.55)'; c.beginPath(); c.ellipse(W / 2, 238, 250, 62, 0, 0, 6.283); c.fill();
+    const title = '별똥별 비행'; c.font = '900 60px ' + FONT;
+    let x = W / 2 - c.measureText(title).width / 2;
+    [...title].forEach((ch, i) => {
+      const w = c.measureText(ch).width, y = 236 + Math.sin(t * 4 + i * 0.8) * 6;
+      c.fillStyle = '#7a2a5a'; c.fillText(ch, x + w / 2, y + 4); c.fillStyle = ['#ffe27a', '#ffb03a', '#ff8fb1', '#9fe8ff', '#c9b8ff'][i % 5]; c.fillText(ch, x + w / 2, y); x += w;
+    });
+  }
+  if (banner > 0) { c.globalAlpha = Math.min(1, banner * 2); c.font = '900 40px ' + FONT; c.lineWidth = 6; c.strokeStyle = 'rgba(10,12,40,.85)'; c.strokeText(bannerTxt, W / 2, 300); c.fillStyle = '#fff'; c.fillText(bannerTxt, W / 2, 300); c.globalAlpha = 1; }
+}
+let last = 0, acc = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const d = Math.min(0.1, (now - last) / 1000 || 0); last = now;
+  if (!manual && (phase === 'play' || phase === 'ready')) { acc += d; let n = 0; while (acc >= DT && n++ < 6) { update(); acc -= DT; } if (n >= 6) acc = 0; } else acc = 0;
+  if (phase === 'play') hud();
+  render(now);
+}
+
+// ---- 입력 ----
+const st = $('#stage');
+let lastPD = 0;
+st.addEventListener('pointerdown', e => {
+  if (e.target.closest('.ov') || e.target.closest('#boost')) return;
+  unlock(); if (phase !== 'play' || joy.on) return;
+  joy.on = true; joy.id = e.pointerId; joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY;
+  try { st.setPointerCapture(e.pointerId); } catch (er) {}
+  e.preventDefault();
+});
+st.addEventListener('pointermove', e => { if (joy.on && e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
+const up = e => { if (e.pointerId === joy.id) { joy.on = false; joy.id = -1; } };
+st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
+st.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+$('#boost').addEventListener('pointerdown', e => { unlock(); lastPD = Date.now(); boost(); e.preventDefault(); e.stopPropagation(); });
+$('#boost').addEventListener('click', () => { if (Date.now() - lastPD > 500) boost(); });
+const KM = { ArrowLeft: 'l', a: 'l', A: 'l', ArrowRight: 'r', d: 'r', D: 'r', ArrowUp: 'u', w: 'u', W: 'u', ArrowDown: 'd', s: 'd', S: 'd' };
+addEventListener('keydown', e => {
+  const k = e.key;
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(k) && phase !== 'result') e.preventDefault();
+  unlock();
+  if (KM[k]) keys[KM[k]] = 1;
+  else if (k === ' ' || k === 'Shift') { if (phase === 'play') boost(); else if (phase === 'ready' && k === ' ') start(); }
+  else if (k === 'p' || k === 'P' || k === 'Escape') { if (phase === 'play') pause(); else if (phase === 'paused') resume(); }
+});
+addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = 0; });
+addEventListener('blur', () => { keys.l = keys.r = keys.u = keys.d = 0; joy.on = false; });
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+$('#start').addEventListener('click', () => start());
+$('#again').addEventListener('click', () => start());
+$('#home').addEventListener('click', home);
+$('#resume').addEventListener('click', resume);
+$('#pauseBtn').addEventListener('click', () => { if (phase === 'play') pause(); else resume(); });
+$('#snd').addEventListener('click', () => { rec.sound = !rec.sound; save(); setSound(); if (rec.sound) unlock(); });
+for (const b of $$('.mode')) b.addEventListener('click', () => { mode = b.dataset.m; for (const x of $$('.mode')) x.classList.toggle('on', x === b); hud(); });
+addEventListener('resize', resize);
+
+window.__test = {
+  seed: n => { sd = (n >>> 0) || 1; }, manual: v => { manual = !!v; }, spawn: v => { spawnOn = !!v; },
+  step: (n = 1) => { for (let i = 0; i < n; i++) update(); hud(); },
+  input: o => { forced = o && ('x' in o || 'y' in o) ? { x: o.x || 0, y: o.y || 0 } : null; if (o && o.boost) return boost(); },
+  place: o => {
+    if (o.ship) Object.assign(S, o.ship);
+    if (o.meteors) meteors.push(...o.meteors.map(mkMeteor));
+    if (o.stars) stars.push(...o.stars.map(s => Object.assign({ ph: 0 }, s)));
+    if (o.shield) shields.push(Object.assign({}, o.shield));
+    if (o.clear) { meteors = []; stars = []; shields = []; }
+    if ('lives' in o) lives = o.lives; if ('time' in o) time = o.time;
+  },
+  state: () => ({ phase, score, lives, time, mode, stars: stars.length, meteors: meteors.length, starsN, nearN, joy: joy.on,
+    ship: { x: S.x, y: S.y, vx: S.vx, vy: S.vy, bank: S.bank, inv: S.inv, shield: S.shield, boostT: S.boostT, cd: S.cd }, best: rec.best[mode] }),
+  start: m => start(m), end: () => endGame(), pause, resume
+};
+setSound(); bestLabels(); resize(); reset(); S.y = 345; hud();
+for (let i = 0; i < 200; i++) update(); // 첫 화면부터 움직이는 장면
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

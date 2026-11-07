@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>꼬마 운전 연습 - 핸들과 페달로 배우는 교통안전 게임</title>
+<meta name="description" content="핸들을 돌리고 가속·브레이크 페달을 밟아 S자 코스, 신호등과 횡단보도, 주차 미션을 해결하는 교통안전 운전 게임. 안전 별점과 최고 기록, 안전 수칙 정리.">
+<style>
+  :root{--ink:#1c2a3a;--sub:#5b6b80;--line:#dbe4ee;--pri:#2f80ed}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#eef5ea;color:var(--ink);display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;overflow:hidden}
+  button{font:inherit;cursor:pointer;touch-action:manipulation}
+  header{display:flex;align-items:center;gap:10px;padding:8px 16px;background:#fff;border-bottom:2px solid var(--line);flex-wrap:wrap}
+  .logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#4fc3f7,#2f80ed);display:grid;place-items:center;font-size:25px;box-shadow:0 4px 0 #1f5fb8;flex-shrink:0}
+  h1{margin:0;font-size:23px;letter-spacing:-.5px}
+  header small{display:block;color:var(--sub);font-size:12.5px}
+  .hud{display:flex;align-items:center;gap:7px;margin-left:auto;flex-wrap:wrap}
+  .pill{background:#f4f8fc;border:2px solid var(--line);border-radius:99px;padding:4px 12px;font-weight:800;color:var(--sub);white-space:nowrap;font-size:14px}
+  .pill b{color:var(--ink);font-size:19px;margin-left:3px}
+  #stars{color:#f5b301;letter-spacing:1px}
+  #stars.hit{animation:hit .4s}
+  @keyframes hit{30%{transform:scale(1.35);color:#e53935}}
+  .ib{border:2px solid var(--line);background:#fff;border-radius:99px;min-width:42px;height:38px;font-size:16px;font-weight:800;color:var(--sub);padding:0 10px}
+  .ib:disabled{opacity:.4;cursor:default}
+  main{flex:1;position:relative;min-height:300px;overflow:hidden;background:#8fcf6e;touch-action:none;user-select:none;-webkit-user-select:none}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #goal{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(28,42,58,.82);color:#fff;border-radius:99px;padding:6px 16px;font-weight:700;font-size:14.5px;max-width:92%;text-align:center;pointer-events:none}
+  #toast{position:absolute;left:50%;top:54px;transform:translateX(-50%) scale(.8);background:#fff;border-radius:16px;padding:8px 18px;font-weight:900;font-size:19px;box-shadow:0 6px 0 rgba(0,0,0,.15);opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
+  #toast.on{opacity:1;transform:translateX(-50%) scale(1)}
+  #toast.bad{background:#ffe3e0;color:#c62828}#toast.good{background:#e3f8e6;color:#1b7a34}
+  .ctl{position:absolute;bottom:12px;display:none}
+  .ctl.on{display:flex}
+  #ctlL{left:14px}#ctlR{right:14px;gap:12px;align-items:flex-end}
+  .wheel{width:150px;height:150px;border-radius:50%;touch-action:none}
+  .wheel svg{width:100%;height:100%;display:block;pointer-events:none}
+  .pedal{border:0;border-radius:18px;color:#fff;font-weight:900;font-size:17px;touch-action:none;box-shadow:0 6px 0 rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;-webkit-touch-callout:none}
+  .pedal i{font-style:normal;font-size:22px}
+  .pedal.on{transform:translateY(5px) scale(.96);box-shadow:0 1px 0 rgba(0,0,0,.25);filter:brightness(1.12)}
+  #brake{width:92px;height:84px;background:linear-gradient(#ff6b5b,#d93a2b)}
+  #gas{width:78px;height:124px;background:linear-gradient(#4cd07d,#1e9e50)}
+  .ov{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(28,42,58,.38)}
+  .ov.on{display:flex}
+  #ready{background:linear-gradient(90deg,rgba(28,42,58,.5),rgba(28,42,58,0) 58%);justify-content:flex-start;padding-left:4%}
+  #mcard{background:none;align-items:flex-start;padding-top:60px;pointer-events:none}
+  #mcard .card{pointer-events:auto}
+  .card{background:#fff;border-radius:24px;padding:20px 24px;max-width:430px;width:100%;box-shadow:0 10px 0 rgba(0,0,0,.12);text-align:center;max-height:100%;overflow:auto}
+  .card h2{margin:0 0 4px;font-size:32px;letter-spacing:-1px}
+  .tag{display:inline-block;background:#e6f0fd;color:#1f5fb8;font-weight:900;border-radius:99px;padding:3px 12px;font-size:13px;margin-bottom:6px}
+  .how{list-style:none;padding:0;margin:10px 0;text-align:left;display:grid;gap:6px}
+  .how li{background:#f4f8fc;border-radius:13px;padding:7px 12px;font-size:14.5px;line-height:1.35}
+  .how b{color:#1f5fb8}
+  .go{border:0;background:linear-gradient(#4f9cff,#2f6fe0);color:#fff;font-weight:900;font-size:21px;padding:13px 28px;border-radius:18px;box-shadow:0 6px 0 #1d4fa8;width:100%}
+  .go:active{transform:translateY(4px);box-shadow:0 2px 0 #1d4fa8}
+  .sub2{color:var(--sub);font-size:13.5px;margin-top:9px}
+  .bigstar{font-size:44px;color:#f5b301;letter-spacing:4px;margin:2px 0}
+  .bigstar s{color:#d8dee6;text-decoration:none}
+  .detail{color:var(--sub);font-weight:700;margin:4px 0 12px;font-size:15px}
+  .rows{display:grid;gap:6px;margin:8px 0}
+  .rows div{display:flex;justify-content:space-between;background:#f4f8fc;border-radius:12px;padding:7px 12px;font-weight:700}
+  .rows span:last-child{color:#f5b301}
+  .tips{text-align:left;background:#fff8e1;border-radius:14px;padding:8px 12px 8px 30px;margin:10px 0;font-size:14px;line-height:1.5}
+  .newrec{display:inline-block;background:#ffd84d;border-radius:99px;padding:4px 14px;font-weight:900;margin-bottom:6px}
+  .total{font-size:40px;font-weight:900;color:#2f6fe0}
+  footer{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 16px;font-size:13px;color:var(--sub);background:#fff;border-top:2px solid var(--line)}
+  footer a{color:var(--sub);font-weight:700;text-decoration:none;white-space:nowrap}
+  @media (max-width:700px){
+    header{padding:6px 10px;gap:8px}
+    h1{font-size:19px}header small{display:none}
+    .logo{width:36px;height:36px;font-size:20px}
+    .hud{width:100%;margin-left:0;gap:5px}
+    .pill{padding:2px 7px;font-size:11.5px}.pill b{font-size:15px}
+    #bestP{display:none}.ib{min-width:34px;height:32px;font-size:14px;padding:0 6px}
+    .pedal{font-size:14px}.pedal i{font-size:18px}
+    #ready{background:rgba(28,42,58,.38);justify-content:center;padding:10px}
+    .card{padding:15px}.card h2{font-size:25px}.how li{font-size:13px}
+    .wheel{width:118px;height:118px}
+    #brake{width:76px;height:70px}#gas{width:66px;height:104px}
+    #goal{font-size:12.5px;top:6px}#toast{font-size:16px;top:46px}
+    footer .kb{display:none}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="꼬마 운전 연습">
+<meta property="og:description" content="핸들과 페달로 신호를 지키며 주차 칸에 차를 세우는 교통안전 운전 게임">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/71-mini-driver.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/mini-driver/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">🚗</div>
+  <div><h1>꼬마 운전 연습</h1><small>핸들 돌리고 페달 밟고, 안전하게!</small></div>
+  <div class="hud">
+    <span class="pill">미션<b id="mis">1/3</b></span>
+    <span class="pill">안전<b id="stars">★★★</b></span>
+    <span class="pill">속도<b id="spd">0</b>km/h</span>
+    <span class="pill" id="bestP">최고<b id="best">0</b></span>
+    <button class="ib" id="pauseBtn" aria-label="일시정지" disabled>⏸</button>
+    <button class="ib" id="snd" aria-pressed="true" aria-label="소리 켜기/끄기">🔊</button>
+  </div>
+</header>
+<main id="stage">
+  <canvas id="cv" aria-label="운전 연습장"></canvas>
+  <div id="goal">핸들과 페달로 3가지 운전 미션에 도전해요</div>
+  <div id="toast"></div>
+  <div class="ctl" id="ctlL"><div class="wheel" id="wheel" role="slider" aria-label="핸들: 돌려서 방향 바꾸기"><svg viewBox="0 0 100 100" id="wheelSvg"><circle cx="50" cy="50" r="44" fill="none" stroke="#2b3440" stroke-width="10"/><circle cx="50" cy="50" r="44" fill="none" stroke="#56606e" stroke-width="3" stroke-dasharray="6 9"/><path d="M8 52h28M64 52h28M50 60v32" stroke="#2b3440" stroke-width="9" stroke-linecap="round"/><circle cx="50" cy="52" r="14" fill="#2f80ed" stroke="#2b3440" stroke-width="4"/><rect x="46" y="4" width="8" height="10" rx="3" fill="#ffcf33"/></svg></div></div>
+  <div class="ctl" id="ctlR"><button class="pedal" id="brake" aria-label="브레이크(멈춘 상태에서 다시 누르면 후진)"><i>■</i>브레이크</button><button class="pedal" id="gas" aria-label="가속"><i>▲</i>가속</button></div>
+  <div class="ov on" id="ready"><div class="card">
+    <span class="tag">교통안전 운전 체험</span>
+    <h2>🚗 꼬마 운전 연습</h2>
+    <ul class="how">
+      <li>🎡 <b>핸들</b>을 돌려 방향, 오른쪽 <b>가속·브레이크 페달</b>로 속도 조절(동시에 눌러도 돼요).</li>
+      <li>⌨️ 키보드: <b>↑/W</b> 가속, <b>↓/S</b> 브레이크(멈춘 상태에서 다시 누르면 후진), <b>← →</b> 핸들</li>
+      <li>① S자 코스 ② 빨간불·횡단보도 ③ 주차 — 콘·연석에 부딪히면 <b>안전 별</b>이 줄어요.</li>
+    </ul>
+    <button class="go" id="start">▶ 운전 시작</button>
+    <div class="sub2">최고 기록 <b id="bestR">0</b>점</div>
+  </div></div>
+  <div class="ov" id="mcard"><div class="card">
+    <h2 id="mTitle">미션 성공!</h2>
+    <div class="bigstar" id="mStars"></div>
+    <div class="detail" id="mDetail"></div>
+    <button class="go" id="next">다음 미션 ▶</button>
+  </div></div>
+  <div class="ov" id="paused"><div class="card">
+    <h2>⏸ 잠깐 멈춤</h2>
+    <p class="sub2">차를 세워 두었어요.</p>
+    <button class="go" id="resume">▶ 계속 운전</button>
+  </div></div>
+  <div class="ov" id="result"><div class="card">
+    <div class="newrec" id="newrec" hidden>🏆 새 최고 기록!</div>
+    <h2 id="rTitle">운전 연습 끝!</h2>
+    <div class="total" id="rTotal">0점</div>
+    <div class="rows" id="rRows"></div>
+    <ol class="tips" id="tips"></ol>
+    <button class="go" id="again">↻ 다시 하기</button>
+  </div></div>
+</main>
+<footer><span class="kb">키보드: ↑ 가속 · ↓ 브레이크/후진 · ← → 핸들 · P 일시정지</span><a href="../">← 전체 데모 보기</a></footer>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const KEY = 'edu-expo-mini-driver-v1';
+let store = {};
+try { store = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { store = {}; }
+if (!store || typeof store !== 'object') store = {};
+let best = Math.floor(Number(store.best)); if (!isFinite(best) || best < 0) best = 0;
+let soundOn = store.sound !== false;
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ best, sound: soundOn })); } catch (e) {} };
+const fx = Math.random;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const wrap = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+
+// ---------- 소리 ----------
+let ac = null, eng = null, engG = null;
+function audio() {
+  if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+  try {
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    eng = ac.createOscillator(); eng.type = 'sawtooth'; engG = ac.createGain(); engG.gain.value = 0;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+    eng.connect(lp); lp.connect(engG); engG.connect(ac.destination); eng.frequency.value = 50; eng.start();
+  } catch (e) { ac = null; }
+}
+function tone(f, dur, type, vol, f2, delay) {
+  if (!ac || !soundOn || G.state === 'ready') return;
+  const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(0.0001, ac.currentTime); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.03);
+}
+const sfx = {
+  bump: () => { tone(90, 0.18, 'sine', 0.35, 50); tone(160, 0.08, 'square', 0.05); },
+  cone: () => { tone(700, 0.06, 'square', 0.05); tone(420, 0.12, 'triangle', 0.08, 300); },
+  good: () => { tone(660, 0.12, 'triangle', 0.12); tone(880, 0.12, 'triangle', 0.12, 0, 0.1); tone(1320, 0.2, 'triangle', 0.12, 0, 0.2); },
+  bad: () => { tone(330, 0.25, 'sawtooth', 0.08, 220); tone(330, 0.25, 'sawtooth', 0.06, 220, 0.25); },
+  ding: () => tone(1050, 0.25, 'sine', 0.1),
+  gate: () => tone(880, 0.09, 'triangle', 0.08, 1200),
+  beep: () => tone(1500, 0.06, 'square', 0.025)
+};
+
+// ---------- 미션 ----------
+const MW = 1000, MH = 560;
+const MISSIONS = [
+  { name: 'S자 코스', goal: '① 콘 사이 빈틈으로 S자를 그리며 결승선까지!', start: [90, 280, 0] },
+  { name: '신호등과 횡단보도', goal: '② 빨간불엔 정지선 앞에 멈추고, 보행자가 다 건너면 출발!', start: [80, 333, 0] },
+  { name: '주차하기', goal: '③ 반짝이는 P 칸에 반듯하게 세워요 (멈추면 판정)', start: [130, 300, 0] }
+];
+const BARS = [{ x: 300, g0: 100, g1: 260 }, { x: 500, g0: 300, g1: 460 }, { x: 700, g0: 100, g1: 260 }];
+const STOP = 600, CW0 = 612, CW1 = 672, FIN1 = 900, FIN2 = 940;
+const STALL = { x0: 496, x1: 568, y0: 40, y1: 160, cx: 532, cy: 100 };
+let M = null; // 현재 미션 세계
+function build(n) {
+  const m = { n, bounds: null, boxes: [], cones: [], parked: [], light: 'green', lt: 0, ped: null, gates: 0, missed: 0, stopNoted: false, crossed: false };
+  if (n === 0) {
+    m.bounds = { x0: 40, y0: 60, x1: 960, y1: 500 };
+    for (const b of BARS) for (let y = 80; y <= 480; y += 40) if (y < b.g0 || y > b.g1) m.cones.push({ x: b.x, y, vx: 0, vy: 0, r: 0, vr: 0, hit: false });
+  } else if (n === 1) {
+    m.bounds = { x0: 0, y0: 190, x1: 1000, y1: 380 };
+    m.ped = { x: 642, y: 150, walk: false, done: false, scared: 0, ph: 0 };
+  } else {
+    m.bounds = { x0: 40, y0: 40, x1: 960, y1: 520 };
+    const top = [1, 2, 4, 6], bot = [0, 3, 5];
+    const cols = ['#ef5350', '#ab47bc', '#26a69a', '#ffa726', '#8d6e63', '#5c6bc0', '#ec407a'];
+    top.forEach((i, k) => m.parked.push({ x: 280 + i * 72 + 36, y: 100, a: -Math.PI / 2, c: cols[k] }));
+    bot.forEach((i, k) => m.parked.push({ x: 280 + i * 72 + 36, y: 460, a: Math.PI / 2, c: cols[k + 4] }));
+    for (const p of m.parked) m.boxes.push({ x0: p.x - 17, x1: p.x + 17, y0: p.y - 31, y1: p.y + 31 });
+  }
+  return m;
+}
+
+// ---------- 차 ----------
+const L = 40, CR = 15, ACC = 230, BRK = 480, VMAX = 270, VREV = 80;
+const car = { x: 0, y: 0, a: 0, v: 0, steer: 0, rev: 0, pitch: 0, stopT: 0 };
+const G = { state: 'ready', paused: false, mi: 0, t: 0, pen: 0, cool: 0, res: [], demoWp: 2, msg: '' };
+const keys = { up: false, down: false, left: false, right: false };
+const pedals = { gas: new Set(), brake: new Set() };
+const wheel = { id: null, rot: 0, last: 0 };
+let testIn = null, kbSteer = 0, manual = false, shake = 0;
+const parts = [], skids = [];
+
+function input() {
+  if (testIn) return { gas: !!testIn.gas, brake: !!testIn.brake, steer: clamp(+testIn.steer || 0, -1, 1) };
+  if (G.state === 'ready') return demoInput();
+  const st = wheel.id !== null || Math.abs(wheel.rot) > 1 ? wheel.rot / 120 : kbSteer;
+  return { gas: keys.up || pedals.gas.size > 0, brake: keys.down || pedals.brake.size > 0, steer: clamp(st, -1, 1) };
+}
+const WP = [[200, 280], [300, 180], [400, 280], [500, 380], [600, 280], [700, 180], [800, 250], [930, 280]];
+function demoInput() {
+  const w = WP[G.demoWp];
+  if (Math.hypot(w[0] - car.x, w[1] - car.y) < 45) { G.demoWp++; if (G.demoWp >= WP.length) reset(0, true); }
+  const d = wrap(Math.atan2(w[1] - car.y, w[0] - car.x) - car.a);
+  return { gas: car.v < 150, brake: false, steer: clamp(d * 2.4, -1, 1) };
+}
+function maxSteer(v) { return 0.62 / (1 + Math.abs(v) / 230); }
+function circles() { const c = Math.cos(car.a), s = Math.sin(car.a); return [-17, 0, 17].map(o => [car.x + c * o, car.y + s * o]); }
+function front() { return car.x + Math.cos(car.a) * 31; }
+
+function drive(dt, inp) {
+  const v0 = car.v;
+  if (inp.gas) { if (car.v < -2) car.v = Math.min(0, car.v + BRK * dt); else car.v += ACC * dt * (1 - car.v / VMAX); car.rev = 0; }
+  else if (inp.brake) {
+    if (car.v > 2) { car.v = Math.max(0, car.v - BRK * dt); car.arm = false; if (car.v > 120 && G.state === 'play') skid(); }
+    else if (car.arm || car.v < -1) car.v = Math.max(-VREV, car.v - 140 * dt); // 멈춘 상태에서 다시 누르면 후진
+    else car.v = 0;
+  } else { car.rev = 0; car.arm = Math.abs(car.v) < 3; const f = (25 + Math.abs(car.v) * 0.45) * dt; car.v = Math.abs(car.v) <= f ? 0 : car.v - Math.sign(car.v) * f; }
+  const want = inp.steer * maxSteer(car.v), rate = 4.5 * dt;
+  car.steer += clamp(want - car.steer, -rate, rate);
+  car.a = wrap(car.a + car.v / L * Math.tan(car.steer) * dt);
+  car.x += Math.cos(car.a) * car.v * dt; car.y += Math.sin(car.a) * car.v * dt;
+  car.pitch += (clamp((car.v - v0) / dt / 900, -0.6, 0.4) - car.pitch) * Math.min(1, dt * 10);
+  if (Math.abs(car.v) < 3 && !inp.gas) car.stopT += dt; else car.stopT = 0;
+  if (inp.gas && car.v > 0 && car.v < 60 && fx() < 0.15) { const c = Math.cos(car.a), s = Math.sin(car.a); parts.push({ x: car.x - c * 34, y: car.y - s * 34, vx: -c * 30 + (fx() - .5) * 20, vy: -s * 30 + (fx() - .5) * 20, life: 0.6, max: 0.6, s: 6, c: 'rgba(120,130,140,' }); }
+}
+function skid() {
+  const c = Math.cos(car.a), s = Math.sin(car.a);
+  for (const side of [-12, 12]) skids.push(car.x - c * 20 - s * side, car.y - s * 20 + c * side);
+  if (skids.length > 600) skids.splice(0, 4);
+}
+function penalty(n, text) {
+  G.pen += n; toast(text, 'bad'); const st = $('#stars'); st.classList.remove('hit'); void st.offsetWidth; st.classList.add('hit'); hud();
+}
+function collide(dt) {
+  if (G.cool > 0) G.cool -= dt;
+  const b = M.bounds; let bumped = false;
+  for (const [px, py] of circles()) {
+    let nx = 0, ny = 0, d = 0;
+    const tests = [[px - CR - b.x0, 1, 0], [b.x1 - px - CR, -1, 0], [py - CR - b.y0, 0, 1], [b.y1 - py - CR, 0, -1]];
+    for (const [g, ux, uy] of tests) if (g < 0 && -g > d) { d = -g; nx = ux; ny = uy; }
+    for (const o of M.boxes) {
+      const qx = clamp(px, o.x0, o.x1), qy = clamp(py, o.y0, o.y1), dx = px - qx, dy = py - qy, dd = Math.hypot(dx, dy);
+      if (dd < CR && dd > 1e-4 && CR - dd > d) { d = CR - dd; nx = dx / dd; ny = dy / dd; }
+    }
+    if (d > 0) { car.x += nx * d; car.y += ny * d; bumped = true; }
+    for (const k of M.cones) {
+      if (k.hit) continue;
+      const dx = k.x - px, dy = k.y - py, dd = Math.hypot(dx, dy);
+      if (dd < CR + 9) {
+        k.hit = true; const sp = Math.abs(car.v) * 0.9 + 60, ux = dd ? dx / dd : 1, uy = dd ? dy / dd : 0;
+        k.vx = ux * sp; k.vy = uy * sp; k.vr = (fx() - .5) * 14; car.v *= 0.75; shake = Math.max(shake, 3);
+        if (G.state === 'play') { sfx.cone(); penalty(1, '🚧 콘을 건드렸어요'); }
+        dust(k.x, k.y, 4);
+      }
+    }
+  }
+  if (bumped) {
+    const sp = Math.abs(car.v);
+    car.v = -car.v * 0.3; car.x += Math.cos(car.a) * Math.sign(car.v) * 1;
+    if (sp > 25) { shake = Math.max(shake, Math.min(8, sp / 30)); const [px, py] = circles()[car.v < 0 ? 2 : 0]; dust(px, py, 5); }
+    if (G.state === 'play' && sp > 25 && G.cool <= 0) { G.cool = 0.7; sfx.bump(); penalty(1, M.n === 2 ? '💥 쿵! 주차된 차·벽 조심' : '💥 쿵! 연석에 부딪혔어요'); }
+  }
+}
+function dust(x, y, n) { for (let i = 0; i < n; i++) parts.push({ x, y, vx: (fx() - .5) * 140, vy: (fx() - .5) * 140, life: 0.5, max: 0.5, s: 5 + fx() * 5, c: 'rgba(200,190,170,' }); }
+
+// ---------- 미션 진행 ----------
+function rules(dt, px) {
+  if (M.n === 0) {
+    for (let i = G.gates + M.missed; i < BARS.length; i++) {
+      const g = BARS[i];
+      if (px < g.x && car.x >= g.x) {
+        if (car.y > g.g0 && car.y < g.g1) { G.gates++; if (G.state === 'play') { sfx.gate(); toast('통과 ' + G.gates + '/3 👍', 'good'); } }
+        else { M.missed++; if (G.state === 'play') penalty(1, '빈틈으로 지나가야 해요'); }
+      }
+    }
+    if (car.x > FIN1 && G.state === 'play') complete();
+  } else if (M.n === 1) {
+    const f = front(), p = M.ped; M.lt += dt;
+    if (M.light === 'green' && f > 230) { M.light = 'yellow'; M.lt = 0; sfx.beep(); }
+    else if (M.light === 'yellow' && M.lt > 0.9) { M.light = 'red'; M.lt = 0; sfx.ding(); }
+    else if (M.light === 'red') {
+      if (car.stopT >= 0.8 && f < STOP + 4 && !M.stopNoted) {
+        M.stopNoted = true; const gap = STOP - f;
+        if (gap <= 70) { M.bonus = 30; toast('👍 정지선 앞에 딱 멈췄어요!', 'good'); sfx.good(); } else toast('조금 더 정지선 가까이 가도 돼요', '');
+      }
+      if ((M.stopNoted || M.crossed) && M.lt > 0.8) { M.light = 'walk'; M.lt = 0; p.walk = true; }
+    } else if (M.light === 'walk') {
+      if (p.scared > 0) p.scared -= dt; else { p.y += 85 * dt; p.ph += dt * 10; }
+      if (p.y >= 420) { p.walk = false; p.done = true; M.light = 'green2'; sfx.ding(); toast('초록불! 출발해요', 'good'); }
+      const r = circles().some(([cx]) => cx + CR > CW0 && cx - CR < CW1);
+      if (r && !M.pedHit) { M.pedHit = true; p.scared = 0.9; sfx.bad(); penalty(3, '🚸 보행자가 먼저예요!'); }
+    }
+    const pf = px + Math.cos(car.a) * 31;
+    if (pf < STOP && f >= STOP && M.light !== 'green' && M.light !== 'green2' && !M.crossed) {
+      M.crossed = true; sfx.bad(); penalty(3, '🚨 신호 위반! 빨간불엔 멈춰요');
+    }
+    if (car.x > FIN2 && G.state === 'play') complete();
+  } else if (M.n === 2) {
+    if (car.stopT >= 1 && !M.judged && car.x > STALL.x0 && car.x < STALL.x1 && car.y > STALL.y0 && car.y < STALL.y1 && G.state === 'play') {
+      M.judged = true;
+      M.pos = Math.hypot(car.x - STALL.cx, car.y - STALL.cy);
+      M.ang = Math.min(Math.abs(wrap(car.a + Math.PI / 2)), Math.abs(wrap(car.a - Math.PI / 2))) * 180 / Math.PI;
+      M.park = M.pos < 12 && M.ang < 7 ? 3 : M.pos < 24 && M.ang < 14 ? 2 : 1;
+      complete();
+    }
+  }
+}
+const penStars = p => p === 0 ? 3 : p <= 2 ? 2 : p <= 4 ? 1 : 0;
+function complete() {
+  let stars = penStars(G.pen), detail = '';
+  if (M.n === 0) detail = '빈틈 통과 ' + G.gates + '/3 · 감점 ' + G.pen;
+  if (M.n === 1) detail = (M.crossed ? '신호 위반 ✗' : '신호 지킴 ✓') + ' · ' + (M.pedHit ? '보행자 양보 ✗' : '보행자 양보 ✓');
+  if (M.n === 2) { stars = Math.min(stars, M.park); detail = '위치 오차 ' + Math.round(M.pos) + ' · 각도 오차 ' + Math.round(M.ang) + '°'; }
+  const score = stars * 100 + Math.max(0, Math.round(60 - G.t)) + (stars ? (M.bonus || 0) : 0);
+  G.res[M.n] = { stars, score, detail };
+  G.state = 'mdone'; car.v = 0; testIn = testIn && { steer: 0 };
+  $('#mTitle').textContent = stars >= 3 ? '완벽해요! 🎉' : stars >= 1 ? '미션 성공! 👍' : '다시 연습해 봐요 💪';
+  const ms = $('#mStars'); ms.textContent = '';
+  for (let i = 0; i < 3; i++) { const e = document.createElement(i < stars ? 'span' : 's'); e.textContent = '★'; ms.appendChild(e); }
+  $('#mDetail').textContent = detail + ' · ' + score + '점';
+  $('#next').textContent = M.n < 2 ? '다음 미션 ▶' : '결과 보기 ▶';
+  card('mcard'); ctl(false); stars ? sfx.good() : sfx.bad(); hud();
+}
+
+// ---------- 상태 ----------
+function reset(n, demo) {
+  M = build(n); const s = MISSIONS[n].start;
+  car.x = s[0]; car.y = s[1]; car.a = s[2]; car.v = car.steer = car.rev = car.pitch = car.stopT = 0; car.arm = false;
+  G.t = 0; G.pen = 0; G.cool = 0; G.gates = 0; skids.length = parts.length = 0;
+  if (demo) { car.x = 330; car.y = 196; car.a = 0.45; car.v = 130; G.demoWp = 2; }
+  bgDirty = true;
+}
+function startMission(n) {
+  audio(); testIn = null;
+  G.state = 'play'; G.paused = false; G.mi = n; reset(n);
+  $('#goal').textContent = MISSIONS[n].goal; card(null); ctl(true); $('#pauseBtn').disabled = false;
+  toast('미션 ' + (n + 1) + ': ' + MISSIONS[n].name, ''); hud();
+}
+function start() { G.res = []; startMission(0); }
+function next() { if (G.state !== 'mdone') return; if (G.mi < 2) startMission(G.mi + 1); else finish(); }
+function finish() {
+  G.state = 'result'; G.paused = false; ctl(false); $('#pauseBtn').disabled = true;
+  const total = G.res.reduce((a, r) => a + (r ? r.score : 0), 0);
+  const isNew = total > best; if (isNew) { best = total; save(); }
+  $('#rTotal').textContent = total + '점'; $('#newrec').hidden = !isNew;
+  const rows = $('#rRows'); rows.textContent = '';
+  MISSIONS.forEach((m, i) => { const r = G.res[i], d = document.createElement('div'), a = document.createElement('span'), b = document.createElement('span'); a.textContent = (i + 1) + '. ' + m.name + ' · ' + (r ? r.score : 0) + '점'; b.textContent = r ? '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars) : '☆☆☆'; d.append(a, b); rows.appendChild(d); });
+  const stars = G.res.reduce((a, r) => a + (r ? r.stars : 0), 0);
+  $('#rTitle').textContent = stars >= 8 ? '안전 운전왕! 👑' : stars >= 5 ? '든든한 운전자! 🚗' : '연습하면 더 잘해요! 💪';
+  const tips = ['빨간불·노란불에는 정지선 앞에서 멈춰요.', '횡단보도에 사람이 있으면 다 건널 때까지 기다려요.', '어린이 보호구역에서는 시속 30km 이하로 천천히!', '걸을 때는 주차된 차 사이로 갑자기 뛰어나오지 않아요.', '차에 타면 뒷자리에서도 안전띠를 꼭 매요.'];
+  const ol = $('#tips'); ol.textContent = ''; for (const t of tips) { const li = document.createElement('li'); li.textContent = t; ol.appendChild(li); }
+  card('result'); hud();
+}
+function pause() { if (G.state !== 'play' || G.paused) return; G.paused = true; pedals.gas.clear(); pedals.brake.clear(); wheel.id = null; $$('.pedal').forEach(b => b.classList.remove('on')); card('paused'); }
+function resume() { if (!G.paused) return; G.paused = false; card(null); last = performance.now(); }
+function card(id) { for (const k of ['ready', 'mcard', 'paused', 'result']) $('#' + k).classList.toggle('on', k === id); }
+function ctl(on) { $('#ctlL').classList.toggle('on', on); $('#ctlR').classList.toggle('on', on); }
+let toastT = 0;
+function toast(t, kind) { const e = $('#toast'); e.textContent = t; e.className = 'on ' + (kind || ''); toastT = 1.8; }
+let hudCache = '';
+function hud() {
+  const s = penStars(G.pen), k = [G.mi, s, Math.round(Math.abs(car.v) * 0.12), best, car.v < -1].join();
+  if (k === hudCache) return; hudCache = k;
+  $('#mis').textContent = (G.mi + 1) + '/3'; $('#stars').textContent = '★'.repeat(s) + '☆'.repeat(3 - s);
+  $('#spd').textContent = (car.v < -1 ? 'R ' : '') + Math.round(Math.abs(car.v) * 0.12);
+  $('#best').textContent = best; $('#bestR').textContent = best;
+}
+
+// ---------- 갱신 ----------
+const DT = 1 / 120;
+function tick(dt) {
+  if (G.paused || G.state === 'result') return;
+  if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('#toast').classList.remove('on'); }
+  if (wheel.id === null) wheel.rot += clamp(-wheel.rot, -700 * dt, 700 * dt);
+  const kt = keys.left ? -1 : keys.right ? 1 : 0;
+  kbSteer += clamp(kt - kbSteer, -(kt ? 3.5 : 6) * dt, (kt ? 3.5 : 6) * dt);
+  if (G.state === 'play' || G.state === 'ready') {
+    const inp = input(), px = car.x;
+    if (G.state === 'play') G.t += dt;
+    drive(dt, inp); collide(dt); rules(dt, px);
+    car.brakeOn = inp.brake && car.v >= 0; car.revOn = car.v < -1;
+  }
+  for (const k of M.cones) if (k.hit) { k.x += k.vx * dt; k.y += k.vy * dt; k.r += k.vr * dt; const f = Math.pow(0.08, dt); k.vx *= f; k.vy *= f; k.vr *= f; }
+  for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.life -= dt; if (p.life <= 0) { parts.splice(i, 1); continue; } p.x += p.vx * dt; p.y += p.vy * dt; }
+  shake = Math.max(0, shake - dt * 30);
+}
+
+// ---------- 그리기 ----------
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const bg = document.createElement('canvas'), bx = bg.getContext('2d');
+let dpr = 1, z = 1, cw = 0, ch = 0, camX = MW / 2, camY = MH / 2, bgDirty = true;
+const MG = 260, BGS = 1.25;
+function layout() {
+  cw = stage.clientWidth || 960; ch = stage.clientHeight || 560; dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  const fit = Math.min(cw / MW, ch / MH);
+  z = fit >= 0.62 ? fit : Math.max(fit, Math.min(cw / 470, ch / 380));
+}
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function tree(c, x, y, r) {
+  c.fillStyle = 'rgba(0,40,0,.22)'; c.beginPath(); c.ellipse(x + 6, y + 7, r, r * 0.8, 0, 0, 7); c.fill();
+  c.fillStyle = '#3f9a3a'; c.beginPath(); c.arc(x, y - 4, r, 0, 7); c.fill();
+  c.fillStyle = '#5cbf4f'; c.beginPath(); c.arc(x - r * 0.25, y - 4 - r * 0.25, r * 0.6, 0, 7); c.fill();
+}
+function asphalt(c, x0, y0, x1, y1) {
+  c.fillStyle = '#c9cfd6'; c.fillRect(x0 - 10, y0 - 10, x1 - x0 + 20, y1 - y0 + 20); // 연석
+  c.fillStyle = '#9aa3ad'; c.fillRect(x0 - 10, y1 + 4, x1 - x0 + 20, 6);
+  c.fillStyle = '#5d6670'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
+}
+function drawBg() {
+  bgDirty = false;
+  bg.width = Math.round((MW + MG * 2) * BGS); bg.height = Math.round((MH + MG * 2) * BGS);
+  const c = bx; c.setTransform(BGS, 0, 0, BGS, MG * BGS, MG * BGS);
+  c.fillStyle = '#8fcf6e'; c.fillRect(-MG, -MG, MW + MG * 2, MH + MG * 2);
+  c.fillStyle = 'rgba(255,255,255,.12)'; for (let i = 0; i < 160; i++) { const x = (i * 137) % (MW + 400) - 200, y = (i * 263) % (MH + 400) - 200; c.fillRect(x, y, 4, 4); }
+  const n = M.n, f = '700 22px system-ui, "Malgun Gothic", sans-serif';
+  c.font = f; c.textAlign = 'center';
+  if (n === 0) {
+    asphalt(c, 40, 60, 960, 500);
+    c.fillStyle = 'rgba(255,255,255,.9)'; c.fillRect(40, 60, 6, 440);
+    for (let y = 60; y < 500; y += 40) { c.fillStyle = ((y / 40) % 2) ? '#fff' : '#222'; c.fillRect(FIN1, y, 20, 20); c.fillStyle = ((y / 40) % 2) ? '#222' : '#fff'; c.fillRect(FIN1 + 20, y, 20, 20); c.fillRect(FIN1, y + 20, 20, 20); c.fillStyle = ((y / 40) % 2) ? '#fff' : '#222'; c.fillRect(FIN1 + 20, y + 20, 20, 20); }
+    c.strokeStyle = 'rgba(255,230,120,.55)'; c.lineWidth = 4; c.setLineDash([16, 14]); c.beginPath(); c.moveTo(90, 280);
+    c.bezierCurveTo(220, 280, 240, 180, 300, 180); c.bezierCurveTo(380, 180, 420, 380, 500, 380); c.bezierCurveTo(580, 380, 620, 180, 700, 180); c.bezierCurveTo(780, 180, 820, 280, 900, 280); c.stroke(); c.setLineDash([]);
+    c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText('출발', 90, 92); c.fillText('결승', FIN1 + 20, 48);
+    for (const [x, y] of [[120, 30], [260, 26], [520, 30], [760, 24], [140, 535], [420, 540], [640, 532], [880, 538]]) tree(c, x, y, 20);
+  } else if (n === 1) {
+    c.fillStyle = '#e8dcc8'; c.fillRect(-MG, 110, MW + MG * 2, 80); c.fillRect(-MG, 380, MW + MG * 2, 80);
+    c.strokeStyle = 'rgba(0,0,0,.08)'; c.lineWidth = 1; for (let x = -MG; x < MW + MG; x += 30) { c.beginPath(); c.moveTo(x, 110); c.lineTo(x, 190); c.moveTo(x, 380); c.lineTo(x, 460); c.stroke(); }
+    asphalt(c, -MG, 190, MW + MG, 380);
+    c.fillStyle = '#fff'; for (let x = -MG; x < MW + MG; x += 60) if (x < CW0 - 40 || x > CW1 + 10) c.fillRect(x, 283, 34, 4);
+    c.fillStyle = '#ffd54f'; c.fillRect(-MG, 281, CW0 - 40 + MG, 3); c.fillRect(-MG, 287, CW0 - 40 + MG, 3);
+    c.fillStyle = 'rgba(214,48,49,.55)'; c.fillRect(250, 290, 280, 90);
+    c.fillStyle = '#fff'; c.font = '900 26px system-ui, "Malgun Gothic", sans-serif'; c.fillText('어린이 보호구역', 390, 330);
+    c.beginPath(); c.arc(390, 356, 0, 0, 7); c.font = '900 22px system-ui, "Malgun Gothic", sans-serif'; c.fillText('30', 390, 370);
+    c.fillStyle = '#fff'; c.fillRect(STOP - 8, 287, 8, 93);
+    for (let y = 196; y < 378; y += 22) c.fillRect(CW0, y, CW1 - CW0, 12);
+    c.fillStyle = '#fff'; for (let x = FIN2; x < FIN2 + 16; x += 8) c.fillRect(x, 290, 4, 90);
+    // 건물(2.5D)
+    const bl = [[60, '#ffb74d'], [250, '#81d4fa'], [760, '#ce93d8'], [900, '#a5d6a7']];
+    for (const [x, col] of bl) { c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(x + 10, 30, 130, 76); c.fillStyle = col; c.fillRect(x, 20, 130, 74); c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x, 20, 130, 12); c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(x, 94, 130, 10); }
+    c.fillStyle = '#1c2a3a'; c.font = f; c.fillText('햇살초등학교', 125, 70);
+    for (const x of [480, 560, 700]) tree(c, x, 70, 22);
+    for (const x of [120, 300, 470, 820, 960]) tree(c, x, 500, 22);
+  } else {
+    asphalt(c, 40, 40, 960, 520);
+    c.strokeStyle = '#fff'; c.lineWidth = 4;
+    for (let i = 0; i <= 8; i++) { const x = 280 + i * 72; c.beginPath(); c.moveTo(x, 40); c.lineTo(x, 160); c.moveTo(x, 400); c.lineTo(x, 520); c.stroke(); }
+    c.fillStyle = 'rgba(255,255,255,.75)'; c.font = '900 30px system-ui, sans-serif';
+    c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.moveTo(150, 340); c.lineTo(220, 340); c.lineTo(220, 326); c.lineTo(250, 350); c.lineTo(220, 374); c.lineTo(220, 360); c.lineTo(150, 360); c.fill();
+    for (const p of M.parked) drawCar(c, p.x, p.y, p.a, p.c, 0, false, false);
+    for (const [x, y] of [[120, 120], [80, 470], [990, 200], [990, 420]]) tree(c, x, y, 22);
+  }
+  c.textAlign = 'left';
+}
+function drawCar(c, x, y, a, col, steer, brakeOn, revOn, pitch) {
+  pitch = pitch || 0;
+  c.save(); c.translate(x + 4, y + 7); c.rotate(a); c.fillStyle = 'rgba(0,0,0,.25)'; rr(c, -33, -17, 66, 34, 10); c.fill(); c.restore();
+  c.save(); c.translate(x, y); c.rotate(a);
+  c.fillStyle = '#222';
+  for (const [wx, wy, f] of [[19, -17, 1], [19, 11, 1], [-19, -17, 0], [-19, 11, 0]]) { c.save(); c.translate(wx, wy + 3); if (f) c.rotate(steer); c.fillRect(-7, -3, 14, 6); c.restore(); }
+  c.fillStyle = col; rr(c, -31, -16, 62, 32, 9); c.fill();
+  c.fillStyle = 'rgba(0,0,0,.15)'; rr(c, -31, 8, 62, 8, 4); c.fill();
+  c.fillStyle = '#fff6b0'; c.fillRect(27, -13, 4, 6); c.fillRect(27, 7, 4, 6);
+  c.fillStyle = brakeOn ? '#ff2a2a' : revOn ? '#ffffff' : '#a33'; c.fillRect(-31, -13, 3, 6); c.fillRect(-31, 7, 3, 6);
+  if (brakeOn || revOn) { c.fillStyle = brakeOn ? 'rgba(255,40,40,.35)' : 'rgba(255,255,255,.4)'; c.beginPath(); c.arc(-34, -10, 7, 0, 7); c.arc(-34, 10, 7, 0, 7); c.fill(); }
+  c.restore();
+  // 지붕(높이감): 화면 위쪽으로 살짝 띄움
+  c.save(); c.translate(x, y - 5); c.rotate(a); c.translate(-pitch * 4, 0);
+  c.fillStyle = 'rgba(255,255,255,.28)'; rr(c, -17, -13, 32, 26, 7); c.fill();
+  c.fillStyle = col; rr(c, -15, -12, 28, 24, 6); c.fill();
+  c.fillStyle = '#9fd8ff'; rr(c, 8, -11, 7, 22, 3); c.fill(); c.fillStyle = '#7fb8df'; rr(c, -17, -10, 5, 20, 2); c.fill();
+  c.restore();
+}
+function drawCone(c, k) {
+  c.save(); c.translate(k.x, k.y); c.globalAlpha = k.hit ? 0.75 : 1;
+  c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(4, 5, 11, 8, 0, 0, 7); c.fill();
+  c.rotate(k.r); c.fillStyle = '#d84315'; c.fillRect(-10, -10, 20, 20);
+  c.fillStyle = '#ff7a1a'; c.beginPath(); c.arc(0, -4, 8, 0, 7); c.fill();
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(0, -5, 5, 0, 7); c.fill();
+  c.fillStyle = '#ff7a1a'; c.beginPath(); c.arc(0, -6, 2.6, 0, 7); c.fill();
+  c.restore(); c.globalAlpha = 1;
+}
+function drawLight(c, t) {
+  const st = M.light, on = st === 'green' || st === 'green2' ? 2 : st === 'yellow' ? 1 : 0;
+  c.fillStyle = '#555'; c.fillRect(694, 384, 8, 30);
+  c.fillStyle = 'rgba(0,0,0,.25)'; rr(c, 664, 412, 84, 32, 10); c.fill();
+  c.fillStyle = '#263238'; rr(c, 658, 404, 84, 32, 10); c.fill();
+  const cols = ['#ff3b30', '#ffcc00', '#34c759'];
+  for (let i = 0; i < 3; i++) {
+    const lx = 674 + i * 26, ly = 420;
+    if (i === on) { c.fillStyle = cols[i]; c.globalAlpha = 0.3 + 0.1 * Math.sin(t * 8); c.beginPath(); c.arc(lx, ly, 20, 0, 7); c.fill(); c.globalAlpha = 1; }
+    c.fillStyle = i === on ? cols[i] : '#3d4a52'; c.beginPath(); c.arc(lx, ly, 10, 0, 7); c.fill();
+  }
+  // 보행자 신호
+  c.fillStyle = '#263238'; rr(c, 690, 120, 28, 40, 6); c.fill();
+  c.fillStyle = st === 'walk' ? '#34c759' : '#ff3b30'; c.font = '900 22px system-ui, sans-serif'; c.fillText(st === 'walk' ? '🚶' : '■', 692, 150);
+}
+function drawPed(c, p, t) {
+  if (!p) return;
+  const sw = p.walk && !p.scared ? Math.sin(p.ph) * 5 : 0;
+  c.save(); c.translate(p.x, p.y);
+  c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(4, 6, 12, 8, 0, 0, 7); c.fill();
+  c.fillStyle = '#37474f'; c.fillRect(-6, 2 + sw, 5, 10); c.fillRect(1, 2 - sw, 5, 10);
+  c.fillStyle = '#42a5f5'; c.beginPath(); c.ellipse(0, 0, 11, 8, 0, 0, 7); c.fill();
+  c.fillStyle = '#ff8a65'; c.fillRect(-14, -2 - sw / 2, 5, 8); c.fillRect(9, -2 + sw / 2, 5, 8);
+  c.fillStyle = '#ffcc33'; c.beginPath(); c.arc(0, -9, 8, 0, 7); c.fill(); c.fillStyle = '#ffe082'; c.beginPath(); c.arc(-2, -11, 3, 0, 7); c.fill();
+  if (p.scared > 0) { c.font = '900 18px system-ui, sans-serif'; c.fillStyle = '#e53935'; c.fillText('!', 12, -16); }
+  c.restore();
+}
+let clock = 0;
+function render() {
+  if (bgDirty) drawBg();
+  const c = ctx, vw = cw / z, vh = ch / z;
+  const tx = vw >= MW ? MW / 2 : clamp(car.x + Math.cos(car.a) * car.v * 0.25, vw / 2 - 20, MW - vw / 2 + 20);
+  const ty = vh >= MH ? MH / 2 : clamp(car.y + 40, vh / 2 - 20, MH - vh / 2 + 20);
+  camX += (tx - camX) * 0.12; camY += (ty - camY) * 0.12;
+  if (vw >= MW) camX = MW / 2; if (vh >= MH) camY = MH / 2;
+  const sx = shake ? (fx() - .5) * shake * 2 : 0, sy = shake ? (fx() - .5) * shake * 2 : 0;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#8fcf6e'; c.fillRect(0, 0, cv.width, cv.height);
+  c.setTransform(dpr * z, 0, 0, dpr * z, dpr * (cw / 2 - (camX + sx) * z), dpr * (ch / 2 - (camY + sy) * z));
+  c.drawImage(bg, -MG, -MG, MW + MG * 2, MH + MG * 2);
+  c.fillStyle = 'rgba(30,30,30,.35)'; for (let i = 0; i < skids.length; i += 2) c.fillRect(skids[i] - 2, skids[i + 1] - 2, 4, 4);
+  if (M.n === 2) {
+    const k = 0.5 + 0.5 * Math.sin(clock * 5);
+    c.strokeStyle = 'rgba(255,214,0,' + (0.5 + k * 0.5) + ')'; c.lineWidth = 5; c.setLineDash([12, 8]); c.strokeRect(STALL.x0 + 5, STALL.y0 + 5, 62, 110); c.setLineDash([]);
+    c.fillStyle = 'rgba(255,214,0,.85)'; c.font = '900 34px system-ui, sans-serif'; c.textAlign = 'center'; c.fillText('P', STALL.cx, STALL.cy + 12 - k * 4); c.textAlign = 'left';
+  }
+  if (M.n === 0) for (let i = 0; i < BARS.length; i++) if (i === G.gates + M.missed && G.state !== 'ready') { const g = BARS[i]; c.fillStyle = 'rgba(255,235,59,' + (0.25 + 0.2 * Math.sin(clock * 6)) + ')'; c.fillRect(g.x - 14, g.g0 + 12, 28, g.g1 - g.g0 - 24); }
+  for (const k of M.cones) drawCone(c, k);
+  if (M.n === 1) { drawPed(c, M.ped, clock); drawLight(c, clock); }
+  drawCar(c, car.x, car.y, car.a, '#2f80ed', car.steer, car.brakeOn, car.revOn, car.pitch);
+  for (const p of parts) { c.fillStyle = p.c + (p.life / p.max * 0.6) + ')'; c.beginPath(); c.arc(p.x, p.y, p.s * (1.6 - p.life / p.max), 0, 7); c.fill(); }
+}
+
+// ---------- 입력 ----------
+const wheelEl = $('#wheel'), wsvg = $('#wheelSvg');
+const angOf = e => { const r = wheelEl.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)); };
+wheelEl.addEventListener('pointerdown', e => { e.preventDefault(); audio(); wheel.id = e.pointerId; wheel.last = angOf(e); try { wheelEl.setPointerCapture(e.pointerId); } catch (er) {} });
+wheelEl.addEventListener('pointermove', e => { if (e.pointerId !== wheel.id) return; const a = angOf(e); wheel.rot = clamp(wheel.rot + wrap(a - wheel.last) * 180 / Math.PI, -120, 120); wheel.last = a; });
+const wOff = e => { if (e.pointerId === wheel.id) wheel.id = null; };
+wheelEl.addEventListener('pointerup', wOff); wheelEl.addEventListener('pointercancel', wOff);
+for (const k of ['gas', 'brake']) {
+  const b = $('#' + k);
+  b.addEventListener('pointerdown', e => { e.preventDefault(); audio(); pedals[k].add(e.pointerId); b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (er) {} });
+  const off = e => { pedals[k].delete(e.pointerId); if (!pedals[k].size) b.classList.remove('on'); };
+  b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+  b.addEventListener('contextmenu', e => e.preventDefault());
+}
+stage.addEventListener('contextmenu', e => e.preventDefault());
+const KM = { ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down', ' ': 'down', ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right' };
+document.addEventListener('keydown', e => {
+  const k = KM[e.key];
+  if (k || e.key === ' ') e.preventDefault();
+  if (e.key === 'Enter' && !e.repeat && document.activeElement === document.body) { if (G.state === 'ready' || G.state === 'result') start(); else if (G.state === 'mdone') next(); return; }
+  if ((e.key === 'p' || e.key === 'P' || e.key === 'Escape') && G.state === 'play') { G.paused ? resume() : pause(); return; }
+  if (k) { keys[k] = true; audio(); }
+});
+document.addEventListener('keyup', e => { const k = KM[e.key]; if (k) keys[k] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+$('#start').addEventListener('click', start);
+$('#again').addEventListener('click', start);
+$('#next').addEventListener('click', next);
+$('#resume').addEventListener('click', resume);
+$('#pauseBtn').addEventListener('click', () => { G.paused ? resume() : pause(); });
+const sndB = $('#snd');
+function setSound() { sndB.textContent = soundOn ? '🔊' : '🔇'; sndB.setAttribute('aria-pressed', String(soundOn)); }
+sndB.addEventListener('click', () => { soundOn = !soundOn; audio(); setSound(); save(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+window.addEventListener('resize', layout);
+
+// ---------- 루프 ----------
+let last = performance.now(), acc = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  let d = (now - last) / 1000; last = now; if (d > 0.1) d = 0.1; if (d < 0) d = 0;
+  if (!manual) { acc += d; let n = 0; while (acc >= DT && n < 12) { tick(DT); acc -= DT; n++; } if (n >= 12) acc = 0; clock += d; }
+  wsvg.style.transform = 'rotate(' + wheel.rot.toFixed(1) + 'deg)';
+  if (ac && engG) { const on = soundOn && G.state === 'play' && !G.paused; engG.gain.value = on ? 0.035 + Math.abs(car.v) / VMAX * 0.03 : 0; eng.frequency.value = 45 + Math.abs(car.v) * 0.45; }
+  hud(); render();
+}
+setSound(); reset(0, true); layout(); hud();
+requestAnimationFrame(frame);
+
+// 테스트용 훅
+window.__test = {
+  seed: () => {}, manual: b => { manual = !!b; },
+  step: f => { for (let i = 0; i < f * 2; i++) tick(DT); hud(); },
+  input: o => { testIn = o ? Object.assign({}, o) : null; },
+  mission: n => { if (G.state === 'ready' || G.state === 'result') G.res = []; startMission(clamp(n | 0, 1, 3) - 1); },
+  place: (x, y, a) => { car.x = x; car.y = y; car.a = a || 0; car.v = car.steer = car.stopT = 0; },
+  start, next, end: finish,
+  state: () => ({ state: G.paused ? 'paused' : G.state, mission: G.mi + 1, car: { x: car.x, y: car.y, a: car.a, v: car.v, steer: car.steer }, pen: G.pen, stars: penStars(G.pen),
+    gates: G.gates, light: M.light, ped: M.ped && { y: M.ped.y, walk: M.ped.walk, done: M.ped.done }, crossed: !!M.crossed, pedHit: !!M.pedHit, cones: M.cones.filter(k => k.hit).length,
+    res: G.res.map(r => r && Object.assign({}, r)), best, toast: $('#toast').textContent })
+};
+})();
+</script>
+</body>
+</html>
