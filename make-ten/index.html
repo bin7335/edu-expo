@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>합쳐서 10 - 두 수를 골라 10을 만드는 60초 덧셈 게임</title>
+<meta name="description" content="4×4 숫자 판에서 합이 10이 되는 두 수를 골라 없애는 60초 덧셈 순발력 게임. 콤보 보너스, 20 만들기 어려움 모드, 최고 기록 저장.">
+<style>
+  :root{--bg:#fff7ea;--card:#fff;--ink:#2b2340;--sub:#7a6f8f;--line:#f0e2c8;--pri:#ff7a3d;--pri2:#ffe7d9;--g:#1fae6a;--r:#e8484a}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:radial-gradient(circle at 20% 0,#fff1d6,transparent 50%),radial-gradient(circle at 100% 100%,#ffe3ec,transparent 45%),var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;-webkit-tap-highlight-color:transparent}
+  header{display:flex;align-items:center;gap:12px;padding:10px 22px}
+  .logo{width:50px;height:50px;border-radius:15px;background:linear-gradient(135deg,#ff9a3d,#ff5e7e);display:grid;place-items:center;color:#fff;font-weight:900;font-size:22px;box-shadow:0 5px 0 #c94a5a;flex-shrink:0}
+  header h1{margin:0;font-size:26px;letter-spacing:-.5px}
+  header small{display:block;color:var(--sub);font-size:14px}
+  header>div{min-width:0}
+  .snd{margin-left:auto;border:0;background:#fff;border-radius:14px;width:50px;height:46px;font-size:22px;cursor:pointer;box-shadow:0 4px 0 var(--line)}
+  main{flex:1;display:grid;grid-template-columns:auto 360px;gap:26px;justify-content:center;align-items:start;align-content:start;padding:4px 22px 6px}
+  /* 판 */
+  .stage{--bs:min(540px,calc(100vh - 150px),92vw);width:var(--bs);perspective:1100px;position:relative}
+  #board{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--bs)*.03);padding:calc(var(--bs)*.035);background:#ffe2b8;border-radius:26px;box-shadow:0 12px 0 #f0bf82,0 22px 30px rgba(120,70,0,.15);transform:rotateX(9deg);transform-origin:50% 70%;touch-action:manipulation}
+  .tile{--h:30;position:relative;aspect-ratio:1;border:0;border-radius:18px;font:inherit;font-weight:900;font-size:calc(var(--bs)*.1);color:hsl(var(--h),55%,28%);background:hsl(var(--h),90%,88%);box-shadow:0 7px 0 hsl(var(--h),50%,64%),0 10px 12px rgba(0,0,0,.1);cursor:pointer;transition:transform .12s,box-shadow .12s;padding:0;line-height:1}
+  .tile:active{transform:translateY(4px);box-shadow:0 3px 0 hsl(var(--h),50%,64%)}
+  .tile.sel{transform:translateY(-7px) scale(1.04);background:#fff;box-shadow:0 0 0 5px var(--pri),0 12px 0 hsl(var(--h),50%,64%),0 16px 18px rgba(0,0,0,.15)}
+  .tile.in{animation:pin .38s cubic-bezier(.3,1.6,.5,1)}
+  .tile.no{animation:shake .4s}
+  .tile.hint::after{content:"";position:absolute;inset:-4px;border-radius:20px;border:4px dashed #ffb03d;animation:pulse 1s infinite alternate}
+  @keyframes pin{0%{transform:scale(.2) rotate(-20deg);opacity:0}100%{transform:none;opacity:1}}
+  @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-9px) rotate(-4deg)}40%{transform:translateX(8px) rotate(3deg)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+  @keyframes pulse{from{opacity:.3;transform:scale(.97)}to{opacity:1;transform:scale(1.03)}}
+  .fx{position:absolute;pointer-events:none;font-weight:900;font-size:30px;color:var(--g);text-shadow:0 3px 0 #fff;animation:up .9s ease-out forwards;transform:translate(-50%,-50%);white-space:nowrap;z-index:5}
+  .fx.c{color:#ff5e7e;font-size:22px}
+  @keyframes up{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-180%) scale(1)}}
+  /* 옆 패널 */
+  .side{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--card);border-radius:22px;padding:14px 16px;box-shadow:0 6px 0 var(--line)}
+  .goal{display:flex;align-items:center;gap:14px}
+  .goal .big{font-size:58px;font-weight:900;line-height:1;background:linear-gradient(135deg,#ff7a3d,#ff4f7b);-webkit-background-clip:text;background-clip:text;color:transparent;min-width:84px;text-align:center}
+  .goal b{display:block;font-size:17px}
+  .goal span{color:var(--sub);font-size:14px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+  .stats div{background:#fff8ef;border-radius:14px;padding:6px 2px}
+  .stats small{display:block;color:var(--sub);font-size:13px;font-weight:700}
+  .stats b{font-size:28px;font-variant-numeric:tabular-nums}
+  #comboBox.hot b{color:#ff4f7b}
+  .bar{height:12px;border-radius:9px;background:#f4e8d6;overflow:hidden;margin-top:10px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#1fae6a,#ffc23d);transform-origin:0 50%;transition:transform .1s linear}
+  .bar.low i{background:#e8484a}
+  #msg{min-height:24px;margin-top:8px;font-weight:800;font-size:17px;text-align:center}
+  #msg.ok{color:var(--g)}#msg.bad{color:var(--r)}
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mode{border:3px solid var(--line);background:#fff;border-radius:14px;padding:10px 6px;font:inherit;font-weight:800;font-size:16px;color:var(--ink);cursor:pointer;min-height:54px}
+  .mode small{display:block;font-size:12px;color:var(--sub);font-weight:600}
+  .mode.on{border-color:var(--pri);background:var(--pri2)}
+  .btn{border:0;font:inherit;font-weight:900;font-size:22px;padding:16px;border-radius:18px;cursor:pointer;background:var(--pri);color:#fff;box-shadow:0 6px 0 #c9541f;width:100%;transition:transform .1s}
+  .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #c9541f}
+  .btn:disabled{opacity:.45;cursor:default}
+  .best{display:flex;justify-content:space-between;font-weight:800;color:var(--sub);font-size:15px}
+  .best b{color:var(--ink)}
+  .how{margin:0;padding-left:20px;color:var(--sub);font-size:14px;line-height:1.6}
+  footer{text-align:right;padding:0 22px 10px;font-size:13px}
+  footer a{color:var(--sub);text-decoration:none}
+  /* 결과 */
+  #result{position:fixed;inset:0;background:rgba(43,35,64,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+  #result.on{display:flex}
+  .rbox{background:#fff;border-radius:28px;padding:24px 26px;width:min(420px,100%);text-align:center;box-shadow:0 10px 0 #f0bf82;animation:pin .4s cubic-bezier(.3,1.6,.5,1)}
+  .rbox h2{margin:0 0 4px;font-size:28px}
+  #rScore{font-size:68px;font-weight:900;color:var(--pri);line-height:1.1}
+  .rrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+  .rrow div{background:#fff8ef;border-radius:14px;padding:8px 4px}
+  .rrow small{display:block;color:var(--sub);font-size:12px;font-weight:700}
+  .rrow b{font-size:22px}
+  #rNew{display:none;background:#ffe14d;color:#6b4b00;border-radius:99px;padding:4px 12px;font-weight:900;font-size:15px;margin-bottom:6px}
+  #rNew.on{display:inline-block;animation:pulse .5s infinite alternate}
+  .rbtns{display:grid;grid-template-columns:1fr;gap:8px}
+  .btn.ghost{background:#f2ecf8;color:var(--ink);box-shadow:0 5px 0 #ddd2ea;font-size:17px;padding:12px}
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;justify-items:center;gap:14px;padding:4px 12px 6px}
+    .side{width:min(540px,100%);order:-1;gap:10px}
+    .stage{--bs:min(92vw,520px)}
+    .how,.hideM{display:none}
+    header{padding:10px 12px}
+    header h1{font-size:22px}
+    header small{font-size:12px}
+    .goal .big{font-size:44px;min-width:64px}
+    .stats b{font-size:24px}
+    .btn{font-size:20px;padding:13px}
+    .tile{border-radius:14px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition:none!important}}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="합쳐서 10">
+<meta property="og:description" content="60초 동안 두 수를 골라 10을 만드는 덧셈 순발력 게임">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/54-make-ten.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/make-ten/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">+10</div>
+  <div><h1>합쳐서 10</h1><small>두 수를 골라 합이 <span class="tgt">10</span>이 되면 펑! 60초 덧셈 순발력 게임</small></div>
+  <button class="snd" id="snd" title="소리 켜기/끄기" aria-label="소리 켜기/끄기">🔊</button>
+</header>
+<main>
+  <div class="stage" id="stage"><div id="board" aria-label="숫자 판"></div></div>
+  <div class="side">
+    <div class="card goal hideM"><div class="big tgt">10</div><div><b>합이 <span class="tgt">10</span>이 되는 두 수를 고르세요</b><span>예) 3 + 7, 4 + 6, 9 + 1</span></div></div>
+    <div class="card">
+      <div class="stats">
+        <div><small>점수</small><b id="score">0</b></div>
+        <div id="comboBox"><small>콤보</small><b id="combo">0</b></div>
+        <div><small>남은 시간</small><b id="time">60</b></div>
+      </div>
+      <div class="bar" id="bar"><i id="barFill"></i></div>
+      <div id="msg">숫자 두 개를 눌러 보세요</div>
+    </div>
+    <div class="modes" id="modes">
+      <button class="mode on" data-t="10">10 만들기<small>숫자 1-9</small></button>
+      <button class="mode" data-t="20">더 어려운 20 만들기<small>숫자 1-19</small></button>
+    </div>
+    <button class="btn" id="start">▶ 게임 시작</button>
+    <div class="card best"><span>🏆 최고 기록 (<span class="tgt">10</span>)</span><b id="best">0점</b></div>
+    <ol class="how card"><li>숫자 두 개를 차례로 누르세요.</li><li>합이 <span class="tgt">10</span>이면 사라지고 새 숫자가 나와요.</li><li>연속으로 맞히면 콤보 보너스! 틀리면 콤보가 끊겨요.</li></ol>
+  </div>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+<div id="result" role="dialog" aria-modal="true">
+  <div class="rbox">
+    <h2>시간 끝! 🎉</h2>
+    <div id="rNew">🏆 신기록!</div>
+    <div id="rScore">0</div>
+    <div class="rrow">
+      <div><small>맞힌 쌍</small><b id="rPairs">0</b></div>
+      <div><small>최고 콤보</small><b id="rCombo">0</b></div>
+      <div><small>최고 기록</small><b id="rBest">0</b></div>
+    </div>
+    <div class="rbtns">
+      <button class="btn" id="again">↻ 다시 하기</button>
+      <button class="btn ghost" id="close">모드 바꾸기</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var KEY = 'edu-expo-make-ten-v1', DUR = 60000, N = 16;
+  var $ = function(s){ return document.querySelector(s); };
+  var board = $('#board'), stage = $('#stage');
+  var T = 10, vals = [], sel = -1, playing = false, score = 0, combo = 0, maxCombo = 0, pairs = 0;
+  var endAt = 0, timer = 0, lastOk = 0, sound = true, ac = null, rnd = Math.random, dirty = false;
+
+  function mulberry(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function rv(){ return 1 + Math.floor(rnd() * (T - 1)); }
+  function findPair(){ for (var i = 0; i < N; i++) for (var j = i + 1; j < N; j++) if (vals[i] + vals[j] === T) return [i, j]; return null; }
+  // 판에 합이 T인 쌍이 하나도 없으면 바뀐 칸 하나를 다른 칸의 짝 수로 바꾼다
+  function ensure(changed){
+    if (findPair()) return;
+    var i = changed.length ? changed[Math.floor(rnd() * changed.length)] : Math.floor(rnd() * N), j;
+    do { j = Math.floor(rnd() * N); } while (j === i);
+    vals[i] = T - vals[j];
+  }
+
+  // 소리 (사용자 동작 때만 AudioContext 생성)
+  function unlock(){
+    if (!sound) return;
+    try { if (!ac) { var A = window.AudioContext || window.webkitAudioContext; if (A) ac = new A(); } if (ac && ac.state === 'suspended') ac.resume(); } catch (e) {}
+  }
+  function beep(f, d, type, delay){
+    if (!sound || !ac) return;
+    try {
+      var t = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+      o.type = type || 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(.14, t); g.gain.exponentialRampToValueAtTime(.001, t + (d || .12));
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + (d || .12) + .02);
+    } catch (e) {}
+  }
+
+  // 기록
+  function num(v){ v = Number(v); return isFinite(v) && v > 0 ? Math.floor(v) : 0; }
+  function getBest(){ try { var o = JSON.parse(localStorage.getItem(KEY)) || {}; return { 10: num(o[10]), 20: num(o[20]) }; } catch (e) { return { 10: 0, 20: 0 }; } }
+  function setBest(b){ try { localStorage.setItem(KEY, JSON.stringify(b)); } catch (e) {} }
+
+  // 그리기
+  var tiles = [];
+  for (var k = 0; k < N; k++) {
+    var b = document.createElement('button');
+    b.className = 'tile'; b.dataset.i = k;
+    tiles.push(b); board.appendChild(b);
+  }
+  function hue(v){ return T === 10 ? (v * 38 + 10) % 360 : (v * 23 + 10) % 360; }
+  function draw(i, anim){
+    var t = tiles[i];
+    t.textContent = vals[i]; t.dataset.v = vals[i];
+    t.style.setProperty('--h', hue(vals[i]));
+    t.setAttribute('aria-label', '숫자 ' + vals[i]);
+    if (anim) { t.classList.remove('in'); void t.offsetWidth; t.classList.add('in'); }
+  }
+  function newBoard(){
+    vals = []; for (var i = 0; i < N; i++) vals.push(rv());
+    ensure([]); sel = -1;
+    for (var j = 0; j < N; j++) { tiles[j].className = 'tile'; draw(j, true); }
+    dirty = false;
+  }
+  function hud(){
+    $('#score').textContent = score;
+    $('#combo').textContent = combo;
+    $('#comboBox').classList.toggle('hot', combo >= 3);
+    var tg = document.querySelectorAll('.tgt'); for (var i = 0; i < tg.length; i++) tg[i].textContent = T;
+    $('#best').textContent = getBest()[T] + '점';
+  }
+  function setTime(ms){
+    var s = Math.max(0, Math.ceil(ms / 1000));
+    $('#time').textContent = s;
+    $('#barFill').style.transform = 'scaleX(' + Math.max(0, Math.min(1, ms / DUR)) + ')';
+    $('#bar').classList.toggle('low', ms <= 10000 && playing);
+  }
+  function msg(t, cls){ var m = $('#msg'); m.textContent = t; m.className = cls || ''; }
+  function fx(i, text, cls){
+    var t = tiles[i], r = t.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    var e = document.createElement('div'); e.className = 'fx' + (cls ? ' ' + cls : ''); e.textContent = text;
+    e.style.left = (r.left + r.width / 2 - sr.left) + 'px'; e.style.top = (r.top + r.height / 2 - sr.top) + 'px';
+    stage.appendChild(e); setTimeout(function(){ e.remove(); }, 950);
+  }
+  function clearHint(){ for (var i = 0; i < N; i++) tiles[i].classList.remove('hint'); }
+
+  // 게임 흐름
+  function start(){
+    unlock();
+    if (dirty) newBoard();
+    for (var q = 0; q < N; q++) tiles[q].classList.remove('sel', 'hint');
+    $('#result').classList.remove('on');
+    playing = true; dirty = true; score = 0; combo = 0; maxCombo = 0; pairs = 0; sel = -1;
+    endAt = performance.now() + DUR; lastOk = performance.now();
+    var ms = document.querySelectorAll('.mode'); for (var i = 0; i < ms.length; i++) ms[i].disabled = true;
+    $('#start').disabled = true; $('#start').textContent = '게임 중...';
+    msg('합이 ' + T + '이 되는 두 수를 찾아요!'); hud(); setTime(DUR);
+    clearInterval(timer); timer = setInterval(tick, 100);
+    beep(523, .1); beep(784, .15, 'sine', .1);
+  }
+  function tick(){
+    var now = performance.now(), left = endAt - now;
+    setTime(left);
+    if (left <= 0) return end();
+    if (now - lastOk > 6000 && !board.querySelector('.hint')) {
+      var p = findPair(); if (p) { tiles[p[0]].classList.add('hint'); tiles[p[1]].classList.add('hint'); msg('힌트: 점선 두 수를 더해 보세요'); }
+    }
+  }
+  function end(){
+    if (!playing) return;
+    playing = false; clearInterval(timer); setTime(0); clearHint();
+    if (sel >= 0) { tiles[sel].classList.remove('sel'); sel = -1; }
+    var best = getBest(), isNew = score > best[T];
+    if (isNew) { best[T] = score; setBest(best); }
+    $('#rScore').textContent = score + '점';
+    $('#rPairs').textContent = pairs;
+    $('#rCombo').textContent = maxCombo;
+    $('#rBest').textContent = best[T];
+    $('#rNew').classList.toggle('on', isNew && score > 0);
+    $('#result').classList.add('on');
+    var ms = document.querySelectorAll('.mode'); for (var i = 0; i < ms.length; i++) ms[i].disabled = false;
+    $('#start').disabled = false; $('#start').textContent = '▶ 게임 시작';
+    msg(score + '점! 다시 도전해 보세요'); hud();
+    [523, 659, 784, 1047].forEach(function(f, i){ beep(f, .16, 'triangle', i * .1); });
+  }
+  function pick(i){
+    if ($('#result').classList.contains('on')) return;
+    if (!playing) { start(); }
+    unlock();
+    if (sel === -1) { sel = i; tiles[i].classList.add('sel'); beep(660, .05, 'square'); return; }
+    if (sel === i) { tiles[i].classList.remove('sel'); sel = -1; return; }
+    var a = sel; sel = -1; tiles[a].classList.remove('sel');
+    var sum = vals[a] + vals[i];
+    if (sum === T) {
+      combo++; pairs++; if (combo > maxCombo) maxCombo = combo;
+      var gain = 10 + Math.min(20, (combo - 1) * 5); score += gain;
+      msg(vals[a] + ' + ' + vals[i] + ' = ' + T + ' 정답!', 'ok');
+      fx(i, '+' + gain); if (combo >= 2) fx(a, '콤보 ×' + combo, 'c');
+      vals[a] = rv(); vals[i] = rv(); ensure([a, i]);
+      clearHint(); draw(a, true); draw(i, true);
+      lastOk = performance.now();
+      beep(523 + Math.min(combo, 8) * 60, .12, 'triangle'); beep(880 + Math.min(combo, 8) * 60, .14, 'triangle', .07);
+    } else {
+      combo = 0;
+      msg(vals[a] + ' + ' + vals[i] + ' = ' + sum + ' (' + T + '이 아니에요)', 'bad');
+      [a, i].forEach(function(x){ tiles[x].classList.remove('no'); void tiles[x].offsetWidth; tiles[x].classList.add('no'); });
+      beep(160, .22, 'sawtooth');
+    }
+    hud();
+  }
+  function setMode(t){
+    if (playing) return;
+    T = t; dirty = true;
+    var ms = document.querySelectorAll('.mode'); for (var i = 0; i < ms.length; i++) ms[i].classList.toggle('on', +ms[i].dataset.t === T);
+    newBoard(); score = 0; combo = 0; hud(); setTime(DUR); msg('숫자 두 개를 눌러 보세요');
+  }
+
+  board.addEventListener('click', function(e){ var t = e.target.closest('.tile'); if (t) pick(+t.dataset.i); });
+  $('#modes').addEventListener('click', function(e){ var b = e.target.closest('.mode'); if (b && !b.disabled) setMode(+b.dataset.t); });
+  $('#start').addEventListener('click', function(){ if (!playing) start(); });
+  $('#again').addEventListener('click', function(){ dirty = true; start(); });
+  $('#close').addEventListener('click', function(){ $('#result').classList.remove('on'); newBoard(); setTime(DUR); });
+  $('#snd').addEventListener('click', function(){ sound = !sound; this.textContent = sound ? '🔊' : '🔇'; if (sound) { unlock(); beep(880, .08); } });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && $('#result').classList.contains('on')) $('#close').click(); });
+
+  // 테스트용 훅
+  window.__test = {
+    seed: function(n){ rnd = mulberry(n); newBoard(); },
+    pair: findPair,
+    vals: function(){ return vals.slice(); },
+    target: function(){ return T; },
+    state: function(){ return { playing: playing, score: score, combo: combo, maxCombo: maxCombo, pairs: pairs, sel: sel }; },
+    end: function(){ endAt = performance.now(); end(); }
+  };
+
+  newBoard(); dirty = false; hud(); setTime(DUR);
+  // 첫 화면 미리보기: 짝 하나를 골라 둔 모습
+  var p0 = findPair(); if (p0) { tiles[p0[0]].classList.add('sel'); sel = p0[0]; msg(vals[p0[0]] + '의 짝꿍 수는? (합 ' + T + ')'); }
+})();
+</script>
+</body>
+</html>

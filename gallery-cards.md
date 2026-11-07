@@ -1,4 +1,4 @@
-# 패들렛·작품 등록용 카드 문구 (51개)
+# 패들렛·작품 등록용 카드 문구 (61개)
 
 - catalog.json에서 생성(tools/build-catalog.js). 직접 고치지 말고 catalog.json을 고친 뒤 다시 실행.
 - 썸네일: `thumbnails/` 같은 번호 PNG (1280×720)
@@ -266,4 +266,54 @@ https://bin7335.github.io/edu-expo/multilang-notice/
 대상: 교사 · 확장프로그램
 https://bin7335.github.io/edu-expo/ext-page-qr/
 설치 파일: https://bin7335.github.io/edu-expo/extensions/page-qr.zip
+
+**52. 번개 손**
+화면이 초록으로 바뀌는 순간 터치! 5번 평균으로 재는 반응 속도 챌린지
+대상: 누구나 · 게임
+https://bin7335.github.io/edu-expo/reaction-tap/
+
+**53. 짝꿍 뒤집기**
+카드 16장을 뒤집어 같은 그림 짝을 찾는 기억력 게임, 시간·횟수 기록
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/pair-flip/
+
+**54. 합쳐서 10**
+60초 동안 두 수를 골라 10을 만드는 덧셈 순발력 게임
+대상: 학생 · 게임
+https://bin7335.github.io/edu-expo/make-ten/
+
+**55. 색깔 함정**
+글자 뜻에 속지 말고 글자 색을 고르는 30초 집중력 게임
+대상: 누구나 · 게임
+https://bin7335.github.io/edu-expo/color-trick/
+
+**56. 순서 기억 패드**
+불빛과 소리가 켜진 순서를 기억해 그대로 누르는 기억력 단계 도전
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/sound-order/
+
+**57. 안전 OX 챔피언**
+생활·교통·재난 안전 상식 OX 10문제와 해설, 안전 등급 배지
+대상: 학생·학부모 · 게임
+https://bin7335.github.io/edu-expo/safety-ox/
+
+**58. 풍선 계산 팡팡**
+떠오르는 풍선 중 문제의 답이 적힌 풍선을 터뜨리는 연산 게임
+대상: 학생 · 게임
+https://bin7335.github.io/edu-expo/balloon-math/
+
+**59. 밀어 퍼즐**
+빈칸으로 조각을 밀어 숫자·그림을 맞추는 3×3·4×4 슬라이딩 퍼즐
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/slide-puzzle/
+
+**60. 분리배출 챔피언**
+쓰레기 29종을 종이팩·스티로폼·음식물까지 9개 통에 나누고 배출 팁을 배우는 환경 게임
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/recycle-sort/
+
+**61. 딱 10초**
+시계를 보지 않고 마음속으로 10초를 세어 멈추는 시간 감각 게임
+대상: 누구나 · 게임
+https://bin7335.github.io/edu-expo/ten-seconds/
 

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>밀어 퍼즐 - 빈칸으로 조각을 밀어 맞추는 슬라이딩 퍼즐</title>
+<meta name="description" content="빈칸 옆 조각을 밀어 숫자·그림을 원래대로 맞추는 3×3·4×4 슬라이딩 퍼즐. 터치·방향키, 이동 횟수·시간, 완성 그림 힌트, 최고 기록.">
+<style>
+  :root{--ink:#2a2140;--sub:#6b6385;--pri:#7c5cff;--line:#e6e0f5;--wood:#c98b4f;--wood2:#9b6532}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:radial-gradient(circle at 20% 0,#fff4dc,#f6f1ff 55%);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  button{font:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:#fff;border-bottom:2px solid var(--line);flex-wrap:wrap}
+  .logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#7c5cff,#ff8fb1);display:grid;place-items:center;font-size:27px;flex-shrink:0;box-shadow:0 4px 0 #5a3fd6}
+  header h1{margin:0;font-size:25px;letter-spacing:-.5px}
+  header small{display:block;color:var(--sub);font-size:13px}
+  .opts{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .seg{display:flex;background:#f1eef9;border-radius:14px;padding:4px;gap:4px}
+  .seg button{border:0;background:none;border-radius:11px;padding:8px 14px;font-weight:900;font-size:15px;color:var(--sub)}
+  .seg button.on{background:#fff;color:var(--pri);box-shadow:0 2px 0 #ddd5f2}
+  .snd{border:0;background:#f1eef9;border-radius:14px;width:46px;height:44px;font-size:19px}
+  main{flex:1;display:flex;gap:28px;padding:16px 24px 6px;align-items:center;justify-content:center;min-height:0}
+  .stage{perspective:1100px;flex-shrink:0}
+  .board{--n:3;position:relative;width:min(540px,calc(100vh - 175px),calc(100vw - 28px));min-width:280px;aspect-ratio:1;padding:12px;border-radius:26px;background:linear-gradient(#d99a5c,var(--wood));box-shadow:0 14px 0 var(--wood2),0 26px 34px rgba(60,30,10,.28),inset 0 2px 0 rgba(255,255,255,.35);transform:rotateX(7deg);transform-origin:50% 100%}
+  .grid{position:relative;width:100%;height:100%;border-radius:16px;background:#7a4d25;box-shadow:inset 0 4px 10px rgba(0,0,0,.35)}
+  .tile{position:absolute;left:0;top:0;width:calc(100% / var(--n));height:calc(100% / var(--n));padding:4px;border:0;background:none;transition:transform .13s ease-out;z-index:1}
+  .tile .f{display:grid;place-items:center;width:100%;height:100%;border-radius:12px;position:relative;font-weight:900;font-size:var(--fs,48px);color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.2);box-shadow:inset 0 -7px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 rgba(0,0,0,.25);background-repeat:no-repeat}
+  .tile:active .f{transform:translateY(2px)}
+  .num .tile .f{background:linear-gradient(160deg,hsl(var(--h) 85% 66%),hsl(var(--h) 72% 50%))}
+  .pic .tile .f{background-image:var(--img);background-size:calc(var(--n) * 100%) calc(var(--n) * 100%)}
+  .tile .no{position:absolute;right:6px;top:5px;font-size:13px;line-height:1;background:rgba(255,255,255,.85);color:var(--ink);border-radius:8px;padding:3px 6px;text-shadow:none;display:none}
+  .pic .tile .no{display:block}
+  .tile.ok .f:after{content:"";position:absolute;left:50%;bottom:7px;width:22%;height:5px;border-radius:9px;background:rgba(255,255,255,.75);transform:translateX(-50%)}
+  .full{position:absolute;inset:0;border-radius:16px;z-index:3;pointer-events:none;opacity:0;transition:opacity .3s;background-size:100% 100%;display:grid}
+  .num .full{background:#fff7;grid-template-columns:repeat(var(--n),1fr)}
+  .full span{display:grid;place-items:center;font-weight:900;font-size:calc(var(--fs,48px) * .7);color:var(--ink)}
+  .board.hint .full{opacity:.6}
+  .board.done .full{opacity:1;transition:opacity .6s .15s}
+  .pic .full{background-image:var(--img)}
+  .board.done .tile{pointer-events:none}
+  .side{width:300px;display:flex;flex-direction:column;gap:12px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .st{background:#fff;border:2px solid var(--line);border-radius:18px;padding:10px 14px}
+  .st small{display:block;color:var(--sub);font-weight:800;font-size:13px}
+  .st b{font-size:30px;font-variant-numeric:tabular-nums}
+  .st.best{grid-column:1/-1;background:#fff9e3;border-color:#ffe39a}
+  .st.best b{font-size:20px}
+  .btn{border:0;font-weight:900;font-size:18px;padding:14px;border-radius:16px;background:#f1eef9;color:var(--pri);box-shadow:0 5px 0 #ddd5f2}
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #ddd5f2}
+  .btn.pri{background:var(--pri);color:#fff;box-shadow:0 5px 0 #5a3fd6}
+  .btn[aria-pressed=true]{background:#ffe9a8;color:#7a5200;box-shadow:0 5px 0 #e6c66a}
+  .tip{margin:0;color:var(--sub);font-size:14px;line-height:1.6;background:#fff;border-radius:16px;padding:10px 14px;border:2px dashed var(--line)}
+  .tip kbd{background:#f1eef9;border-radius:6px;padding:1px 6px;font-family:inherit;font-weight:800}
+  .win{position:absolute;inset:0;z-index:5;display:none;place-items:center;pointer-events:none}
+  .win.on{display:grid}
+  .wcard{pointer-events:auto;background:#fff;border-radius:24px;padding:20px 28px;text-align:center;box-shadow:0 8px 0 #e3dcf5,0 16px 40px rgba(40,20,80,.3);animation:pin .4s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pin{from{transform:scale(.5);opacity:0}}
+  .wcard h2{margin:0;font-size:30px}
+  .wcard p{margin:6px 0 4px;font-weight:800;color:var(--sub);font-size:17px}
+  .newrec{display:inline-block;background:#ffe14d;color:#7a5200;font-weight:900;border-radius:99px;padding:4px 14px;margin:4px 0}
+  .wcard .btn{margin-top:10px;width:100%}
+  .conf{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:4;border-radius:16px}
+  .conf i{position:absolute;top:-20px;width:10px;height:16px;border-radius:3px;animation:fall 1.6s ease-in forwards}
+  @keyframes fall{to{transform:translateY(620px) rotate(540deg);opacity:.2}}
+  footer{text-align:right;padding:0 20px 8px;font-size:13px}
+  footer a{color:var(--sub);text-decoration:none}
+  @media (max-width:860px){
+    main{flex-direction:column;padding:14px 12px 6px;gap:22px}
+    .side{width:100%;max-width:540px}
+    .stats{grid-template-columns:1fr 1fr 1.3fr}.st.best{grid-column:auto}
+    .st{padding:8px 10px}.st b{font-size:22px}.st.best b{font-size:15px}
+    .board{width:min(540px,calc(100vw - 28px))}
+  }
+  @media (max-width:600px){
+    header{padding:8px 12px;gap:8px}
+    header h1{font-size:21px}
+    .opts{display:contents}.seg{order:2;flex:1 1 40%}.seg button{flex:1}.snd{order:1}
+    header>div:nth-child(2){flex:1 0 auto}header small{font-size:12px}
+    .seg button{padding:8px 9px;font-size:14px}
+    .snd{margin-left:auto}
+    .board{padding:8px;border-radius:20px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="밀어 퍼즐">
+<meta property="og:description" content="빈칸으로 조각을 밀어 숫자·그림을 맞추는 3×3·4×4 슬라이딩 퍼즐">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/59-slide-puzzle.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/slide-puzzle/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">🧩</div>
+  <div><h1>밀어 퍼즐</h1><small>빈칸 옆 조각을 밀어 원래 그림으로!</small></div>
+  <div class="opts">
+    <div class="seg" id="sizeSeg"><button data-n="3" class="on">3×3 쉬움</button><button data-n="4">4×4 도전</button></div>
+    <div class="seg" id="modeSeg"><button data-m="pic" class="on">🖼️ 그림</button><button data-m="num">🔢 숫자</button></div>
+    <button class="snd" id="snd" aria-pressed="true" aria-label="소리 켜기/끄기">🔊</button>
+  </div>
+</header>
+<main>
+  <section class="stage">
+    <div class="board pic" id="board">
+      <div class="grid" id="grid"><div class="full" id="full"></div><div class="conf" id="conf"></div></div>
+      <div class="win" id="win"><div class="wcard">
+        <h2>🎉 완성!</h2>
+        <p id="wStat"></p>
+        <div class="newrec" id="newrec" hidden>🏆 새 최고 기록!</div>
+        <button class="btn pri" id="again">🔁 다시 하기</button>
+      </div></div>
+    </div>
+  </section>
+  <aside class="side">
+    <div class="stats">
+      <div class="st"><small>이동</small><b id="moves">0</b></div>
+      <div class="st"><small>시간</small><b id="time">0:00</b></div>
+      <div class="st best"><small>🏆 최고 기록 <span id="bestLbl"></span></small><b id="best">아직 없어요</b></div>
+    </div>
+    <button class="btn" id="hint" aria-pressed="false">💡 힌트: 완성 그림 보기</button>
+    <button class="btn pri" id="shuffle">🔀 다시 하기 (새로 섞기)</button>
+    <p class="tip">빈칸과 같은 줄의 조각을 누르면 <b>스르륵</b> 밀려요.<br>키보드 <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> 로도 움직일 수 있어요.</p>
+  </aside>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+<script>
+(() => {
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const KEY = 'edu-expo-slide-puzzle-v1';
+const board = $('#board'), grid = $('#grid'), full = $('#full');
+let rng = Math.random;
+const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+// ---- 그림 (SVG를 data URI로) ----
+const SCENES = [
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><defs><linearGradient id='s' x2='0' y2='1'><stop offset='0' stop-color='#5ec4ff'/><stop offset='1' stop-color='#d9f3ff'/></linearGradient></defs><rect width='400' height='400' fill='url(#s)'/><g fill='none' stroke-width='14'><path d='M20 260a170 170 0 0 1 340 0' stroke='#ff6b6b'/><path d='M34 260a156 156 0 0 1 312 0' stroke='#ffb347'/><path d='M48 260a142 142 0 0 1 284 0' stroke='#ffe14d'/><path d='M62 260a128 128 0 0 1 256 0' stroke='#6bd968'/><path d='M76 260a114 114 0 0 1 228 0' stroke='#5aa9ff'/><path d='M90 260a100 100 0 0 1 200 0' stroke='#a77bff'/></g><circle cx='336' cy='62' r='38' fill='#ffd23f'/><circle cx='336' cy='62' r='50' fill='#ffd23f' opacity='.3'/><g fill='#fff'><ellipse cx='80' cy='70' rx='46' ry='18'/><ellipse cx='104' cy='56' rx='26' ry='20'/><ellipse cx='230' cy='40' rx='34' ry='13'/></g><path d='M0 270q100-60 210 0t190-10v140H0z' fill='#5fc35a'/><path d='M0 320q120-40 240 10t160-6v76H0z' fill='#43a047'/><rect x='70' y='232' width='96' height='76' fill='#fff3d6'/><path d='M58 238l60-52 60 52z' fill='#e8554e'/><rect x='104' y='262' width='28' height='46' rx='4' fill='#8d5a3b'/><rect x='80' y='248' width='18' height='18' fill='#7ec8ff'/><rect x='138' y='248' width='18' height='18' fill='#7ec8ff'/><rect x='292' y='250' width='14' height='60' fill='#8d5a3b'/><circle cx='299' cy='236' r='34' fill='#2e8b3a'/><circle cx='282' cy='224' r='12' fill='#ff6b6b'/><circle cx='312' cy='244' r='10' fill='#ff6b6b'/><g fill='#ff8fb1'><circle cx='40' cy='352' r='9'/><circle cx='200' cy='366' r='9'/><circle cx='350' cy='350' r='9'/></g><g fill='#ffe14d'><circle cx='40' cy='352' r='4'/><circle cx='200' cy='366' r='4'/><circle cx='350' cy='350' r='4'/></g></svg>`,
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><defs><radialGradient id='b' cx='.3' cy='.2' r='1'><stop offset='0' stop-color='#3b3f9e'/><stop offset='1' stop-color='#120f3a'/></radialGradient></defs><rect width='400' height='400' fill='url(#b)'/><g fill='#fff'><circle cx='40' cy='50' r='2.5'/><circle cx='120' cy='30' r='2'/><circle cx='210' cy='80' r='2.5'/><circle cx='360' cy='40' r='2'/><circle cx='300' cy='150' r='2'/><circle cx='30' cy='200' r='2.5'/><circle cx='380' cy='250' r='2'/><circle cx='150' cy='340' r='2'/><circle cx='60' cy='300' r='2'/></g><circle cx='300' cy='300' r='70' fill='#ff9f43'/><ellipse cx='300' cy='300' rx='118' ry='26' fill='none' stroke='#ffd28a' stroke-width='10' transform='rotate(-18 300 300)'/><circle cx='280' cy='280' r='14' fill='#ffc27a'/><circle cx='86' cy='110' r='44' fill='#e8ecff'/><circle cx='72' cy='98' r='9' fill='#c9d0f2'/><circle cx='100' cy='126' r='6' fill='#c9d0f2'/><g transform='rotate(35 180 220)'><path d='M180 120c34 34 34 110 22 150h-44c-12-40-12-116 22-150z' fill='#f4f6ff'/><circle cx='180' cy='180' r='16' fill='#5ec4ff' stroke='#7c5cff' stroke-width='6'/><path d='M158 240l-26 36 30-6zM202 240l26 36-30-6z' fill='#ff5d8f'/><path d='M166 270h28l-14 50z' fill='#ffd23f'/><path d='M172 270h16l-8 28z' fill='#ff6b3d'/></g></svg>`
+];
+const imgUrl = i => 'url("data:image/svg+xml,' + encodeURIComponent(SCENES[i]) + '")';
+
+// ---- 저장 ----
+function loadRec() {
+  const r = { sound: true, best: {} };
+  try { const o = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+    r.sound = o.sound !== false;
+    for (const k of ['3-pic', '3-num', '4-pic', '4-num']) {
+      const b = o.best && o.best[k]; const m = Math.floor(Number(b && b.m)), t = Math.floor(Number(b && b.t));
+      if (m > 0 && m < 1e6 && t >= 0 && t < 1e7) r.best[k] = { m, t };
+    }
+  } catch (e) {}
+  return r;
+}
+const rec = loadRec();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+
+// ---- 소리 ----
+let AC = null;
+function tone(f, dur, vol, delay, create) {
+  if (!rec.sound) return;
+  if (!AC && create) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } }
+  if (!AC) return;
+  if (AC.state === 'suspended') AC.resume().catch(() => {});
+  const t = AC.currentTime + (delay || 0), o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'triangle'; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const tick = () => tone(520 + Math.random() * 120, 0.06, 0.12, 0, true);
+const fanfare = () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.22, 0.16, i * 0.1, true));
+function setSound() { $('#snd').textContent = rec.sound ? '🔊' : '🔇'; $('#snd').setAttribute('aria-pressed', String(rec.sound)); }
+$('#snd').addEventListener('click', () => { rec.sound = !rec.sound; save(); setSound(); tick(); });
+
+// ---- 상태 ----
+let N = 3, mode = 'pic', scene = 0, pos = [], tiles = {}, moves = 0, t0 = 0, elapsed = 0, timer = 0, won = false, path = [];
+const recKey = () => N + '-' + mode;
+const fmt = ms => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const solved = () => pos.every((v, i) => v === (i === N * N - 1 ? 0 : i + 1));
+
+function build() {
+  for (const el of $$('#grid .tile')) el.remove();
+  board.style.setProperty('--n', N);
+  board.classList.toggle('pic', mode === 'pic'); board.classList.toggle('num', mode === 'num');
+  board.style.setProperty('--img', imgUrl(scene));
+  tiles = {};
+  for (let v = 1; v < N * N; v++) {
+    const el = document.createElement('button'); el.type = 'button'; el.className = 'tile'; el.dataset.v = v;
+    el.setAttribute('aria-label', v + '번 조각');
+    const f = document.createElement('span'); f.className = 'f';
+    const r = Math.floor((v - 1) / N), c = (v - 1) % N;
+    f.style.backgroundPosition = (c * 100 / (N - 1)) + '% ' + (r * 100 / (N - 1)) + '%';
+    f.style.setProperty('--h', (v - 1) * 360 / (N * N - 1) + 10);
+    const no = document.createElement('span'); no.className = 'no'; no.textContent = v;
+    if (mode === 'num') f.textContent = v;
+    f.appendChild(no); el.appendChild(f);
+    el.addEventListener('click', () => tap(+el.dataset.v));
+    grid.insertBefore(el, full); tiles[v] = el;
+  }
+  full.textContent = '';
+  if (mode === 'num') for (let i = 1; i <= N * N; i++) { const s = document.createElement('span'); s.textContent = i < N * N ? i : ''; full.appendChild(s); }
+  fit();
+}
+function fit() { board.style.setProperty('--fs', Math.round(grid.clientWidth / N * 0.42) + 'px'); }
+function render() {
+  pos.forEach((v, i) => {
+    if (!v) return;
+    const el = tiles[v]; el.style.transform = 'translate(' + (i % N) * 100 + '%,' + Math.floor(i / N) * 100 + '%)';
+    el.classList.toggle('ok', v === i + 1);
+  });
+  $('#moves').textContent = moves;
+}
+function showBest() {
+  const b = rec.best[recKey()];
+  $('#bestLbl').textContent = '(' + N + '×' + N + ' ' + (mode === 'pic' ? '그림' : '숫자') + ')';
+  $('#best').textContent = b ? b.m + '번 · ' + fmt(b.t) : '아직 없어요';
+}
+function stopTimer() { clearInterval(timer); timer = 0; }
+function drawTime() { $('#time').textContent = fmt(elapsed); }
+
+// 빈칸을 무작위 합법 이동으로 섞기 → 항상 풀 수 있음
+function shuffle(k) {
+  pos = []; for (let i = 1; i < N * N; i++) pos.push(i); pos.push(0);
+  let e = N * N - 1, prev = -1; path = [];
+  const step = () => {
+    const nb = [e - N, e + N, e % N ? e - 1 : -1, (e + 1) % N ? e + 1 : -1].filter(x => x >= 0 && x < N * N && x !== prev);
+    const p = nb[Math.floor(rng() * nb.length)];
+    path.push(pos[p]); pos[e] = pos[p]; pos[p] = 0; prev = e; e = p;
+  };
+  for (let i = 0; i < k; i++) step();
+  for (let g = 0; k > 0 && solved() && g < 50; g++) step();
+  moves = 0; elapsed = 0; won = false; stopTimer(); drawTime();
+  board.classList.remove('done'); $('#win').classList.remove('on'); $('#conf').textContent = '';
+  render(); showBest();
+}
+function newGame() {
+  if (mode === 'pic') scene = (scene + 1) % SCENES.length;
+  build(); shuffle(N === 3 ? 30 : 70);
+}
+
+function tap(v) {
+  if (won) return;
+  const c = pos.indexOf(v), e = pos.indexOf(0);
+  const cr = Math.floor(c / N), er = Math.floor(e / N);
+  let d;
+  if (cr === er) d = c > e ? 1 : -1; else if (c % N === e % N) d = c > e ? N : -N; else { nudge(v); return; }
+  let x = e;
+  while (x !== c) { pos[x] = pos[x + d]; pos[x + d] = 0; x += d; moves++; }
+  if (!timer) { t0 = performance.now() - elapsed; timer = setInterval(() => { elapsed = performance.now() - t0; drawTime(); }, 250); }
+  tick(); render();
+  if (solved()) win();
+}
+function nudge(v) { const f = tiles[v].firstChild; f.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(0)' }], { duration: 220 }); }
+
+function win() {
+  won = true; if (timer) elapsed = performance.now() - t0; stopTimer(); drawTime();
+  const k = recKey(), b = rec.best[k];
+  const isNew = !b || moves < b.m || (moves === b.m && elapsed < b.t);
+  if (isNew) { rec.best[k] = { m: moves, t: Math.floor(elapsed) }; save(); }
+  $('#wStat').textContent = moves + '번 움직여서 ' + fmt(elapsed) + ' 만에 완성했어요!';
+  $('#newrec').hidden = !isNew;
+  board.classList.add('done'); board.classList.remove('hint'); $('#hint').setAttribute('aria-pressed', 'false');
+  const conf = $('#conf'); conf.textContent = '';
+  const cols = ['#ff5d8f', '#ffd23f', '#5ec4ff', '#6bd968', '#a77bff', '#ff9f43'];
+  for (let i = 0; i < 18; i++) { const s = document.createElement('i'); s.style.left = (i * 5.5 + Math.random() * 4) + '%'; s.style.background = cols[i % 6]; s.style.animationDelay = (Math.random() * 0.5).toFixed(2) + 's'; conf.appendChild(s); }
+  setTimeout(() => { if (won) $('#win').classList.add('on'); }, 450);
+  showBest(); fanfare();
+}
+
+document.addEventListener('keydown', e => {
+  const d = { ArrowLeft: 1, ArrowRight: -1, ArrowUp: N, ArrowDown: -N }[e.key];
+  if (d === undefined || won) return;
+  e.preventDefault();
+  const em = pos.indexOf(0), c = em + d;
+  if (c < 0 || c >= N * N) return;
+  if ((d === 1 || d === -1) && Math.floor(c / N) !== Math.floor(em / N)) return;
+  tap(pos[c]);
+});
+
+$('#hint').addEventListener('click', () => {
+  if (won) return;
+  const on = !board.classList.contains('hint');
+  board.classList.toggle('hint', on); $('#hint').setAttribute('aria-pressed', String(on));
+});
+$('#shuffle').addEventListener('click', newGame);
+$('#again').addEventListener('click', newGame);
+for (const b of $$('#sizeSeg button')) b.addEventListener('click', () => { N = +b.dataset.n; for (const x of $$('#sizeSeg button')) x.classList.toggle('on', x === b); newGame(); });
+for (const b of $$('#modeSeg button')) b.addEventListener('click', () => { mode = b.dataset.m; for (const x of $$('#modeSeg button')) x.classList.toggle('on', x === b); newGame(); });
+window.addEventListener('resize', fit);
+
+setSound(); scene = SCENES.length - 1; newGame();
+
+// 테스트용 훅
+window.__test = {
+  shuffle: (k, seed) => { if (seed !== undefined) rng = mulberry(seed); shuffle(k); return path.slice(); },
+  solved, get pos() { return pos.slice(); }, get won() { return won; }, get n() { return N; }
+};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>번개 손 - 반응 속도 챌린지</title>
+<meta name="description" content="빨간 화면이 초록으로 바뀌는 순간 터치! 5번 평균 반응 속도(ms)를 재고 치타·토끼·거북이 등급과 이 기기 TOP5 기록을 확인하는 게임.">
+<style>
+  :root{--bg:#f3f1ff;--card:#fff;--ink:#22213a;--sub:#6b6a86;--line:#e2def7;--pri:#5b4bdb;--y:#ffd23f;--edge:#2e2470;--face:#4a3bc7}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;-webkit-tap-highlight-color:transparent}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--card);border-bottom:2px solid var(--line)}
+  .logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#5b4bdb,#ff8a3d);display:grid;place-items:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 0 #3a2d9e}
+  header h1{margin:0;font-size:24px}
+  header small{display:block;color:var(--sub);font-size:13px}
+  .hd{min-width:0}
+  .snd{margin-left:auto;border:2px solid var(--line);background:#fff;font:inherit;font-weight:800;font-size:15px;padding:8px 12px;border-radius:12px;cursor:pointer;color:var(--ink);white-space:nowrap;min-height:44px}
+  .snd.off{color:var(--sub);background:#f4f3fa}
+  main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;padding:14px 20px 4px;max-width:1240px;width:100%;margin:0 auto}
+  .stage{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .arena{position:relative;flex:1;min-height:380px;border-radius:28px;background:var(--face);color:#fff;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;outline:none;
+    transform:perspective(1400px) rotateX(5deg);transform-origin:50% 100%;box-shadow:0 14px 0 var(--edge),0 26px 34px rgba(30,20,90,.25);transition:transform .08s,background-color .05s;display:grid;place-items:center;text-align:center;overflow:hidden}
+  .arena:active{transform:perspective(1400px) rotateX(5deg) translateY(6px)}
+  .arena:focus-visible{box-shadow:0 14px 0 var(--edge),0 0 0 5px var(--y)}
+  .arena::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.18),transparent 55%);pointer-events:none}
+  .arena.wait{--face:#e5394a;--edge:#9c1626}
+  .arena.go{--face:#1fbf62;--edge:#0d7a3b}
+  .arena.foul{--face:#ff8a1f;--edge:#b35300}
+  .arena.shown{--face:#2f80ed;--edge:#174f9e}
+  .arena.done{--face:#2b2560;--edge:#16123a;cursor:default}
+  .face{position:relative;padding:20px;max-width:640px}
+  .big{font-size:96px;line-height:1.05;font-weight:900;letter-spacing:-2px;display:inline-block}
+  .ttl{font-size:34px;font-weight:900;margin:6px 0 4px}
+  .sub{font-size:19px;opacity:.92;line-height:1.45}
+  .pill{display:inline-block;margin-top:18px;background:var(--y);color:#2a2200;font-weight:900;font-size:22px;padding:14px 30px;border-radius:999px;box-shadow:0 6px 0 #c99a00;animation:bob 1.6s ease-in-out infinite}
+  .steps{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+  .steps span{background:rgba(255,255,255,.14);border-radius:14px;padding:8px 12px;font-weight:800;font-size:15px}
+  .pop{animation:pop .28s cubic-bezier(.2,1.6,.4,1)}
+  .shake{animation:shake .4s}
+  .dotz{display:inline-flex;gap:8px;margin-top:14px}
+  .dotz i{width:12px;height:12px;border-radius:50%;background:#fff;opacity:.25;animation:blink 1.2s infinite}
+  .dotz i:nth-child(2){animation-delay:.2s}.dotz i:nth-child(3){animation-delay:.4s}
+  @keyframes bob{50%{transform:translateY(-6px)}}
+  @keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+  @keyframes shake{20%,60%{transform:translateX(-12px)}40%,80%{transform:translateX(12px)}}
+  @keyframes blink{50%{opacity:1}}
+  .rounds{display:flex;gap:10px;justify-content:center}
+  .rd{flex:1;max-width:120px;background:#fff;border:2px solid var(--line);border-radius:14px;padding:8px 4px;text-align:center;font-weight:900;font-size:18px;color:#b8b4d6;box-shadow:0 4px 0 var(--line)}
+  .rd small{display:block;font-size:11px;font-weight:700;color:var(--sub)}
+  .rd.ok{color:var(--pri);border-color:#c9c1ff;animation:pop .28s}
+  .rd.now{border-color:var(--pri)}
+  .res{display:grid;gap:4px;justify-items:center}
+  .res .gem{font-size:88px;line-height:1;display:inline-block}
+  .res .avg{font-size:56px;font-weight:900;letter-spacing:-1px}
+  .res .avg small{font-size:22px;opacity:.8}
+  .res .gname{font-size:24px;font-weight:900;color:var(--y)}
+  .res .rank{font-size:17px;background:rgba(255,255,255,.14);padding:6px 14px;border-radius:999px;margin-top:4px}
+  .again{margin-top:14px;border:0;font:inherit;font-weight:900;font-size:22px;padding:14px 34px;border-radius:999px;background:var(--y);color:#2a2200;cursor:pointer;box-shadow:0 6px 0 #c99a00;min-height:56px}
+  .again:active{transform:translateY(4px);box-shadow:0 2px 0 #c99a00}
+  aside{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 16px;box-shadow:0 5px 0 var(--line)}
+  .card h2{margin:0 0 8px;font-size:17px}
+  .grades{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+  .grades li{display:flex;align-items:center;gap:10px;padding:3px 8px;border-radius:12px;font-weight:700;font-size:15px;transition:transform .2s}
+  .grades li b{font-size:22px;width:30px;text-align:center}
+  .grades li span{margin-left:auto;color:var(--sub);font-size:13px;font-weight:600}
+  .grades li.me{background:#fff3c4;transform:translateX(6px)}
+  .top{margin:0;padding:0;list-style:none;display:grid;gap:5px}
+  .top li{display:flex;align-items:center;gap:10px;padding:4px 10px;border-radius:12px;background:#f7f6fd;font-weight:800;font-size:16px}
+  .top li .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#e6e2fb;font-size:13px;flex-shrink:0}
+  .top li:nth-child(1) .n{background:#ffd23f}.top li:nth-child(2) .n{background:#dfe3ea}.top li:nth-child(3) .n{background:#f3c8a0}
+  .top li.new{background:#fff3c4;animation:pop .3s}
+  .top li.empty{color:#b8b4d6;font-weight:600}
+  .note{font-size:12px;color:var(--sub);margin:8px 0 0;display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .clr{border:0;background:none;color:var(--sub);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:4px}
+  footer{text-align:right;padding:4px 20px 10px;font-size:13px}
+  footer a{color:var(--pri)}
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;padding:12px}
+    .arena{min-height:380px;border-radius:22px}
+    .big{font-size:72px}.ttl{font-size:28px}.sub{font-size:16px}
+    .res .avg{font-size:44px}.res .gem{font-size:70px}
+  }
+  @media (max-width:420px){
+    header{padding:8px 12px;gap:8px}header h1{font-size:20px}header small{font-size:12px}
+    .snd{padding:6px 8px;font-size:13px}
+    .rd{font-size:15px}.rounds{gap:5px}
+    .steps span{font-size:13px}.pill{font-size:19px;padding:12px 22px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="번개 손">
+<meta property="og:description" content="화면이 초록으로 바뀌는 순간 터치! 5번 평균으로 재는 반응 속도 챌린지">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/52-reaction-tap.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/reaction-tap/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">⚡</div>
+  <div class="hd"><h1>번개 손</h1><small>초록으로 바뀌는 순간 터치! 5번 평균 반응 속도</small></div>
+  <button class="snd" id="snd" type="button" aria-pressed="true">🔊 소리 켬</button>
+</header>
+<main>
+  <section class="stage">
+    <div class="arena" id="arena" role="button" tabindex="0" aria-live="polite" aria-label="반응 속도 터치 영역">
+      <div class="face" id="face"></div>
+    </div>
+    <div class="rounds" id="rounds"></div>
+  </section>
+  <aside>
+    <div class="card"><h2>🏅 등급표 (5번 평균)</h2><ul class="grades" id="grades"></ul></div>
+    <div class="card"><h2>🏆 이 기기 최고 기록 TOP 5</h2><ol class="top" id="top"></ol>
+      <p class="note"><span>숫자만 이 기기에 저장돼요</span><button class="clr" id="clr" type="button">기록 지우기</button></p></div>
+  </aside>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+<script>
+'use strict';
+const KEY = 'edu-expo-reaction-tap-v1';
+const ROUNDS = 5;
+// 테스트용 훅: delay(대기 ms 고정), fake(측정값 고정), guard(결과 표시 직후 무시 ms)
+const T = window.__test = { delay: null, fake: null, guard: 250 };
+const GRADES = [
+  { max: 230, e: '🐆', n: '치타', m: '눈 깜짝할 새! 번개 그 자체예요' },
+  { max: 280, e: '🦅', n: '독수리', m: '먹이를 낚아채는 날카로운 반사신경!' },
+  { max: 340, e: '🐇', n: '토끼', m: '깡충! 아주 재빠른 손이에요' },
+  { max: 420, e: '🐿️', n: '다람쥐', m: '꽤 빨라요. 한 번 더 하면 토끼!' },
+  { max: Infinity, e: '🐢', n: '거북이', m: '천천히, 하지만 꾸준히! 다시 도전?' }
+];
+const gradeOf = ms => GRADES.find(g => ms < g.max);
+const $ = s => document.querySelector(s);
+const arena = $('#arena'), face = $('#face');
+const st = { phase: 'idle', times: [], goAt: 0, shownAt: 0, timer: 0, last: null };
+
+// ---- 소리 (사용자가 누른 뒤에만 AudioContext 생성) ----
+let sound = true, ac = null;
+function beep(f, d, type) {
+  if (!sound) return;
+  try {
+    if (!ac) { const A = window.AudioContext || window.webkitAudioContext; if (!A) return; ac = new A(); }
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    o.type = type || 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(.18, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d);
+  } catch (e) {}
+}
+$('#snd').addEventListener('click', e => {
+  sound = !sound; const b = e.currentTarget;
+  b.textContent = sound ? '🔊 소리 켬' : '🔇 소리 끔'; b.classList.toggle('off', !sound); b.setAttribute('aria-pressed', sound);
+  if (sound) beep(660, .1);
+});
+
+// ---- 기록 ----
+function loadTop() {
+  try { const a = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(a) ? a.map(Number).filter(n => Number.isFinite(n) && n > 0 && n < 10000).map(Math.round).sort((a, b) => a - b).slice(0, 5) : []; }
+  catch (e) { return []; }
+}
+function saveTop(ms) {
+  const a = loadTop(); a.push(ms); a.sort((x, y) => x - y);
+  const top = a.slice(0, 5);
+  try { localStorage.setItem(KEY, JSON.stringify(top)); } catch (e) {}
+  return top.indexOf(ms);
+}
+function renderTop(hi) {
+  const ol = $('#top'), top = loadTop(); ol.textContent = '';
+  for (let i = 0; i < 5; i++) {
+    const li = document.createElement('li'), n = document.createElement('span'); n.className = 'n'; n.textContent = i + 1; li.append(n);
+    if (top[i] != null) { const g = gradeOf(top[i]); li.append(`${g.e} ${top[i]} ms`); if (i === hi) li.classList.add('new'); }
+    else { li.classList.add('empty'); li.append(i === 0 ? '첫 번째 기록의 주인공은?' : '—'); }
+    ol.append(li);
+  }
+}
+$('#clr').addEventListener('click', () => { try { localStorage.removeItem(KEY); } catch (e) {} renderTop(-1); });
+
+function renderGrades(me) {
+  const ul = $('#grades'); ul.textContent = ''; let lo = 0;
+  for (const g of GRADES) {
+    const li = document.createElement('li'), b = document.createElement('b'), s = document.createElement('span');
+    b.textContent = g.e; s.textContent = g.max === Infinity ? `${lo}ms 이상` : `${lo ? lo + '-' : ''}${g.max}ms 미만`;
+    li.append(b, g.n, s); if (g === me) li.classList.add('me'); ul.append(li); lo = g.max;
+  }
+}
+function renderRounds() {
+  const box = $('#rounds'); box.textContent = '';
+  for (let i = 0; i < ROUNDS; i++) {
+    const d = document.createElement('div'), s = document.createElement('small');
+    d.className = 'rd'; s.textContent = `${i + 1}번째`;
+    const v = st.times[i];
+    d.append(s, v != null ? `${v}ms` : '·');
+    if (v != null) d.classList.add('ok'); else if (i === st.times.length && st.phase !== 'idle' && st.phase !== 'done') d.classList.add('now');
+    box.append(d);
+  }
+}
+
+// ---- 화면 ----
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function show(phase, nodes, anim) {
+  st.phase = phase; arena.className = 'arena' + (phase === 'idle' ? '' : ' ' + phase);
+  face.textContent = ''; face.append(...nodes);
+  face.classList.remove('pop', 'shake'); void face.offsetWidth; if (anim) face.classList.add(anim);
+  renderRounds();
+}
+function idle() {
+  const steps = el('div', 'steps'); steps.append(el('span', '', '🔴 빨강: 기다려'), el('span', '', '🟢 초록: 바로 터치!'), el('span', '', '⏱ 5번 평균 기록'));
+  show('idle', [el('div', 'big', '⚡'), el('div', 'ttl', '번개 손 챌린지'), el('div', 'sub', '화면이 초록으로 바뀌는 순간 최대한 빨리 터치하세요.\n너무 일찍 누르면 반칙!'), el('div', 'pill', '▶ 터치해서 시작'), steps]);
+  face.querySelector('.sub').style.whiteSpace = 'pre-line';
+}
+function start() { clearTimeout(st.timer); st.times = []; st.last = null; renderGrades(null); renderTop(-1); arm(); }
+function arm() {
+  clearTimeout(st.timer);
+  const dots = el('div', 'dotz'); dots.append(el('i'), el('i'), el('i'));
+  show('wait', [el('div', 'big', '✋'), el('div', 'ttl', '기다려…'), el('div', 'sub', `초록이 되면 바로 터치! (${st.times.length + 1}/${ROUNDS})`), dots]);
+  const d = T.delay != null ? T.delay : 1500 + Math.random() * 2500;
+  st.timer = setTimeout(go, d);
+}
+function go() {
+  st.goAt = performance.now();
+  show('go', [el('div', 'big', '지금!'), el('div', 'ttl', '터치!!')], 'pop');
+  beep(1040, .12, 'square');
+}
+function foul() {
+  clearTimeout(st.timer); beep(160, .3, 'sawtooth');
+  show('foul', [el('div', 'big', '😅'), el('div', 'ttl', '반칙! 너무 빨랐어요'), el('div', 'sub', '초록이 될 때까지 참아요. 터치하면 이번 판을 다시 해요.')], 'shake');
+  st.shownAt = performance.now();
+}
+function hit() {
+  const ms = T.fake != null ? T.fake : Math.max(1, Math.round(performance.now() - st.goAt));
+  st.times.push(ms); st.last = ms;
+  if (st.times.length >= ROUNDS) return finish();
+  const g = gradeOf(ms); beep(780, .08);
+  show('shown', [el('div', 'big', `${ms}ms`), el('div', 'ttl', `${g.e} ${g.n} 속도!`), el('div', 'sub', `터치하면 다음 판 (${st.times.length + 1}/${ROUNDS})`)], 'pop');
+  st.shownAt = performance.now();
+}
+function finish() {
+  const avg = Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length);
+  const best = Math.min(...st.times), g = gradeOf(avg), rank = saveTop(avg);
+  st.avg = avg;
+  const res = el('div', 'res');
+  const gem = el('div', 'gem pop', g.e);
+  const a = el('div', 'avg', String(avg)); a.append(el('small', '', ' ms 평균'));
+  res.append(gem, el('div', 'gname', `${g.n} 등급`), a, el('div', 'sub', `${g.m}\n가장 빠른 기록 ${best}ms`),
+    el('div', 'rank', rank >= 0 ? `🏆 이 기기 TOP5 중 ${rank + 1}위!` : 'TOP5에는 아쉽게 못 들었어요'));
+  res.querySelector('.sub').style.whiteSpace = 'pre-line';
+  const again = el('button', 'again', '🔁 다시 하기'); again.type = 'button'; again.id = 'again';
+  again.addEventListener('click', ev => { ev.stopPropagation(); beep(660, .08); start(); });
+  res.append(again);
+  show('done', [res], 'pop');
+  renderGrades(g); renderTop(rank);
+  [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, .12, 'triangle'), i * 110));
+}
+function tap() {
+  const p = st.phase;
+  if (p === 'idle') { beep(660, .08); start(); }
+  else if (p === 'wait') foul();
+  else if (p === 'go') hit();
+  else if ((p === 'shown' || p === 'foul') && performance.now() - st.shownAt >= T.guard) arm();
+}
+arena.addEventListener('pointerdown', e => { if (e.button > 0 || e.target.closest('button')) return; tap(); });
+// 키보드·프로그램 클릭(detail 0)도 지원. 실제 마우스 클릭은 pointerdown에서 이미 처리
+arena.addEventListener('click', e => { if (e.detail === 0 && !e.target.closest('button')) tap(); });
+document.addEventListener('keydown', e => {
+  if (e.repeat || !(e.key === ' ' || e.key === 'Enter')) return;
+  if (e.target.closest && e.target.closest('button')) return;
+  e.preventDefault(); tap();
+});
+idle(); renderGrades(null); renderTop(-1);
+</script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>딱 10초 - 마음속 시계로 정확히 멈춰라</title>
+<meta name="description" content="타이머가 3초 뒤 사라지면 마음속으로 세다가 딱 10초에 멈추는 시간 감각 게임. 5·10·30초 도전, 3번 평균 오차와 최고 기록.">
+<style>
+:root{--ink:#2a2140;--sub:#6f6690;--pri:#6d4aff;--pk:#ff5c8a;--y:#ffc93c}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:radial-gradient(circle at 20% 10%,#fff6d8,transparent 40%),linear-gradient(160deg,#f1ecff,#ffe9f1);min-height:100vh;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none}
+header{display:flex;align-items:center;gap:12px;padding:10px 20px;flex-wrap:wrap}
+.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,var(--pri),var(--pk));display:grid;place-items:center;font-size:28px;box-shadow:0 4px 0 #4b2fc7;flex-shrink:0}
+h1{margin:0;font-size:26px}
+header small{display:block;color:var(--sub);font-size:13px}
+.hr{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{background:#fff;border-radius:99px;padding:6px 12px;font-weight:800;font-size:14px;box-shadow:0 3px 0 #e2d9ff}
+.btn{border:0;font:inherit;font-weight:900;font-size:17px;padding:12px 18px;border-radius:14px;cursor:pointer;background:#fff;color:var(--ink);box-shadow:0 4px 0 #d9cff7;transition:transform .08s;touch-action:manipulation}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #d9cff7}
+.btn.sm{font-size:14px;padding:7px 12px;box-shadow:0 3px 0 #d9cff7}
+main{flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:22px;padding:4px 24px 8px;align-items:center}
+.left{display:flex;flex-direction:column;align-items:center;gap:14px}
+.tg{display:flex;gap:8px;background:#fff;padding:6px;border-radius:18px;box-shadow:0 4px 0 #e2d9ff}
+.tg button{border:0;font:inherit;font-weight:900;font-size:18px;padding:10px 20px;border-radius:13px;background:transparent;color:var(--sub);cursor:pointer}
+.tg button.on{background:var(--pri);color:#fff}
+.tg button:disabled{opacity:.5;cursor:default}
+.dialWrap{perspective:900px}
+#dial{position:relative;width:min(380px,80vw);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 35%,#fff,#efeaff 70%);box-shadow:0 14px 0 #c9bcf5,0 26px 30px rgba(80,50,160,.18),inset 0 0 0 12px #fff,inset 0 0 0 16px #e6defc;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotateX(10deg);cursor:pointer;touch-action:manipulation}
+#dial .tick{position:absolute;inset:22px;border-radius:50%;background:repeating-conic-gradient(#cfc3f7 0 1.2deg,transparent 1.2deg 30deg);-webkit-mask:radial-gradient(circle,transparent 82%,#000 83%);mask:radial-gradient(circle,transparent 82%,#000 83%)}
+#hand{position:absolute;left:50%;top:50%;width:6px;height:40%;margin-left:-3px;background:var(--pk);border-radius:3px;transform-origin:50% 0;transform:rotate(180deg);opacity:0;transition:opacity .3s}
+#hand.spin{opacity:.5;animation:spin var(--d,10s) linear infinite}
+@keyframes spin{from{transform:rotate(180deg)}to{transform:rotate(540deg)}}
+#clock{position:relative;font-size:clamp(56px,13vw,96px);font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-2px;transition:opacity .4s,transform .4s}
+#clock.gone{opacity:0;transform:scale(.6)}
+#dmsg{position:relative;font-size:17px;font-weight:800;color:var(--sub);text-align:center;min-height:24px;padding:0 30px}
+#mind{position:absolute;font-size:70px;opacity:0;transform:scale(.5);transition:opacity .3s,transform .3s}
+#dial.hidden #mind{opacity:1;transform:scale(1);animation:breathe 1s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.08)}}
+#dial.reveal #clock{animation:pop .5s}
+@keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.12)}}
+#act{font-size:26px;padding:18px 44px;border-radius:20px;background:linear-gradient(135deg,var(--pri),#9a6bff);color:#fff;box-shadow:0 6px 0 #4b2fc7;min-width:260px}
+#act.stop{background:linear-gradient(135deg,var(--pk),#ff8a5c);box-shadow:0 6px 0 #c73a64}
+.keyhint{font-size:13px;color:var(--sub);font-weight:700}
+.right{display:flex;flex-direction:column;gap:12px}
+.card{background:#fff;border-radius:22px;padding:16px 18px;box-shadow:0 5px 0 #e2d9ff}
+.card h3{margin:0 0 10px;font-size:18px}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.slot{border-radius:16px;background:#f6f3ff;padding:10px 6px;text-align:center;min-height:96px;display:flex;flex-direction:column;justify-content:center;gap:2px;transition:transform .3s}
+.slot small{font-weight:800;color:var(--sub);font-size:12px}
+.slot b{font-size:24px;font-variant-numeric:tabular-nums}
+.slot span{font-size:13px;font-weight:800}
+.slot.cur{outline:3px dashed var(--pri);outline-offset:-3px}
+.slot.done{background:#fff7dc;animation:flip .4s}
+@keyframes flip{from{transform:rotateY(90deg)}}
+#verdict{font-size:20px;font-weight:900;min-height:56px;display:flex;align-items:center;gap:10px}
+#verdict .em{font-size:40px}
+.sum{display:none;text-align:center}
+.sum.on{display:block;animation:pop .45s}
+.sum .big{font-size:44px;font-weight:900;color:var(--pri);font-variant-numeric:tabular-nums}
+.newbest{color:#d97706;font-weight:900}
+.how{font-size:14px;color:var(--sub);line-height:1.6;margin:0;padding-left:18px}
+footer{text-align:right;padding:0 20px 10px;font-size:13px}
+footer a{color:var(--sub);text-decoration:none}
+@media (max-width:820px){
+  main{grid-template-columns:1fr;padding:4px 12px 8px;gap:16px}
+  header{padding:8px 12px}
+  h1{font-size:22px}
+  #act{min-width:0;width:100%;font-size:22px}
+  .tg button{padding:9px 14px;font-size:16px}
+  .slot b{font-size:20px}
+}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="딱 10초">
+<meta property="og:description" content="시계를 보지 않고 마음속으로 10초를 세어 멈추는 시간 감각 게임">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/61-ten-seconds.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/ten-seconds/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">⏱️</div>
+  <div><h1>딱 10초</h1><small>타이머가 사라져도 마음속 시계로 정확히 멈춰 보세요</small></div>
+  <div class="hr"><span class="pill" id="bestPill">🏆 최고 기록 없음</span><button class="btn sm" id="snd" aria-label="소리 켜기/끄기">🔊 소리</button></div>
+</header>
+<main>
+  <section class="left">
+    <div class="tg" id="tg"><button data-t="5">5초</button><button data-t="10" class="on">10초</button><button data-t="30">30초</button></div>
+    <div class="dialWrap"><div id="dial">
+      <div class="tick"></div><div id="hand"></div><div id="mind">🙈</div>
+      <div id="clock">10.00</div><div id="dmsg">딱 10.00초에 멈추면 성공!</div>
+    </div></div>
+    <button class="btn" id="act">▶ 시작</button>
+    <div class="keyhint">⌨️ 스페이스바 또는 시계를 탭해도 돼요</div>
+  </section>
+  <section class="right">
+    <div class="card">
+      <h3>🎯 3번 도전</h3>
+      <div class="slots" id="slots"></div>
+      <div id="verdict"><span class="em">🤔</span><span>숫자는 3초 뒤 사라져요. 그다음은 마음속으로!</span></div>
+    </div>
+    <div class="card sum" id="sum"></div>
+    <div class="card" id="howCard"><h3>🕹 이렇게 해요</h3><ol class="how"><li>목표 시간을 고르고 <b>시작</b>을 눌러요.</li><li>3초 뒤 숫자가 사라지면 마음속으로 "하나, 둘…" 세어요.</li><li>목표 시간이라고 생각할 때 <b>멈춤!</b></li><li>3번의 평균 오차로 내 시간 감각을 확인해요.</li></ol></div>
+  </section>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const KEY='edu-expo-ten-seconds-v1', SHOW=3000, TRIES=3;
+let off=0;const now=()=>performance.now()+off;
+let best={};try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v==='object')for(const k of ['5','10','30'])if(isFinite(+v[k])&&v[k]!==null)best[k]=+v[k]}catch(e){}
+let soundOn=localStorage.getItem(KEY+'-snd')!=='0',ac=null;
+let target=10,state='idle',t0=0,raf=0,res=[],lastStop=-1e9,hideT=0;
+const dial=$('#dial'),clock=$('#clock'),act=$('#act');
+
+function tone(f,d,type,when){if(!soundOn)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(when||0);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d)}catch(e){}}
+$('#snd').onclick=()=>{soundOn=!soundOn;try{localStorage.setItem(KEY+'-snd',soundOn?'1':'0')}catch(e){}drawSnd();tone(880,.1)};
+function drawSnd(){$('#snd').textContent=soundOn?'🔊 소리':'🔇 소리'}
+drawSnd();
+
+const fmt=s=>s.toFixed(2);
+function drawBest(){const b=best[target];$('#bestPill').textContent=b===undefined?`🏆 ${target}초 최고 기록 없음`:`🏆 ${target}초 최고 오차 ±${fmt(b)}초`}
+function drawSlots(){
+  $('#slots').innerHTML=[0,1,2].map(i=>{const r=res[i];
+    return r?`<div class="slot done"><small>${i+1}번째</small><b>${fmt(r.t)}</b><span>${r.d>=0?'+':'−'}${fmt(Math.abs(r.d))}초</span></div>`
+      :`<div class="slot${i===res.length&&state!=='done'?' cur':''}"><small>${i+1}번째</small><b>–</b><span>&nbsp;</span></div>`}).join('');
+}
+function verdict(d){const e=Math.abs(d),dir=d<0?'빨랐어요':'늦었어요';
+  return e<.05?['🎯','인간 시계! 소름 돋는 정확도']:e<.15?['🥇','놀라워요! 거의 완벽해요']:e<.4?['🥈',`훌륭해요! 살짝 ${dir}`]:e<1?['🥉',`꽤 비슷해요. 조금 ${dir}`]:d<0?['🐇',`앗, 너무 빨랐어요 (${fmt(e)}초)`]:['🐢',`앗, 너무 늦었어요 (${fmt(e)}초)`]}
+function setVerdict(em,msg){$('#verdict').innerHTML='';const a=document.createElement('span');a.className='em';a.textContent=em;const b=document.createElement('span');b.textContent=msg;$('#verdict').append(a,b)}
+function setTarget(t){if(state==='run')return;target=t;document.querySelectorAll('#tg button').forEach(b=>b.classList.toggle('on',+b.dataset.t===t));
+  reset();drawBest()}
+function reset(){state='idle';res=[];clock.textContent=fmt(target);clock.classList.remove('gone');dial.classList.remove('hidden','reveal');
+  $('#dmsg').textContent=`딱 ${fmt(target)}초에 멈추면 성공!`;$('#hand').classList.remove('spin');
+  act.textContent='▶ 시작';act.classList.remove('stop');$('#sum').classList.remove('on');$('#howCard').style.display='';
+  setVerdict('🤔','숫자는 3초 뒤 사라져요. 그다음은 마음속으로!');drawSlots();lockTg(false)}
+function lockTg(v){document.querySelectorAll('#tg button').forEach(b=>b.disabled=v)}
+function begin(){
+  state='run';t0=now();lockTg(true);dial.classList.remove('hidden','reveal');clock.classList.remove('gone');
+  $('#hand').style.setProperty('--d',target+'s');$('#hand').classList.remove('spin');void $('#hand').offsetWidth;$('#hand').classList.add('spin');
+  $('#dmsg').textContent='잘 보세요… 곧 사라져요!';act.textContent='■ 멈춤!';act.classList.add('stop');
+  setVerdict('👀',`${res.length+1}번째 도전 중`);drawSlots();tone(660,.12);
+  cancelAnimationFrame(raf);const loop=()=>{if(state!=='run')return;const el=now()-t0;
+    if(el<SHOW)clock.textContent=fmt(el/1000);else if(!dial.classList.contains('hidden'))hide();raf=requestAnimationFrame(loop)};loop();
+  clearTimeout(hideT);hideT=setTimeout(()=>{if(state==='run'&&now()-t0>=SHOW)hide()},SHOW+20);
+}
+function hide(){clock.classList.add('gone');dial.classList.add('hidden');$('#hand').classList.remove('spin');$('#dmsg').textContent='이제 마음속으로 세어요!';tone(440,.08)}
+function check(){if(state==='run'&&now()-t0>=SHOW&&!dial.classList.contains('hidden'))hide()}
+function stop(){
+  if(state!=='run')return;const el=(now()-t0)/1000;state='shown';lastStop=now();cancelAnimationFrame(raf);clearTimeout(hideT);
+  const d=el-target;res.push({t:el,d});
+  dial.classList.remove('hidden');dial.classList.add('reveal');clock.classList.remove('gone');clock.textContent=fmt(el);$('#hand').classList.remove('spin');
+  const [em,msg]=verdict(d);setVerdict(em,msg);$('#dmsg').textContent=`목표 ${fmt(target)}초 · ${d>=0?'+':'−'}${fmt(Math.abs(d))}초`;
+  const e=Math.abs(d),nb=best[target]===undefined||e<best[target];
+  if(nb){best[target]=+e.toFixed(3);try{localStorage.setItem(KEY,JSON.stringify(best))}catch(_){}drawBest()}
+  Math.abs(d)<.15?[784,988,1175].forEach((f,i)=>tone(f,.2,'triangle',i*.1)):tone(330,.2,'triangle');
+  act.classList.remove('stop');lockTg(false);
+  if(res.length>=TRIES){state='done';act.textContent='↻ 다시 하기';summary()}else act.textContent=`다음 도전 ▶ (${res.length+1}/${TRIES})`;
+  drawSlots();
+}
+function summary(){
+  const avg=res.reduce((a,r)=>a+Math.abs(r.d),0)/res.length,bst=Math.min(...res.map(r=>Math.abs(r.d)));
+  const [em,msg]=verdict(avg);lockTg(false);
+  const s=$('#sum');s.innerHTML='';
+  const h=document.createElement('h3');h.textContent=`${em} 3번 평균 오차`;
+  const big=document.createElement('div');big.className='big';big.id='avg';big.textContent=`±${fmt(avg)}초`;
+  const p=document.createElement('div');p.style.fontWeight='800';p.textContent=msg.replace(/\s*\(.*\)$/,'');
+  const q=document.createElement('div');q.style.cssText='color:#6f6690;font-size:14px;margin-top:6px';q.textContent=`이번 최고 ±${fmt(bst)}초 · 내 ${target}초 최고 기록 ±${fmt(best[target])}초`;
+  s.append(h,big,p,q);
+  s.classList.add('on');$('#howCard').style.display='none';
+}
+function primary(){
+  if(state==='run')return stop();
+  if(now()-lastStop<400)return; // 멈춤 직후 같은 동작으로 다음 판이 시작되지 않게
+  if(state==='done'){reset();return begin()}
+  begin();
+}
+act.addEventListener('pointerdown',e=>{if(state==='run'){e.preventDefault();stop()}});
+dial.addEventListener('pointerdown',()=>{if(state==='run')stop()});
+act.addEventListener('click',primary);
+document.addEventListener('keydown',e=>{if(e.code==='Space'||e.key===' '){e.preventDefault();if(!e.repeat)primary()}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'||e.key===' ')e.preventDefault()});
+$('#tg').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled)setTarget(+b.dataset.t)});
+reset();drawBest();
+
+window.__test={skip:ms=>{off+=ms;check()},elapsed:()=>state==='run'?now()-t0:0,state:()=>({state,target,tries:res.length,res:res.map(r=>r.t)}),stop,unlock:()=>{lastStop=-1e9}};
+})();
+</script>
+</body>
+</html>

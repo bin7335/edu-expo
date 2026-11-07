@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>풍선 계산 팡팡 - 정답 풍선을 터뜨리는 연산 게임</title>
+<meta name="description" content="떠오르는 풍선 중 문제의 답이 적힌 풍선을 터뜨리는 60초 연산 게임. 덧셈·뺄셈·곱셈구구 단계, 연속 정답 보너스, 최고 기록.">
+<style>
+  :root{--ink:#1d2745;--sub:#5d6a8a;--pri:#ff5d8f;--line:#dfe6f5}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#fff6fb;color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  button{font:inherit;cursor:pointer;touch-action:manipulation}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:#fff;border-bottom:2px solid #ffe1ec;flex-wrap:wrap}
+  .logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#ff7aa8,#ffb84d);display:grid;place-items:center;font-size:28px;flex-shrink:0;box-shadow:0 4px 0 #e0567f}
+  header h1{margin:0;font-size:25px;letter-spacing:-.5px}
+  header small{display:block;color:var(--sub);font-size:13px}
+  .stages{margin-left:auto;display:flex;gap:6px}
+  .stg{border:2px solid var(--line);background:#fff;font-weight:900;font-size:16px;padding:9px 14px;border-radius:14px;color:var(--ink)}
+  .stg.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .stg:disabled{opacity:.5;cursor:default}
+  .snd i{font-style:normal}
+  .snd{border:0;background:#f1f3fa;border-radius:14px;padding:10px 12px;font-weight:800;color:var(--sub)}
+  main{flex:1;display:flex;padding:12px 20px 6px;min-height:0}
+  .game{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+  .hud{display:flex;align-items:center;gap:10px}
+  .pill{background:#fff;border:2px solid var(--line);border-radius:99px;padding:6px 16px;font-weight:800;color:var(--sub);white-space:nowrap}
+  .pill b{color:var(--ink);font-size:22px;margin-left:4px;display:inline-block}
+  .pill b.bump{animation:bump .3s}
+  @keyframes bump{50%{transform:scale(1.35)}}
+  .timebar{flex:1;height:22px;border-radius:99px;background:#e9edf7;position:relative;overflow:hidden;min-width:60px}
+  .timebar i{position:absolute;inset:0;background:linear-gradient(90deg,#3ecf8e,#9be15d);transform-origin:left;border-radius:99px}
+  .timebar.low i{background:linear-gradient(90deg,#ff5d5d,#ff9f43)}
+  .timebar span{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;font-size:14px;color:#1d2745}
+  .ib{border:0;background:#fff;border:2px solid var(--line);border-radius:99px;width:44px;height:40px;font-size:18px}
+  .ib:disabled{opacity:.4;cursor:default}
+  .field{flex:1;min-height:420px;position:relative;overflow:hidden;border-radius:26px;background:linear-gradient(#7fd0ff,#c9ecff 60%,#eafaff);box-shadow:inset 0 -18px 0 #8fdc7a,inset 0 -26px 0 #b6ec9e,0 6px 0 #e7c9d6;--bw:88px}
+  .field.shake{animation:shake .38s}
+  @keyframes shake{20%{transform:translateX(-10px)}45%{transform:translateX(9px)}70%{transform:translateX(-5px)}}
+  .cloud{position:absolute;width:160px;height:46px;border-radius:40px;background:#fff;opacity:.85;animation:drift 38s linear infinite}
+  .cloud:before,.cloud:after{content:"";position:absolute;background:#fff;border-radius:50%}
+  .cloud:before{width:70px;height:70px;left:26px;top:-34px}.cloud:after{width:52px;height:52px;left:80px;top:-22px}
+  .c1{top:110px;left:-10%}.c2{top:250px;left:55%;transform:scale(.7);animation-duration:52s;animation-delay:-20s}
+  @keyframes drift{from{transform:translateX(-200px)}to{transform:translateX(1400px)}}
+  .qcard{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:5;background:#fff;border-radius:22px;padding:10px 28px;font-size:44px;font-weight:900;white-space:nowrap;box-shadow:0 6px 0 #d7deef,0 10px 24px rgba(30,50,90,.15)}
+  .qcard em{font-style:normal;color:var(--pri)}
+  .qcard.new{animation:qin .3s}
+  @keyframes qin{from{transform:translateX(-50%) scale(.7);opacity:.3}}
+  #bals{position:absolute;inset:0}
+  .bal{position:absolute;top:0;left:0;width:var(--bw);height:calc(var(--bw)*1.2);border:0;background:none;padding:0;will-change:transform;z-index:2;-webkit-tap-highlight-color:transparent}
+  .bal:after{content:"";position:absolute;left:50%;top:calc(100% + 8px);width:2px;height:46px;background:rgba(60,70,100,.45);transform:translateX(-50%)}
+  .bal .bd{position:absolute;inset:0;border-radius:50% 50% 47% 47%/56% 56% 44% 44%;background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.9) 0 7%,transparent 9%),radial-gradient(circle at 42% 36%,hsl(var(--h) 95% 70%),hsl(var(--h) 82% 52%) 62%,hsl(var(--h) 75% 40%));box-shadow:inset -6px -8px 0 rgba(0,0,0,.08);display:grid;place-items:center;animation:sway 2.4s ease-in-out infinite alternate}
+  .bal .bd:after{content:"";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);border:7px solid transparent;border-bottom:11px solid hsl(var(--h) 75% 42%);border-top:0}
+  .bal b{color:#fff;font-size:calc(var(--bw)*.4);font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.25);pointer-events:none}
+  @keyframes sway{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+  .bal.pop:after,.bal.away:after{opacity:0}
+  .bal.pop .bd{animation:pop .2s ease-out forwards}
+  @keyframes pop{to{transform:scale(1.5);opacity:0}}
+  .bal.bad .bd{background:radial-gradient(circle at 40% 35%,#c4cad6,#8d96a8);animation:bad .45s forwards}
+  @keyframes bad{25%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}100%{transform:scale(.2);opacity:0}}
+  .bal.away .bd{animation:away .35s forwards}
+  @keyframes away{to{opacity:0;transform:translateY(-30px) scale(.8)}}
+  .demo{pointer-events:none}
+  .demo .bd{animation:bob 2.6s ease-in-out infinite alternate}
+  @keyframes bob{from{transform:translateY(-8px) rotate(-3deg)}to{transform:translateY(8px) rotate(3deg)}}
+  .burst{position:absolute;width:0;height:0;z-index:4;pointer-events:none}
+  .burst i{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:var(--c);animation:fly .45s ease-out forwards}
+  @keyframes fly{from{transform:rotate(var(--a)) translateY(0)}to{transform:rotate(var(--a)) translateY(-58px) scale(.3);opacity:0}}
+  .fx{position:absolute;z-index:6;font-weight:900;font-size:28px;color:#1aa55a;pointer-events:none;animation:up .75s ease-out forwards;transform:translateX(-50%);text-shadow:0 2px 0 #fff}
+  .fx.neg{color:#e5484d}
+  @keyframes up{to{transform:translate(-50%,-50px);opacity:0}}
+  .combo{position:absolute;right:16px;top:20px;z-index:5;font-weight:900;font-size:20px;color:#ff7a00;background:#fff3d6;border-radius:99px;padding:6px 14px;opacity:0;transition:opacity .2s}
+  .combo.on{opacity:1}
+  .toast{position:absolute;left:50%;top:96px;transform:translateX(-50%);z-index:6;background:rgba(29,39,69,.85);color:#fff;font-weight:800;font-size:18px;padding:8px 18px;border-radius:99px;opacity:0;transition:opacity .2s;white-space:nowrap}
+  .toast.on{opacity:1}
+  .ov{position:absolute;inset:0;z-index:8;display:none;place-items:center;background:rgba(255,255,255,.18)}
+  .ov.on{display:flex;align-items:center;justify-content:center}
+  .card{display:none;background:#fff;border-radius:26px;padding:22px 30px;text-align:center;box-shadow:0 8px 0 #e3e8f4,0 18px 40px rgba(30,50,90,.18);max-width:92%;width:390px;}
+  .card.anim{animation:cin .25s}
+  .card.on{display:block}
+  @keyframes cin{from{transform:translateY(16px) scale(.95);opacity:0}}
+  .card h2{margin:0 0 6px;font-size:28px}
+  .card p{margin:6px 0;color:var(--sub);font-weight:700;line-height:1.5}
+  .big{border:0;background:var(--pri);color:#fff;font-weight:900;font-size:24px;padding:14px 34px;border-radius:18px;margin-top:12px;box-shadow:0 6px 0 #d63d70}
+  .big:active{transform:translateY(3px);box-shadow:0 3px 0 #d63d70}
+  .big.sec{background:#eef1f8;color:var(--sub);box-shadow:0 6px 0 #d4dae8;font-size:18px;padding:12px 20px}
+  .rscore{font-size:64px;font-weight:900;color:var(--pri);line-height:1.1}
+  .newrec{display:inline-block;background:#ffe14d;color:#7a5200;font-weight:900;border-radius:99px;padding:4px 14px;animation:bump .6s 2}
+  .rules{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .rules span{background:#f4f6fb;border-radius:99px;padding:4px 10px;font-size:13px;font-weight:800;color:var(--sub)}
+  footer{text-align:right;padding:0 20px 8px;font-size:13px}
+  footer a{color:var(--sub);text-decoration:none}
+  @media (max-width:700px){
+    header{padding:8px 12px;gap:8px}
+    header h1{font-size:21px}
+    .stages{margin-left:0;order:3;width:100%}
+    .stg{flex:1;font-size:14px;padding:8px 4px}
+    .snd{margin-left:auto}.snd .t{display:none}
+    header>div:nth-child(2){flex:1;min-width:0}
+    main{padding:8px 10px 4px}
+    .pill{padding:5px 10px;font-size:13px}.pill b{font-size:18px}
+    .qcard{font-size:32px;padding:8px 18px}
+    .field{min-height:460px;--bw:66px}
+    .combo{top:auto;bottom:34px;right:10px;font-size:16px}
+    .card{padding:18px 16px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="풍선 계산 팡팡">
+<meta property="og:description" content="떠오르는 풍선 중 문제의 답이 적힌 풍선을 터뜨리는 연산 게임">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/58-balloon-math.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/balloon-math/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">🎈</div>
+  <div><h1>풍선 계산 팡팡</h1><small>문제의 답이 적힌 풍선을 톡! 터뜨려요</small></div>
+  <nav class="stages" id="stages">
+    <button class="stg on" data-s="add">➕ 덧셈</button>
+    <button class="stg" data-s="sub">➖ 뺄셈</button>
+    <button class="stg" data-s="mul">✖️ 곱셈구구</button>
+  </nav>
+  <button class="snd" id="snd" aria-pressed="true" aria-label="소리 켜기/끄기"><i id="sndI">🔊</i><span class="t" id="sndT"> 소리 켬</span></button>
+</header>
+<main>
+  <section class="game">
+    <div class="hud">
+      <div class="pill">점수<b id="score">0</b></div>
+      <div class="timebar" id="tbox"><i id="tbar"></i><span id="tnum">60초</span></div>
+      <button class="ib" id="pauseBtn" aria-label="잠깐 멈춤" disabled>⏸</button>
+      <div class="pill">🏆 최고<b id="best">0</b></div>
+    </div>
+    <div class="field" id="field">
+      <div class="cloud c1"></div><div class="cloud c2"></div>
+      <div class="qcard" id="qcard"><span id="q">7 + 5</span> = <em>?</em></div>
+      <div class="combo" id="combo"></div>
+      <div id="bals"></div>
+      <div class="toast" id="toast"></div>
+      <div class="ov on" id="ov">
+        <div class="card on" id="ready">
+          <h2>🎈 준비됐나요?</h2>
+          <p><b id="stName">덧셈</b> 문제 · 60초 동안 정답 풍선을 터뜨려요!</p>
+          <div class="rules"><span>정답 +10</span><span>3연속 +5 보너스</span><span>오답 −5</span></div>
+          <button class="big" id="start">▶ 시작하기</button>
+        </div>
+        <div class="card" id="paused">
+          <h2>⏸ 잠깐 멈췄어요</h2>
+          <p>준비되면 계속해요</p>
+          <button class="big" id="resume">▶ 계속하기</button>
+        </div>
+        <div class="card" id="result">
+          <h2 id="rTitle">끝! 🎉</h2>
+          <div class="rscore" id="rScore">0</div>
+          <p id="rStat"></p>
+          <div class="newrec" id="newrec" hidden>🏆 새 최고 기록!</div>
+          <div><button class="big" id="again">🔁 다시 하기</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+<script>
+(() => {
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const KEY = 'edu-expo-balloon-math-v1';
+const NAMES = { add: '덧셈', sub: '뺄셈', mul: '곱셈구구' };
+const DEMO = { add: ['7 + 5', [12, 11, 13, 10, 15]], sub: ['13 − 6', [7, 8, 6, 9, 19]], mul: ['6 × 7', [42, 36, 48, 49, 35]] };
+const HUES = [340, 205, 45, 140, 275, 15];
+const field = $('#field'), bals = $('#bals');
+let rng = Math.random;
+const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const ri = (a, b) => a + Math.floor(rng() * (b - a + 1));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+// ---- 저장 ----
+function load() {
+  const r = { add: 0, sub: 0, mul: 0, sound: true };
+  try { const o = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+    for (const k in NAMES) { const v = Math.floor(Number(o[k])); r[k] = v > 0 && v < 100000 ? v : 0; }
+    r.sound = o.sound !== false;
+  } catch (e) {}
+  return r;
+}
+const rec = load();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+
+// ---- 소리 (첫 터치 때만 AudioContext 생성) ----
+let AC = null;
+function ac(create) {
+  if (!rec.sound) return null;
+  if (!AC && create) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (AC && AC.state === 'suspended') AC.resume().catch(() => {});
+  return AC;
+}
+function tone(f1, f2, dur, type, vol, delay, create) {
+  const a = ac(create); if (!a) return;
+  const t = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  pop: c => { tone(900, 180, 0.12, 'triangle', 0.25, 0, c); tone(1500, 2400, 0.08, 'sine', 0.12, 0.03, c); },
+  bad: c => tone(220, 110, 0.25, 'square', 0.08, 0, c),
+  end: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.18, 'triangle', 0.18, i * 0.12, false))
+};
+function setSound() {
+  $('#sndI').textContent = rec.sound ? '🔊' : '🔇'; $('#sndT').textContent = rec.sound ? ' 소리 켬' : ' 소리 끔';
+  $('#snd').setAttribute('aria-pressed', String(rec.sound));
+}
+$('#snd').addEventListener('click', () => { rec.sound = !rec.sound; save(); setSound(); if (rec.sound) tone(700, 900, 0.08, 'sine', 0.15, 0, true); });
+
+// ---- 상태 ----
+let stage = 'add';
+const G = { state: 'ready', paused: false, score: 0, time: 60, ok: 0, bad: 0, miss: 0, combo: 0, q: null, list: [], wait: false, W: 800, H: 500, BW: 88 };
+
+function measure() {
+  G.W = field.clientWidth; G.H = field.clientHeight;
+  G.BW = G.W < 520 ? 66 : 88;
+}
+function makeQ() {
+  const hard = G.ok >= 6;
+  let a, b, ans, txt; const extra = [];
+  if (stage === 'add') { a = ri(1, hard ? 19 : 9); b = ri(1, 9); ans = a + b; txt = a + ' + ' + b; extra.push(Math.abs(a - b)); }
+  else if (stage === 'sub') { b = ri(1, 9); a = b + ri(1, hard ? 19 : 9); ans = a - b; txt = a + ' − ' + b; extra.push(a + b); }
+  else { a = ri(2, 9); b = ri(hard ? 3 : 1, 9); ans = a * b; txt = a + ' × ' + b; extra.push(a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b); }
+  const n = Math.min(6, 4 + Math.floor(G.ok / 4));
+  const set = new Set([ans]);
+  const cands = shuffle([ans + 1, ans - 1, ans + 2, ans - 2, ans + 10, ans - 10, ...extra]);
+  for (const c of cands) if (set.size < n && c > 0) set.add(c);
+  for (let k = 0; set.size < n && k < 50; k++) { const c = ans + ri(-9, 9); if (c > 0) set.add(c); }
+  return { txt, ans, vals: shuffle([...set]) };
+}
+function balloonEl(v, hue, tag) {
+  const el = document.createElement(tag); el.className = 'bal';
+  if (tag === 'button') { el.type = 'button'; el.setAttribute('aria-label', '풍선 ' + v); }
+  el.dataset.v = v; el.style.setProperty('--h', hue);
+  const bd = document.createElement('span'); bd.className = 'bd';
+  const b = document.createElement('b'); b.textContent = v;
+  bd.appendChild(b); el.appendChild(bd);
+  bd.style.animationDelay = (-rng() * 2).toFixed(2) + 's';
+  return el;
+}
+function setQ(txt, still) { $('#q').textContent = txt; if (still) return; const c = $('#qcard'); c.classList.remove('new'); void c.offsetWidth; c.classList.add('new'); }
+
+// 첫 화면 미리보기 풍선
+function demo() {
+  bals.textContent = ''; G.list = [];
+  const [txt, vals] = DEMO[stage]; setQ(txt, true);
+  const spots = [[7, 52], [19, 26], [77, 30], [88, 56], [64, 66]];
+  vals.forEach((v, i) => { const el = balloonEl(v, HUES[i], 'div'); el.classList.add('demo');
+    el.style.left = 'calc(' + spots[i][0] + '% - var(--bw)/2)'; el.style.top = spots[i][1] + '%'; bals.appendChild(el); });
+}
+
+function spawn() {
+  G.wait = false; bals.textContent = ''; G.list = [];
+  G.q = makeQ(); setQ(G.q.txt);
+  const n = G.q.vals.length, lanes = shuffle([...Array(n).keys()]), lw = G.W / n;
+  const rise = Math.max(4.6, 7.8 - G.ok * 0.15);
+  const hues = shuffle(HUES.slice());
+  G.q.vals.forEach((v, i) => {
+    const el = balloonEl(v, hues[i], 'button');
+    let x = lw * (lanes[i] + 0.5) - G.BW / 2 + (rng() - 0.5) * lw * 0.3;
+    x = Math.max(4, Math.min(G.W - G.BW - 4, x));
+    el.style.left = x + 'px';
+    const b = { el, v, y: G.H + 10 + rng() * G.H * 0.3, sp: (G.H + 200) / rise * (0.85 + rng() * 0.3), dead: false };
+    el.style.transform = 'translate3d(0,' + b.y + 'px,0)';
+    el.addEventListener('click', () => hit(b));
+    bals.appendChild(el); G.list.push(b);
+  });
+}
+function burst(b, color) {
+  const d = document.createElement('div'); d.className = 'burst';
+  const r = b.el.getBoundingClientRect(), f = field.getBoundingClientRect();
+  const cx = r.left - f.left + r.width / 2, cy = r.top - f.top + r.height / 2;
+  d.style.left = cx + 'px'; d.style.top = cy + 'px';
+  for (let i = 0; i < 8; i++) { const s = document.createElement('i'); s.style.setProperty('--a', i * 45 + 'deg'); s.style.setProperty('--c', color); d.appendChild(s); }
+  field.appendChild(d); setTimeout(() => d.remove(), 500);
+  return [cx, cy];
+}
+function fx(x, y, txt, neg) {
+  const d = document.createElement('div'); d.className = 'fx' + (neg ? ' neg' : ''); d.textContent = txt;
+  d.style.left = x + 'px'; d.style.top = (y - 30) + 'px'; field.appendChild(d); setTimeout(() => d.remove(), 800);
+}
+function bump(id) { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
+function clearRound(skip) {
+  for (const o of G.list) if (o !== skip && !o.dead) { o.dead = true; o.el.classList.add('away'); }
+}
+function next(ms) { G.wait = true; setTimeout(() => { if (G.state === 'play') spawn(); }, ms); }
+
+function hit(b) {
+  if (G.state !== 'play' || G.paused || b.dead || G.wait) return;
+  b.dead = true;
+  if (b.v === G.q.ans) {
+    G.ok++; G.combo++;
+    const add = 10 + (G.combo >= 3 ? 5 : 0); G.score += add;
+    b.el.classList.add('pop');
+    const [x, y] = burst(b, 'hsl(' + b.el.style.getPropertyValue('--h') + ' 90% 60%)');
+    fx(x, y, '+' + add); sfx.pop(true);
+    clearRound(b); next(380);
+  } else {
+    G.bad++; G.combo = 0; G.score = Math.max(0, G.score - 5);
+    b.el.classList.add('bad');
+    const [x, y] = burst(b, '#9aa3b5'); fx(x, y, '−5', true); sfx.bad(true);
+    field.classList.remove('shake'); void field.offsetWidth; field.classList.add('shake');
+    setTimeout(() => field.classList.remove('shake'), 420);
+  }
+  hud(); bump('#score');
+}
+let toastT = 0;
+function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('on'), 1100); }
+
+function hud() {
+  $('#score').textContent = G.score;
+  $('#best').textContent = rec[stage];
+  const c = $('#combo'); c.textContent = '🔥 ' + G.combo + '연속!'; c.classList.toggle('on', G.combo >= 2);
+  drawTime();
+}
+let lastSec = -1;
+function drawTime() {
+  $('#tbar').style.transform = 'scaleX(' + (G.time / 60) + ')';
+  const s = Math.ceil(G.time);
+  if (s !== lastSec) { lastSec = s; $('#tnum').textContent = s + '초'; $('#tbox').classList.toggle('low', s <= 10); }
+}
+
+function update(dt) {
+  if (G.state !== 'play' || G.paused) return;
+  G.time -= dt / 1000;
+  if (G.time <= 0) { G.time = 0; drawTime(); finish(); return; }
+  drawTime();
+  for (const b of G.list) {
+    if (b.dead) continue;
+    b.y -= b.sp * dt / 1000;
+    b.el.style.transform = 'translate3d(0,' + b.y.toFixed(1) + 'px,0)';
+    if (b.y < -G.BW * 1.2 - 70) {
+      b.dead = true; b.el.remove();
+      if (b.v === G.q.ans && !G.wait) { G.miss++; G.combo = 0; toast('놓쳤어요! 정답은 ' + G.q.ans); clearRound(); next(650); hud(); }
+    }
+  }
+}
+let raf = 0, last = 0;
+function frame(t) {
+  const dt = last ? Math.min(100, t - last) : 16; last = t;
+  update(dt);
+  raf = G.state === 'play' && !G.paused ? requestAnimationFrame(frame) : 0;
+  if (!raf) last = 0;
+}
+const run = () => { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } };
+const halt = () => { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0; };
+
+function card(id) {
+  $('#ov').classList.toggle('on', !!id);
+  for (const c of $$('.card')) { c.classList.toggle('on', c.id === id); if (booted) c.classList.add('anim'); }
+}
+let booted = false;
+function lockStages(on) { for (const b of $$('.stg')) b.disabled = on; }
+
+function start() {
+  if (G.state === 'play') return;
+  ac(true);
+  Object.assign(G, { state: 'play', paused: false, score: 0, time: 60, ok: 0, bad: 0, miss: 0, combo: 0, wait: false });
+  lastSec = -1; measure(); field.style.setProperty('--bw', G.BW + 'px');
+  card(null); lockStages(true); $('#pauseBtn').disabled = false;
+  spawn(); hud(); run();
+}
+function pause() {
+  if (G.state !== 'play' || G.paused) return;
+  G.paused = true; halt(); card('paused');
+}
+function resume() {
+  if (G.state !== 'play' || !G.paused) return;
+  G.paused = false; card(null); run();
+}
+function finish() {
+  if (G.state !== 'play') return;
+  G.state = 'result'; G.paused = false; halt(); clearRound();
+  $('#pauseBtn').disabled = true; lockStages(false);
+  const isNew = G.score > rec[stage];
+  if (isNew) { rec[stage] = G.score; save(); }
+  $('#rScore').textContent = G.score + '점';
+  $('#rStat').textContent = NAMES[stage] + ' · 맞힘 ' + G.ok + ' · 틀림 ' + G.bad + ' · 놓침 ' + G.miss;
+  $('#rTitle').textContent = G.score >= 150 ? '계산 왕! 👑' : G.score >= 80 ? '멋져요! 🎉' : '끝! 다시 도전해요 💪';
+  $('#newrec').hidden = !isNew;
+  card('result'); hud(); sfx.end();
+}
+function toReady() {
+  halt(); G.state = 'ready'; G.paused = false; G.score = 0; G.time = 60; G.combo = 0; lastSec = -1;
+  $('#stName').textContent = NAMES[stage]; $('#pauseBtn').disabled = true; lockStages(false);
+  demo(); card('ready'); hud();
+}
+
+$('#start').addEventListener('click', start);
+$('#again').addEventListener('click', () => { G.state = 'result'; start(); });
+$('#resume').addEventListener('click', resume);
+$('#pauseBtn').addEventListener('click', pause);
+for (const b of $$('.stg')) b.addEventListener('click', () => {
+  if (G.state === 'play') return;
+  stage = b.dataset.s;
+  for (const x of $$('.stg')) x.classList.toggle('on', x === b);
+  toReady();
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+window.addEventListener('resize', () => { if (G.state === 'play') { measure(); field.style.setProperty('--bw', G.BW + 'px'); } });
+
+setSound(); toReady(); booted = true;
+
+// 테스트용 훅
+window.__test = {
+  seed: n => { rng = mulberry(n); },
+  answer: () => G.q && G.q.ans,
+  step: ms => { for (let t = 0; t < ms; t += 50) update(50); },
+  end: () => finish(),
+  get state() { return G.paused ? 'paused' : G.state; },
+  get time() { return G.time; }
+};
+})();
+</script>
+</body>
+</html>

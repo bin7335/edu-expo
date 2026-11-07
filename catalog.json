@@ -53,6 +53,16 @@
     {"no":48,"slug":"pixel-beads","name":"콩콩 픽셀 도안","kind":"체험형","desc":"구슬 20색 픽셀 그림, 대칭 그리기·재료표·번호 도안 인쇄","who":"학생·누구나","path":"pixel-beads/"},
     {"no":49,"slug":"career-match","name":"꿈길 찾기","kind":"체험형","desc":"그림 카드 15장으로 흥미 육각형과 어울리는 직업 8장, 결과 카드 저장","who":"학생·학부모","path":"career-match/"},
     {"no":50,"slug":"multilang-notice","name":"다가온 통신문","kind":"콘셉트","desc":"블록으로 쓰면 다국어 가정통신문이 나란히, 날짜·금액은 아이콘 숫자로","who":"학부모·교사","path":"multilang-notice/"},
-    {"no":51,"slug":"page-qr","name":"딸깍 QR","kind":"확장프로그램","desc":"아이콘 한 번에 지금 보는 페이지가 큰 QR로, 교실 TV 전체 화면까지","who":"교사","path":"ext-page-qr/","zip":"extensions/page-qr.zip"}
+    {"no":51,"slug":"page-qr","name":"딸깍 QR","kind":"확장프로그램","desc":"아이콘 한 번에 지금 보는 페이지가 큰 QR로, 교실 TV 전체 화면까지","who":"교사","path":"ext-page-qr/","zip":"extensions/page-qr.zip"},
+    {"no":52,"slug":"reaction-tap","name":"번개 손","kind":"게임","desc":"화면이 초록으로 바뀌는 순간 터치! 5번 평균으로 재는 반응 속도 챌린지","who":"누구나","path":"reaction-tap/"},
+    {"no":53,"slug":"pair-flip","name":"짝꿍 뒤집기","kind":"게임","desc":"카드 16장을 뒤집어 같은 그림 짝을 찾는 기억력 게임, 시간·횟수 기록","who":"학생·누구나","path":"pair-flip/"},
+    {"no":54,"slug":"make-ten","name":"합쳐서 10","kind":"게임","desc":"60초 동안 두 수를 골라 10을 만드는 덧셈 순발력 게임","who":"학생","path":"make-ten/"},
+    {"no":55,"slug":"color-trick","name":"색깔 함정","kind":"게임","desc":"글자 뜻에 속지 말고 글자 색을 고르는 30초 집중력 게임","who":"누구나","path":"color-trick/"},
+    {"no":56,"slug":"sound-order","name":"순서 기억 패드","kind":"게임","desc":"불빛과 소리가 켜진 순서를 기억해 그대로 누르는 기억력 단계 도전","who":"학생·누구나","path":"sound-order/"},
+    {"no":57,"slug":"safety-ox","name":"안전 OX 챔피언","kind":"게임","desc":"생활·교통·재난 안전 상식 OX 10문제와 해설, 안전 등급 배지","who":"학생·학부모","path":"safety-ox/"},
+    {"no":58,"slug":"balloon-math","name":"풍선 계산 팡팡","kind":"게임","desc":"떠오르는 풍선 중 문제의 답이 적힌 풍선을 터뜨리는 연산 게임","who":"학생","path":"balloon-math/"},
+    {"no":59,"slug":"slide-puzzle","name":"밀어 퍼즐","kind":"게임","desc":"빈칸으로 조각을 밀어 숫자·그림을 맞추는 3×3·4×4 슬라이딩 퍼즐","who":"학생·누구나","path":"slide-puzzle/"},
+    {"no":60,"slug":"recycle-sort","name":"분리배출 챔피언","kind":"게임","desc":"쓰레기 29종을 종이팩·스티로폼·음식물까지 9개 통에 나누고 배출 팁을 배우는 환경 게임","who":"학생·누구나","path":"recycle-sort/"},
+    {"no":61,"slug":"ten-seconds","name":"딱 10초","kind":"게임","desc":"시계를 보지 않고 마음속으로 10초를 세어 멈추는 시간 감각 게임","who":"누구나","path":"ten-seconds/"}
   ]
 }

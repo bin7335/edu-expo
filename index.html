@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>교실에서 바로 쓰는 웹 도구 51 · 찍먹 데모관</title>
+<title>교실에서 바로 쓰는 웹 도구 61 · 찍먹 데모관</title>
 <meta name="description" content="초등 교사가 직접 만든 수업·업무용 웹앱, 확장프로그램, 아이디어 시연 페이지를 한곳에 모았습니다. 눌러서 바로 체험해 보세요.">
-<meta property="og:title" content="교실에서 바로 쓰는 웹 도구 51 · 찍먹 데모관">
+<meta property="og:title" content="교실에서 바로 쓰는 웹 도구 61 · 찍먹 데모관">
 <meta property="og:image" content="thumbnails/08-classroom-tools.png">
 <style>
   *{box-sizing:border-box}
@@ -27,6 +27,7 @@
   .tag.c{background:#fce7f3;color:#be185d}
   .tag.w{background:#dcfce7;color:#166534}
   .tag.x{background:#fef3c7;color:#92400e}
+  .tag.g{background:#e0e7ff;color:#3730a3}
   h2{margin:2px 0 0;font-size:19px}
   .desc{margin:0;font-size:14px;color:#475569;line-height:1.5}
   .who{margin-top:auto;font-size:12px;color:#64748b;padding-top:6px}
@@ -35,7 +36,7 @@
 </head>
 <body>
 <header>
-  <h1>교실에서 바로 쓰는 웹 도구 51</h1>
+  <h1>교실에서 바로 쓰는 웹 도구 61</h1>
   <p>초등 교사가 AI와 함께 직접 만든 앱·확장프로그램·아이디어 시연 모음 · 카드를 눌러 바로 체험해 보세요</p>
 </header>
 <div class="filters" id="filters"></div>
@@ -98,9 +99,19 @@ const APPS = [
   ["49-career-match","꿈길 찾기","체험형","그림 카드 15장으로 흥미 육각형과 어울리는 직업 8장, 결과 카드 저장","학생·학부모","career-match/"],
   ["50-multilang-notice","다가온 통신문","콘셉트","블록으로 쓰면 다국어 가정통신문이 나란히, 날짜·금액은 아이콘 숫자로","학부모·교사","multilang-notice/"],
   ["51-page-qr","딸깍 QR","확장프로그램","아이콘 한 번에 지금 보는 페이지가 큰 QR로, 교실 TV 전체 화면까지","교사","ext-page-qr/"],
+  ["52-reaction-tap","번개 손","게임","화면이 초록으로 바뀌는 순간 터치! 5번 평균으로 재는 반응 속도 챌린지","누구나","reaction-tap/"],
+  ["53-pair-flip","짝꿍 뒤집기","게임","카드 16장을 뒤집어 같은 그림 짝을 찾는 기억력 게임, 시간·횟수 기록","학생·누구나","pair-flip/"],
+  ["54-make-ten","합쳐서 10","게임","60초 동안 두 수를 골라 10을 만드는 덧셈 순발력 게임","학생","make-ten/"],
+  ["55-color-trick","색깔 함정","게임","글자 뜻에 속지 말고 글자 색을 고르는 30초 집중력 게임","누구나","color-trick/"],
+  ["56-sound-order","순서 기억 패드","게임","불빛과 소리가 켜진 순서를 기억해 그대로 누르는 기억력 단계 도전","학생·누구나","sound-order/"],
+  ["57-safety-ox","안전 OX 챔피언","게임","생활·교통·재난 안전 상식 OX 10문제와 해설, 안전 등급 배지","학생·학부모","safety-ox/"],
+  ["58-balloon-math","풍선 계산 팡팡","게임","떠오르는 풍선 중 문제의 답이 적힌 풍선을 터뜨리는 연산 게임","학생","balloon-math/"],
+  ["59-slide-puzzle","밀어 퍼즐","게임","빈칸으로 조각을 밀어 숫자·그림을 맞추는 3×3·4×4 슬라이딩 퍼즐","학생·누구나","slide-puzzle/"],
+  ["60-recycle-sort","분리배출 챔피언","게임","쓰레기 29종을 종이팩·스티로폼·음식물까지 9개 통에 나누고 배출 팁을 배우는 환경 게임","학생·누구나","recycle-sort/"],
+  ["61-ten-seconds","딱 10초","게임","시계를 보지 않고 마음속으로 10초를 세어 멈추는 시간 감각 게임","누구나","ten-seconds/"],
 ];
-const TAGCLS = {"콘셉트":"c","체험형":"w","확장프로그램":"x"};
-const KINDS = ["전체","체험형","수업 도구","업무 도구","확장프로그램","콘셉트"];
+const TAGCLS = {"콘셉트":"c","체험형":"w","확장프로그램":"x","게임":"g"};
+const KINDS = ["전체","게임","체험형","수업 도구","업무 도구","확장프로그램","콘셉트"];
 let cur = "전체";
 function render(){
   document.getElementById('grid').innerHTML = APPS.filter(a=>a[1]&&(cur==="전체"||a[2]===cur)).map(([t,n,k,d,w,u])=>`

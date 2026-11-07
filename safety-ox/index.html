@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>안전 OX 챔피언 - 생활·교통·재난·물놀이 안전 퀴즈</title>
+<meta name="description" content="생활·교통·화재·지진·물놀이 안전 상식 OX 10문제. 문제마다 해설, 안전 등급 배지, 틀린 문제 다시 보기, 최고 점수 기록.">
+<style>
+:root{--bg:#fff7e8;--card:#fff;--ink:#2b2a3a;--sub:#6b6880;--line:#f0dfbf;--o:#2f7cf6;--od:#1b4fae;--x:#f0473e;--xd:#a5241e;--g:#1fa463;--y:#ffc93c}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;
+background-image:repeating-linear-gradient(-45deg,transparent 0 22px,#ffefcf 22px 26px)}
+header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:#fff;border-bottom:3px solid var(--line);flex-wrap:wrap}
+.logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#ffc93c,#ff7a45);display:grid;place-items:center;font-size:28px;box-shadow:0 4px 0 #c9541f}
+h1{margin:0;font-size:26px}
+header small{display:block;color:var(--sub);font-size:14px}
+.tools{margin-left:auto;display:flex;gap:8px;align-items:center}
+.pill{background:#fff3d1;border-radius:99px;padding:8px 14px;font-weight:800;color:#8a5a00}
+.btn{border:0;font:inherit;font-weight:800;font-size:16px;padding:10px 16px;border-radius:14px;cursor:pointer;background:#eef0f6;color:var(--ink);box-shadow:0 4px 0 #c9cddb;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #c9cddb}
+.btn.go{background:linear-gradient(135deg,#ff8a3d,#ff5a5f);color:#fff;font-size:22px;padding:15px 26px;box-shadow:0 6px 0 #b8383c}
+.btn.go:active{box-shadow:0 2px 0 #b8383c}
+main{flex:1;padding:16px 20px;display:flex;justify-content:center;align-items:flex-start}
+.scr{display:none;width:100%;max-width:1120px}
+.scr.on{display:block;animation:in .3s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:3px solid var(--line);border-radius:24px;padding:20px;box-shadow:0 8px 0 #f0d9ad}
+/* 시작 화면 */
+.home{display:grid;grid-template-columns:1.05fr 1fr;gap:22px;align-items:center}
+.hero h2{font-size:40px;margin:0 0 8px;line-height:1.2}
+.hero h2 em{font-style:normal;color:var(--o)}.hero h2 i{font-style:normal;color:var(--x)}
+.hero p{font-size:18px;color:var(--sub);margin:0 0 14px}
+.cats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.cat{background:#fff;border:2px solid var(--line);border-radius:99px;padding:6px 12px;font-weight:800;font-size:15px}
+.badges{display:flex;gap:10px;margin:16px 0 0}
+.bd{flex:1;text-align:center;background:#fff;border:2px solid var(--line);border-radius:16px;padding:8px 4px;font-size:13px;font-weight:800;color:var(--sub)}
+.bd b{display:block;font-size:30px}
+.startrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.preview{perspective:900px}
+.preview .card{transform:rotateX(8deg) rotateZ(-1.5deg);transform-origin:50% 100%}
+.tag{display:inline-block;background:#e8f0ff;color:var(--od);font-weight:900;border-radius:99px;padding:4px 12px;font-size:14px}
+/* 문제 화면 */
+.top{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.bar{flex:1;min-width:160px;height:16px;background:#fff;border:2px solid var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ffc93c,#ff7a45);transform-origin:0 50%;transition:transform .3s}
+.qtext{font-size:clamp(21px,2.6vw,30px);font-weight:900;line-height:1.45;margin:10px 0 4px;min-height:2.9em;word-break:keep-all}
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px;perspective:800px}
+.ob{border:0;cursor:pointer;font:inherit;border-radius:28px;height:clamp(120px,24vh,190px);display:flex;align-items:center;justify-content:center;gap:12px;color:#fff;font-weight:900;font-size:clamp(64px,10vw,110px);line-height:1;transition:transform .1s,opacity .2s;touch-action:manipulation}
+.ob small{font-size:20px}
+.ob.o{background:var(--o);box-shadow:0 10px 0 var(--od)}
+.ob.x{background:var(--x);box-shadow:0 10px 0 var(--xd)}
+.ob:active:not(:disabled){transform:translateY(7px)}
+.ob:disabled{cursor:default;opacity:.35}
+.ob.pick{opacity:1;transform:translateY(7px)}
+.ob.right{opacity:1;animation:yay .5s}
+@keyframes yay{40%{transform:scale(1.06) rotateX(10deg)}}
+.fb{display:none;margin-top:16px;border-radius:20px;padding:14px 16px;align-items:center;gap:14px;flex-wrap:wrap}
+.fb.on{display:flex;animation:in .25s}
+.fb.good{background:#e3f8ec;border:3px solid #9fdcb9}
+.fb.bad{background:#ffe9e7;border:3px solid #f6b3ad}
+.fb .big{font-size:40px;animation:pop .4s}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.fb div{flex:1;min-width:200px}
+.fb b{font-size:20px}
+.fb p{margin:4px 0 0;font-size:17px;line-height:1.5}
+/* 결과 */
+.res{text-align:center;max-width:720px;margin:0 auto}
+.medal{font-size:96px;line-height:1;display:inline-block;animation:drop .7s cubic-bezier(.3,1.6,.5,1)}
+@keyframes drop{from{transform:translateY(-60px) rotate(-20deg);opacity:0}to{transform:none;opacity:1}}
+.res h2{font-size:34px;margin:8px 0 4px}
+.res .sc{font-size:22px;font-weight:800;color:var(--sub)}
+.res .sc b{color:var(--ink);font-size:30px}
+.newrec{display:inline-block;background:var(--y);border-radius:99px;padding:4px 14px;font-weight:900;margin-top:8px}
+.btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+#wrongList{text-align:left;margin-top:14px;display:none;gap:10px;flex-direction:column}
+#wrongList.on{display:flex}
+.wq{background:#fff;border:2px solid var(--line);border-radius:16px;padding:12px 14px}
+.wq b{display:block;font-size:17px}
+.wq p{margin:4px 0 0;color:var(--sub);font-size:15px;line-height:1.5}
+.ans{display:inline-block;color:#fff;border-radius:8px;padding:0 8px;font-weight:900;margin-right:6px}
+.ans.o{background:var(--o)}.ans.x{background:var(--x)}
+footer{text-align:right;padding:0 20px 10px;font-size:13px}
+footer a{color:var(--sub);text-decoration:none}
+@media (max-width:860px){
+  header{padding:10px 12px}h1{font-size:22px}
+  .tools{margin-left:0;width:100%}
+  main{padding:12px}
+  .home{grid-template-columns:1fr}
+  .hero h2{font-size:30px}
+  .card{padding:16px}
+  .ox{gap:12px}
+  .medal{font-size:76px}
+}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="안전 OX 챔피언">
+<meta property="og:description" content="생활·교통·재난 안전 상식 OX 10문제와 해설, 안전 등급 배지">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/57-safety-ox.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/safety-ox/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">🦺</div>
+  <div><h1>안전 OX 챔피언</h1><small>생활·교통·화재·지진·물놀이 안전 상식, O일까 X일까?</small></div>
+  <div class="tools"><span class="pill">🏅 최고 <span id="best">0</span>점</span><button class="btn" id="snd" type="button">🔊 소리</button></div>
+</header>
+<main>
+  <section class="scr on" id="sHome"><div class="home">
+    <div class="hero">
+      <h2>정답은 <em>O</em>일까, <i>X</i>일까?<br>안전 챔피언에 도전!</h2>
+      <p>랜덤 10문제 · 약 2분 · 문제마다 짧은 해설</p>
+      <div class="cats"><span class="cat">🏠 생활</span><span class="cat">🚦 교통</span><span class="cat">🔥 화재</span><span class="cat">🌏 지진</span><span class="cat">🏊 물놀이</span></div>
+      <div class="startrow"><button class="btn go" id="start" type="button">▶ 시작하기</button><span class="pill" id="bankInfo"></span></div>
+      <div class="badges"><div class="bd"><b>🌱</b>안전 새싹<br>0-5점</div><div class="bd"><b>🛡️</b>안전 지킴이<br>6-8점</div><div class="bd"><b>🏆</b>안전 챔피언<br>9-10점</div></div>
+    </div>
+    <div class="preview"><div class="card">
+      <span class="tag">🔥 화재 · 예시 문제</span>
+      <div class="qtext">불이 나면 엘리베이터를 타고 빨리 내려가야 한다.</div>
+      <div class="ox"><div class="ob o" style="opacity:.55">O</div><div class="ob x right">X</div></div>
+      <div class="fb good on"><span class="big">✅</span><div><b>정답은 X!</b><p>불이 나면 엘리베이터가 멈출 수 있어요. 계단으로 대피해요.</p></div></div>
+    </div></div>
+  </div></section>
+
+  <section class="scr" id="sQuiz"><div class="card">
+    <div class="top"><span class="tag" id="qCat"></span><b id="qNo"></b><div class="bar"><i id="qBar"></i></div><span class="pill">⭐ <span id="qScore">0</span>점</span></div>
+    <div class="qtext" id="qText"></div>
+    <div class="ox"><button class="ob o" id="bO" type="button" aria-label="O 맞아요">O<small>맞아요</small></button><button class="ob x" id="bX" type="button" aria-label="X 아니에요">X<small>아니에요</small></button></div>
+    <div class="fb" id="fb"><span class="big" id="fbIcon"></span><div><b id="fbTitle"></b><p id="fbText"></p></div><button class="btn go" id="next" type="button">다음 문제 →</button></div>
+  </div></section>
+
+  <section class="scr" id="sRes"><div class="card res">
+    <div class="medal" id="rMedal"></div>
+    <h2 id="rTitle"></h2>
+    <div class="sc">10문제 중 <b id="rScore"></b>개 정답</div>
+    <div id="rNew"></div>
+    <p id="rMsg"></p>
+    <div class="btns"><button class="btn go" id="again" type="button">🔁 다시 하기</button><button class="btn" id="review" type="button">📝 틀린 문제 다시 보기</button></div>
+    <div id="wrongList"></div>
+  </div></section>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+<script>
+(function(){
+'use strict';
+// [분류, 문제, 정답(true=O), 해설] — 행정안전부·소방청 생활안전 일반 수칙 수준
+var BANK=[
+['🚦 교통','횡단보도 초록불이 깜빡이기 시작하면 빨리 뛰어서 건너야 한다.',false,'초록불이 깜빡이면 새로 건너기 시작하지 말고 다음 신호를 기다려요.'],
+['🚦 교통','초록불이 켜져도 좌우를 살피고 차가 멈췄는지 확인한 뒤 건넌다.',true,'신호를 어기는 차가 있을 수 있어요. 멈춤-살핌-확인 후 건너요.'],
+['🚦 교통','자전거를 탈 때는 안전모(헬멧)를 써야 한다.',true,'자전거를 탈 때는 안전모를 꼭 써야 해요. 머리를 지켜 주는 가장 중요한 보호 장비예요.'],
+['🚦 교통','자동차 뒷좌석에 탈 때는 안전띠를 매지 않아도 된다.',false,'자동차는 앞좌석·뒷좌석 모든 좌석에서 안전띠를 매야 해요.'],
+['🚦 교통','횡단보도는 자전거를 탄 채로 건너도 괜찮다.',false,'횡단보도에서는 자전거에서 내려 끌고 걸어서 건너요.'],
+['🚦 교통','버스에서 내린 뒤 버스 바로 앞이나 뒤로 길을 건너도 안전하다.',false,'버스에 가려 오는 차가 안 보여요. 버스가 떠난 뒤 가까운 횡단보도로 건너요.'],
+['🚦 교통','어린이 보호구역(스쿨존)에서 자동차는 보통 시속 30km 이하로 달려야 한다.',true,'어린이 보호구역은 대부분 제한 속도가 시속 30km예요. 그래도 길은 늘 조심해서 건너요.'],
+['🔥 화재','불이 나면 엘리베이터를 타고 빨리 내려가야 한다.',false,'불이 나면 엘리베이터가 멈추거나 연기가 들어올 수 있어요. 계단으로 대피해요.'],
+['🔥 화재','연기가 많을 때는 젖은 수건 등으로 코와 입을 막고 몸을 낮춰 대피한다.',true,'연기는 위로 올라가요. 코와 입을 막고 자세를 낮춰 벽을 짚으며 나가요.'],
+['🔥 화재','옷에 불이 붙으면 빨리 달려서 불을 꺼야 한다.',false,'달리면 불이 더 커져요. 멈춰서, 눕고, 얼굴을 가린 채 굴러서 불을 꺼요.'],
+['🔥 화재','불이 난 것을 보면 "불이야!" 하고 크게 외치고 119에 신고한다.',true,'주변에 알리고 119에 신고해요. 먼저 안전한 곳으로 피한 뒤 신고해도 돼요.'],
+['🔥 화재','불이 났을 때 문을 열기 전 손등으로 손잡이를 만져 보고, 뜨거우면 열지 않는다.',true,'손잡이가 뜨거우면 문 밖에 불이 있을 수 있어요. 다른 길로 피하거나 구조를 기다려요.'],
+['🔥 화재','콘센트 하나에 여러 전기 제품을 한꺼번에 많이 꽂아 써도 괜찮다.',false,'한 콘센트에 너무 많이 꽂으면 전선이 뜨거워져 불이 날 수 있어요.'],
+['🌏 지진','지진으로 흔들릴 때는 튼튼한 탁자 아래로 들어가 탁자 다리를 꼭 잡는다.',true,'떨어지는 물건에서 머리와 몸을 보호해요. 탁자가 없으면 가방이나 방석으로 머리를 감싸요.'],
+['🌏 지진','흔들림이 멈추고 밖으로 나갈 때는 엘리베이터 말고 계단을 이용한다.',true,'지진 뒤 엘리베이터는 멈출 수 있어요. 계단으로 나가 넓은 곳으로 대피해요.'],
+['🌏 지진','지진이 나서 밖에 나가면 건물 벽이나 담장 옆에 바짝 붙어 있는 것이 가장 안전하다.',false,'벽·담장·유리창·간판은 무너지거나 떨어질 수 있어요. 운동장이나 공원 같은 넓은 곳으로 가요.'],
+['🌏 지진','학교에서 지진이 나면 흔들림이 멈춘 뒤 선생님 안내에 따라 운동장으로 대피한다.',true,'흔들릴 때는 책상 아래에서 몸을 보호하고, 멈추면 안내에 따라 운동장으로 대피해요.'],
+['🏊 물놀이','물놀이 전에는 준비운동을 하고, 심장에서 먼 다리부터 물을 적신다.',true,'갑자기 차가운 물에 들어가면 몸이 놀라요. 준비운동 후 다리·팔·얼굴·가슴 순서로 적셔요.'],
+['🏊 물놀이','물에 빠진 친구를 보면 바로 물에 뛰어들어 구해야 한다.',false,'함께 위험해질 수 있어요. 큰 소리로 어른에게 알리고 119에 신고, 튜브나 막대를 던져 줘요.'],
+['🏊 물놀이','물놀이할 때는 내 몸에 맞는 구명조끼를 입고 끈을 꼭 조인다.',true,'헐렁하면 물에서 벗겨질 수 있어요. 몸에 맞는 크기로 끈까지 단단히 조여요.'],
+['🏊 물놀이','입술이 파래지고 몸이 덜덜 떨리면 물 밖으로 나와 몸을 따뜻하게 한다.',true,'몸이 차가워졌다는 신호예요. 바로 나와서 수건으로 감싸고 쉬어요.'],
+['🏊 물놀이','계곡 물이 얕아 보이면 깊이를 확인하지 않고 들어가도 된다.',false,'계곡은 갑자기 깊어지는 곳이 많아요. 어른과 함께 깊이를 확인하고 들어가요.'],
+['🏊 물놀이','비가 많이 오면 계곡 물이 갑자기 불어날 수 있으니 바로 물 밖으로 나온다.',true,'상류에 비가 오면 물이 빠르게 불어나요. 바로 나와 높은 곳으로 피해요.'],
+['🏠 생활','젖은 손으로 전기 플러그를 만지면 감전될 수 있다.',true,'물은 전기가 잘 통해요. 손을 잘 말린 뒤 플러그를 만져요.'],
+['🏠 생활','모르는 어른이 길을 알려 달라며 같이 가자고 하면 따라가서 도와준다.',false,'어른은 어른에게 도움을 청해요. "싫어요, 안 돼요" 하고 사람 많은 곳으로 가서 알려요.'],
+['🏠 생활','에스컬레이터에서는 손잡이를 잡고 노란 선 안쪽에 선다.',true,'뛰거나 걸으면 넘어질 수 있어요. 손잡이를 잡고 노란 선 안에 바르게 서요.'],
+['🏠 생활','집에서 가스 냄새가 나면 전등 스위치를 켜서 어디서 나는지 확인한다.',false,'스위치 불꽃에 불이 붙을 수 있어요. 스위치는 건드리지 말고 창문을 열고 밖으로 나가 어른에게 알려요.'],
+['🏠 생활','119는 불이 나거나 다친 사람이 있을 때, 112는 범죄를 신고할 때 거는 번호다.',true,'화재·구조·응급은 119, 범죄·위험한 사람은 112에 신고해요.']
+];
+var KEY='edu-expo-safety-ox-v1',N=10;
+var $=function(id){return document.getElementById(id);};
+var rnd=Math.random;
+function seeded(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+var st={qs:[],i:0,score:0,wrong:[],answered:false,best:0,sound:true};
+try{var s=JSON.parse(localStorage.getItem(KEY)||'{}');var b=Number(s&&s.best);st.best=isFinite(b)?Math.max(0,Math.min(N,Math.floor(b))):0;st.sound=!(s&&s.sound===false);}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({best:st.best,sound:st.sound}));}catch(e){}}
+var ac=null;
+function audio(){if(!st.sound)return;if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return;}}if(ac.state==='suspended'){try{ac.resume();}catch(e){}}}
+function tone(f,ms,type,delay){if(!ac||!st.sound)return;try{var o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(delay||0);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.25,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+ms/1000);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+ms/1000+0.05);}catch(e){}}
+function show(id){['sHome','sQuiz','sRes'].forEach(function(k){$(k).classList.toggle('on',k===id);});}
+function renderSnd(){$('snd').textContent=st.sound?'🔊 소리':'🔇 소리 끔';}
+function start(){
+  audio();
+  var idx=BANK.map(function(_,k){return k;});
+  for(var k=idx.length-1;k>0;k--){var j=Math.floor(rnd()*(k+1));var t=idx[k];idx[k]=idx[j];idx[j]=t;}
+  st.qs=idx.slice(0,N);st.i=0;st.score=0;st.wrong=[];$('wrongList').classList.remove('on');
+  show('sQuiz');renderQ();
+}
+function cur(){return BANK[st.qs[st.i]];}
+function renderQ(){
+  var q=cur();st.answered=false;
+  $('qCat').textContent=q[0];$('qNo').textContent=(st.i+1)+' / '+N;$('qText').textContent=q[1];$('qScore').textContent=st.score;
+  $('qBar').style.transform='scaleX('+(st.i/N)+')';
+  ['bO','bX'].forEach(function(id){var b=$(id);b.disabled=false;b.className='ob '+(id==='bO'?'o':'x');});
+  $('fb').className='fb';
+}
+function answer(v){
+  if(st.answered||!$('sQuiz').classList.contains('on'))return;
+  audio();st.answered=true;var q=cur(),ok=v===q[2];
+  if(ok){st.score++;tone(660,120);tone(990,180,'sine',0.11);}else{st.wrong.push(st.qs[st.i]);tone(180,300,'square');}
+  var pick=v?$('bO'):$('bX'),right=q[2]?$('bO'):$('bX');
+  $('bO').disabled=true;$('bX').disabled=true;pick.classList.add('pick');right.classList.add('right');
+  $('qScore').textContent=st.score;$('qBar').style.transform='scaleX('+((st.i+1)/N)+')';
+  $('fb').className='fb on '+(ok?'good':'bad');$('fbIcon').textContent=ok?'🎉':'💡';
+  $('fbTitle').textContent=(ok?'정답이에요! ':'아쉬워요! ')+'정답은 '+(q[2]?'O':'X');
+  $('fbText').textContent=q[3];
+  $('next').textContent=st.i+1<N?'다음 문제 →':'결과 보기 🏁';
+  try{$('next').focus({preventScroll:true});}catch(e){}
+}
+function next(){if(!st.answered)return;if(st.i+1<N){st.i++;renderQ();}else result();}
+function grade(s){return s>=9?['🏆','안전 챔피언','최고예요! 친구와 가족에게도 안전 수칙을 알려 주세요.']:s>=6?['🛡️','안전 지킴이','잘했어요! 틀린 문제 해설만 다시 보면 챔피언이에요.']:['🌱','안전 새싹','괜찮아요! 해설을 읽고 다시 도전하면 쑥쑥 자라요.'];}
+function result(){
+  var g=grade(st.score),rec=st.score>st.best;
+  if(rec){st.best=st.score;save();}
+  $('best').textContent=st.best;
+  $('rMedal').textContent=g[0];$('rTitle').textContent=g[1];$('rScore').textContent=st.score;$('rMsg').textContent=g[2];
+  $('rNew').textContent='';if(rec&&st.score>0){var s=document.createElement('span');s.className='newrec';s.textContent='🎊 새 최고 점수!';$('rNew').appendChild(s);}
+  $('review').style.display=st.wrong.length?'':'none';
+  var wl=$('wrongList');wl.textContent='';wl.classList.remove('on');
+  st.wrong.forEach(function(k){var q=BANK[k],d=document.createElement('div');d.className='wq';
+    var b=document.createElement('b');var a=document.createElement('span');a.className='ans '+(q[2]?'o':'x');a.textContent=q[2]?'O':'X';b.appendChild(a);b.appendChild(document.createTextNode(q[1]));
+    var p=document.createElement('p');p.textContent=q[0]+' · '+q[3];d.appendChild(b);d.appendChild(p);wl.appendChild(d);});
+  show('sRes');
+  if(st.score>=9){[523,659,784,1046].forEach(function(f,i){tone(f,200,'triangle',i*0.12);});}else tone(523,200,'triangle');
+}
+$('start').addEventListener('click',start);
+$('again').addEventListener('click',start);
+$('bO').addEventListener('click',function(){answer(true);});
+$('bX').addEventListener('click',function(){answer(false);});
+$('next').addEventListener('click',next);
+$('review').addEventListener('click',function(){var on=$('wrongList').classList.toggle('on');$('review').textContent=on?'📝 틀린 문제 접기':'📝 틀린 문제 다시 보기';});
+$('snd').addEventListener('click',function(){st.sound=!st.sound;save();renderSnd();if(st.sound){audio();tone(880,120);}});
+document.addEventListener('keydown',function(e){var k=(e.key||'').toLowerCase();if(!$('sQuiz').classList.contains('on'))return;if(k==='o')answer(true);else if(k==='x')answer(false);});
+$('best').textContent=st.best;$('bankInfo').textContent='📚 문제 은행 '+BANK.length+'개';renderSnd();
+window.__test={seed:function(v){rnd=seeded(v);},bank:function(){return BANK.map(function(q){return{cat:q[0],q:q[1],a:q[2],ex:q[3]};});},current:function(){var q=cur();return q?{q:q[1],a:q[2]}:null;},state:function(){return{i:st.i,score:st.score,wrong:st.wrong.length,qs:st.qs.slice(),best:st.best};}};
+})();
+</script>
+</body>
+</html>
