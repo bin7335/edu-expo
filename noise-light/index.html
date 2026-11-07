@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>쉿쉿 신호등 - 교실 소음 신호등</title>
+<meta name="description" content="마이크로 교실 소리 크기를 재서 초록·노랑·빨강 신호등으로 보여 주는 교실 소음 신호등. 조용히 유지한 시간과 소리 그래프까지 한눈에.">
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --text:#e2e8f0; --muted:#94a3b8;
+    --green:#22c55e; --yellow:#facc15; --red:#ef4444;
+    --off:#2b3443;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background:radial-gradient(circle at 20% 0%, #1e3a5f 0%, var(--bg) 55%);
+    color:var(--text); min-height:100vh;
+  }
+  header{
+    display:flex; align-items:center; gap:14px; padding:14px 24px 6px;
+  }
+  .logo{
+    width:44px;height:44px;border-radius:12px;background:#111827;border:2px solid #475569;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;flex:none
+  }
+  .logo i{width:10px;height:10px;border-radius:50%;display:block}
+  h1{margin:0;font-size:26px;letter-spacing:-0.5px}
+  h1 small{font-size:15px;color:var(--muted);font-weight:500;margin-left:8px}
+  .mode-badge{
+    margin-left:auto;padding:6px 12px;border-radius:999px;font-size:14px;font-weight:700;
+    background:#334155;color:#cbd5e1;white-space:nowrap
+  }
+  .mode-badge.mic{background:#14532d;color:#bbf7d0}
+  main{
+    display:grid; grid-template-columns: 340px 1fr; gap:20px; padding:10px 24px 14px;
+    max-width:1280px; margin:0 auto;
+  }
+  /* 신호등 */
+  .light-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+  }
+  .housing{
+    background:#0b1220;border:4px solid #3b4658;border-radius:70px;padding:18px 22px;
+    display:flex;flex-direction:column;gap:16px;box-shadow:inset 0 0 30px #000a;
+  }
+  .lamp{
+    width:128px;height:128px;border-radius:50%;background:var(--off);
+    box-shadow:inset 0 -8px 18px #0006; transition:background .25s, box-shadow .25s, transform .25s;
+    display:flex;align-items:center;justify-content:center;font-size:52px;
+    filter:saturate(.6);
+  }
+  .lamp span{opacity:0;transition:opacity .25s}
+  .lamp.on span{opacity:1}
+  .lamp.red.on{background:var(--red);box-shadow:0 0 50px 10px #ef444488, inset 0 -8px 18px #0003;filter:none}
+  .lamp.yellow.on{background:var(--yellow);box-shadow:0 0 50px 10px #facc1588, inset 0 -8px 18px #0003;filter:none}
+  .lamp.green.on{background:var(--green);box-shadow:0 0 50px 10px #22c55e88, inset 0 -8px 18px #0003;filter:none}
+  .lamp.on{transform:scale(1.04)}
+  .status{
+    font-size:28px;font-weight:800;text-align:center;min-height:38px;letter-spacing:-0.5px
+  }
+  .status.green{color:var(--green)} .status.yellow{color:var(--yellow)} .status.red{color:var(--red)}
+
+  /* 오른쪽 */
+  .right{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+  .start-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .btn{
+    font:inherit;border:0;border-radius:14px;padding:12px 18px;font-weight:700;font-size:16px;cursor:pointer;
+    background:var(--panel2);color:var(--text);border:1px solid #3d4b61;
+  }
+  .btn:hover{filter:brightness(1.15)}
+  .btn.primary{background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;border:0;font-size:20px;padding:14px 24px}
+  .btn.primary.stop{background:linear-gradient(135deg,#f87171,#dc2626);color:#fff}
+  .toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;user-select:none}
+  .toggle input{width:20px;height:20px;accent-color:#facc15}
+  .hint{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.5}
+  .hint.err{color:#fca5a5}
+
+  .meter-wrap{position:relative;height:34px;border-radius:12px;background:#0b1220;overflow:hidden;border:1px solid var(--line)}
+  .meter-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:12px 0 0 12px;transition:width .08s linear}
+  .tick{position:absolute;top:0;bottom:0;width:3px;background:#fff;opacity:.85}
+  .tick::after{content:attr(data-label);white-space:nowrap;position:absolute;top:2px;left:6px;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000}
+  .meter-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .meter-head b{font-size:16px}
+  .meter-head .num{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+  .stat .k{font-size:13px;color:var(--muted)}
+  .stat .v{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+  .stat .v.g{color:var(--green)}
+
+  canvas#graph{width:100%;height:110px;display:block;border-radius:10px;background:#0b1220}
+  .graph-head{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px;color:var(--muted)}
+  .graph-head b{color:var(--text)}
+
+  .settings{display:grid;grid-template-columns:1fr 1fr auto;gap:14px 18px;align-items:end}
+  .settings label{font-size:14px;color:var(--muted);display:block}
+  .settings label b{color:var(--text)}
+  input[type=range]{width:100%;margin-top:6px}
+  #thY{accent-color:var(--yellow)} #thR{accent-color:var(--red)}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+  footer{text-align:right;padding:0 24px 18px;font-size:13px;max-width:1280px;margin:0 auto}
+  footer a{color:#94a3b8;text-decoration:none;background:#0f172acc;padding:6px 10px;border-radius:8px;border:1px solid var(--line)}
+  footer a:hover{color:#fff}
+
+  /* 전체 화면(프로젝터) 모드 */
+  body.full header, body.full .right, body.full footer{display:none}
+  body.full main{grid-template-columns:1fr;height:100vh;padding:0;max-width:none}
+  body.full .light-card{border:0;background:transparent;justify-content:center;height:100vh}
+  body.full .housing{flex-direction:row;padding:3vh 4vh;gap:4vh;border-radius:30vh}
+  body.full .lamp{width:min(26vh,28vw);height:min(26vh,28vw);font-size:min(12vh,13vw)}
+  body.full .status{font-size:8vh;min-height:10vh}
+  body.full #fullTimer{display:block}
+  #fullTimer{display:none;font-size:4vh;color:var(--muted);font-weight:700}
+  #exitFull{display:none;position:fixed;top:14px;right:14px}
+  body.full #exitFull{display:block}
+
+  @media (max-width: 820px){
+    header{padding:12px 14px 4px;flex-wrap:wrap}
+    h1{font-size:22px}
+    h1 small{display:block;margin:2px 0 0;font-size:13px}
+    .mode-badge{font-size:12px}
+    main{grid-template-columns:minmax(0,1fr);padding:8px 12px 16px;gap:12px}
+    footer{padding:0 12px 18px}
+    .housing{flex-direction:row;padding:12px 16px;gap:12px;border-radius:60px}
+    .lamp{width:84px;height:84px;font-size:36px}
+    .status{font-size:24px}
+    .stats{grid-template-columns:repeat(3,1fr);gap:8px}
+    .stat{padding:10px}
+    .stat .v{font-size:22px}
+    .stat .k{font-size:12px}
+    .settings{grid-template-columns:1fr}
+    .btn.primary{font-size:18px;padding:12px 18px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true"><i style="background:#ef4444"></i><i style="background:#facc15"></i><i style="background:#22c55e"></i></div>
+  <h1>쉿쉿 신호등<small>교실 소리 크기를 신호등으로 보여 줘요</small></h1>
+  <span class="mode-badge" id="modeBadge">🎮 체험 모드 (가짜 소리)</span>
+</header>
+
+<main>
+  <section class="light-card" aria-label="소음 신호등">
+    <div class="housing">
+      <div class="lamp red" id="lampR"><span>😣</span></div>
+      <div class="lamp yellow" id="lampY"><span>🤔</span></div>
+      <div class="lamp green" id="lampG"><span>😊</span></div>
+    </div>
+    <div class="status" id="status" aria-live="polite">준비 중</div>
+    <div id="fullTimer">조용히 유지 <span id="fullTimerV">0:00</span></div>
+  </section>
+
+  <section class="right">
+    <div class="card">
+      <div class="start-row">
+        <button class="btn primary" id="micBtn">🎤 마이크 켜기</button>
+        <label class="toggle"><input type="checkbox" id="demoToggle" checked> 체험 모드 (마이크 없이)</label>
+        <button class="btn" id="fullBtn" style="margin-left:auto">⛶ 전체 화면</button>
+      </div>
+      <div class="hint" id="hint">마이크 없이도 체험 모드로 움직여 봐요. 실제 교실에서는 <b>마이크 켜기</b>를 누르고 권한을 허용하세요. 소리는 저장·전송되지 않아요.</div>
+    </div>
+
+    <div class="card">
+      <div class="meter-head"><b>지금 소리 크기</b><span class="num" id="levelNum">0</span></div>
+      <div class="meter-wrap">
+        <div class="meter-fill" id="meterFill"></div>
+        <div class="tick" id="tickY" data-label="노랑"></div>
+        <div class="tick" id="tickR" data-label="빨강"></div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">조용히 유지한 시간</div><div class="v g" id="streak">0:00</div></div>
+      <div class="stat"><div class="k">오늘 최고 기록</div><div class="v" id="best">0:00</div></div>
+      <div class="stat"><div class="k">빨간불 횟수</div><div class="v" id="redCount">0</div></div>
+    </div>
+
+    <div class="card">
+      <div class="graph-head"><b>최근 1분 소리 그래프</b><span>점선 = 노랑·빨강 기준</span></div>
+      <canvas id="graph" width="800" height="110"></canvas>
+    </div>
+
+    <div class="card settings">
+      <label>노랑 기준 <b id="thYv">45</b>
+        <input type="range" id="thY" min="10" max="90" value="45"></label>
+      <label>빨강 기준 <b id="thRv">70</b>
+        <input type="range" id="thR" min="20" max="100" value="70"></label>
+      <div class="btn-row">
+        <button class="btn" id="calBtn">🤫 지금이 조용한 상태</button>
+        <button class="btn" id="resetBtn">↺ 기록 초기화</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<button class="btn" id="exitFull">✕ 나가기</button>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const STORE = 'noise-light-v1';
+  const saved = JSON.parse(localStorage.getItem(STORE) || '{}');
+
+  const st = {
+    thY: saved.thY ?? 45, thR: saved.thR ?? 70,
+    baseDb: saved.baseDb ?? -62,     // 조용한 상태로 볼 데시벨
+    best: saved.best ?? 0,
+    level: 0, raw: 0, light: 'green', lastAbove: 0,
+    streak: 0, redCount: 0,
+    mode: 'demo',                    // demo | mic | off
+    hist: [], demoT: 0, demoBurst: 0,
+  };
+  let audioCtx = null, analyser = null, stream = null, buf = null;
+  let calibrating = null;
+
+  const HIST_N = 240; // 0.25초 x 240 = 60초
+  let realBest = saved.best ?? 0;   // 실제 마이크 기록만 저장
+  const save = () => {
+    if (st.mode === 'mic') realBest = st.best;
+    localStorage.setItem(STORE, JSON.stringify({thY:st.thY, thR:st.thR, baseDb:st.baseDb, best:realBest}));
+  };
+  const fmt = s => { s = Math.floor(s); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
+
+  // ---------- 설정 UI ----------
+  function syncThresholds(){
+    if (st.thR <= st.thY + 5) st.thR = Math.min(100, st.thY + 5);
+    $('thY').value = st.thY; $('thR').value = st.thR;
+    $('thYv').textContent = st.thY; $('thRv').textContent = st.thR;
+    $('tickY').style.left = st.thY + '%'; $('tickR').style.left = st.thR + '%';
+    save();
+  }
+  $('thY').addEventListener('input', e => { st.thY = +e.target.value; syncThresholds(); });
+  $('thR').addEventListener('input', e => {
+    st.thR = +e.target.value;
+    if (st.thR <= st.thY + 5) { st.thY = Math.max(10, st.thR - 5); }
+    syncThresholds();
+  });
+  syncThresholds();
+
+  // ---------- 소리 측정 ----------
+  function demoSample(dt){
+    // 잔잔한 웅성거림 + 가끔 터지는 큰 소리
+    st.demoT += dt;
+    if (st.demoBurst <= 0 && Math.random() < dt * 0.12) st.demoBurst = 1.2 + Math.random() * 2.2;
+    let v = 22 + 10 * Math.sin(st.demoT * 0.7) + 7 * Math.sin(st.demoT * 2.3) + (Math.random() - 0.5) * 14;
+    if (st.demoBurst > 0) { st.demoBurst -= dt; v += 38 + Math.random() * 18; }
+    return v;
+  }
+  function micDb(){
+    analyser.getFloatTimeDomainData(buf);
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    const rms = Math.sqrt(sum / buf.length);
+    return 20 * Math.log10(rms + 1e-8);
+  }
+  // 데시벨 → 0-100 점수 (조용한 기준보다 약 40dB 크면 100)
+  const dbToLevel = db => (db - st.baseDb) * 2.3 + 8;
+
+  function readRaw(dt){
+    if (st.mode === 'mic' && analyser) {
+      const db = micDb();
+      if (calibrating) calibrating.push(db);
+      return dbToLevel(db);
+    }
+    if (st.mode === 'demo') {
+      const v = demoSample(dt);
+      if (calibrating) calibrating.push(v);
+      return v;
+    }
+    return 0;
+  }
+
+  // ---------- 신호등 판정 ----------
+  function decide(now){
+    const L = st.level;
+    let target = L >= st.thR ? 'red' : L >= st.thY ? 'yellow' : 'green';
+    const rank = {green:0, yellow:1, red:2};
+    if (rank[target] >= rank[st.light]) {
+      if (target === 'red' && st.light !== 'red') st.redCount++;
+      if (rank[target] > rank[st.light] || target === st.light) st.lastAbove = now;
+      st.light = target;
+    } else if (now - st.lastAbove > 1200) {   // 내려갈 때는 1.2초 기다려 깜빡임 방지
+      st.light = target; st.lastAbove = now;
+    }
+  }
+  const TEXT = {green:'조용해요 👍', yellow:'조금 커요', red:'너무 시끄러워요!'};
+  function renderLight(){
+    ['R','Y','G'].forEach(k => $('lamp'+k).classList.remove('on'));
+    if (st.mode === 'off') { $('status').textContent = '마이크를 켜 주세요'; $('status').className='status'; return; }
+    $({green:'lampG', yellow:'lampY', red:'lampR'}[st.light]).classList.add('on');
+    $('status').textContent = TEXT[st.light];
+    $('status').className = 'status ' + st.light;
+  }
+  function renderMeter(){
+    const L = Math.max(0, Math.min(100, st.level));
+    const f = $('meterFill');
+    f.style.width = L + '%';
+    f.style.background = L >= st.thR ? 'var(--red)' : L >= st.thY ? 'var(--yellow)' : 'var(--green)';
+    $('levelNum').textContent = Math.round(L);
+  }
+  function renderStats(){
+    $('streak').textContent = fmt(st.streak);
+    $('fullTimerV').textContent = fmt(st.streak);
+    $('best').textContent = fmt(st.best);
+    $('redCount').textContent = st.redCount;
+  }
+
+  // ---------- 그래프 ----------
+  const cv = $('graph'), ctx = cv.getContext('2d');
+  function fitCanvas(){
+    const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    cv.width = Math.max(200, r.width * d); cv.height = 110 * d;
+  }
+  function drawGraph(){
+    const W = cv.width, H = cv.height;
+    ctx.clearRect(0,0,W,H);
+    const y = v => H - (Math.max(0, Math.min(100, v)) / 100) * (H - 6) - 3;
+    ctx.setLineDash([6,6]); ctx.lineWidth = 1.5;
+    [[st.thY,'#facc15'],[st.thR,'#ef4444']].forEach(([t,c]) => {
+      ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(0,y(t)); ctx.lineTo(W,y(t)); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    const n = st.hist.length; if (!n) return;
+    const bw = W / HIST_N;
+    for (let i = 0; i < n; i++) {
+      const v = st.hist[i];
+      ctx.fillStyle = v >= st.thR ? '#ef4444' : v >= st.thY ? '#facc15' : '#22c55e';
+      const x = (HIST_N - n + i) * bw;
+      ctx.fillRect(x, y(v), Math.max(1, bw - 1), H - y(v));
+    }
+  }
+
+  // ---------- 메인 루프 ----------
+  let last = performance.now(), histAcc = 0, histMax = 0;
+  function tick(now){
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (st.mode !== 'off') {
+      const raw = readRaw(dt);
+      // 올라갈 때 빠르게, 내려갈 때 천천히
+      const a = raw > st.level ? 0.35 : 0.06;
+      st.level += (raw - st.level) * a;
+      decide(now);
+      if (st.light === 'green') {
+        st.streak += dt;
+        if (st.streak > st.best) { st.best = st.streak; }
+      } else if (st.light === 'red') {
+        st.streak = 0;
+      }
+      histMax = Math.max(histMax, st.level); histAcc += dt;
+      if (histAcc >= 0.25) {
+        st.hist.push(histMax); if (st.hist.length > HIST_N) st.hist.shift();
+        histAcc = 0; histMax = 0;
+      }
+    } else { st.level += (0 - st.level) * 0.1; }
+    renderLight(); renderMeter(); renderStats(); drawGraph();
+    requestAnimationFrame(tick);
+  }
+
+  // 썸네일이 살아 보이도록 체험 그래프를 미리 채움
+  function prefill(){
+    let lv = 0;
+    for (let i = 0; i < HIST_N; i++) {
+      let m = 0;
+      for (let k = 0; k < 4; k++) { const r = demoSample(1/16); lv += (r - lv) * (r > lv ? .35 : .06); m = Math.max(m, lv); }
+      st.hist.push(m);
+    }
+    st.level = lv; st.streak = 47; st.best = Math.max(st.best, 132); st.redCount = 2;
+    st.demoBurst = 0;
+  }
+
+  // ---------- 모드 전환 ----------
+  function setMode(m){
+    st.mode = m;
+    const b = $('modeBadge');
+    if (m === 'mic') { b.textContent = '🎤 마이크 측정 중'; b.className = 'mode-badge mic'; }
+    else if (m === 'demo') { b.textContent = '🎮 체험 모드 (가짜 소리)'; b.className = 'mode-badge'; }
+    else { b.textContent = '⏸ 멈춤'; b.className = 'mode-badge'; }
+    $('demoToggle').checked = (m === 'demo');
+    const mb = $('micBtn');
+    mb.textContent = m === 'mic' ? '⏹ 마이크 끄기' : '🎤 마이크 켜기';
+    mb.classList.toggle('stop', m === 'mic');
+  }
+  function stopMic(){
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = null; analyser = null;
+    if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  }
+  async function startMic(){
+    const hint = $('hint');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      hint.className = 'hint err';
+      hint.textContent = '이 브라우저(또는 주소)에서는 마이크를 쓸 수 없어요. https 주소에서 열거나 체험 모드를 사용하세요.';
+      return;
+    }
+    hint.className = 'hint';
+    hint.innerHTML = '브라우저 위쪽에 뜨는 <b>마이크 권한 창에서 허용</b>을 눌러 주세요…';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048;
+      buf = new Float32Array(analyser.fftSize);
+      src.connect(analyser);
+      st.hist = []; st.streak = 0; st.redCount = 0; st.level = 0; st.light = 'green'; st.best = realBest;
+      setMode('mic');
+      hint.className = 'hint';
+      hint.innerHTML = '측정 중이에요. 교실이 조용할 때 <b>🤫 지금이 조용한 상태</b>를 한 번 눌러 맞춰 주세요.';
+    } catch (e) {
+      stopMic();
+      hint.className = 'hint err';
+      hint.textContent = '마이크를 켜지 못했어요(' + (e.name || '오류') + '). 브라우저 주소창의 마이크 권한을 확인하거나 체험 모드를 사용하세요.';
+    }
+  }
+
+  $('micBtn').addEventListener('click', () => {
+    if (st.mode === 'mic') { stopMic(); setMode('off'); }
+    else startMic();
+  });
+  $('demoToggle').addEventListener('change', e => {
+    if (e.target.checked) { stopMic(); st.hist = []; st.streak = 0; st.redCount = 0; setMode('demo'); }
+    else { if (st.mode === 'demo') setMode('off'); }
+  });
+
+  $('calBtn').addEventListener('click', () => {
+    if (st.mode === 'off') { $('hint').textContent = '먼저 마이크를 켜거나 체험 모드를 켜 주세요.'; return; }
+    const btn = $('calBtn');
+    calibrating = []; btn.disabled = true; btn.textContent = '🤫 2초 동안 듣는 중…';
+    setTimeout(() => {
+      const arr = calibrating.sort((a,b) => a-b); calibrating = null;
+      btn.disabled = false; btn.textContent = '🤫 지금이 조용한 상태';
+      if (!arr.length) return;
+      const med = arr[Math.floor(arr.length / 2)];
+      if (st.mode === 'mic') {
+        st.baseDb = med; save();
+        $('hint').className = 'hint';
+        $('hint').innerHTML = '맞췄어요! 지금 소리가 <b>조용한 상태(초록)</b> 기준이 됐어요.';
+      } else {
+        $('hint').className = 'hint';
+        $('hint').innerHTML = '체험 모드에서도 눌러 볼 수 있어요. 실제 마이크에서는 지금 소리가 <b>조용한 기준</b>으로 저장돼요.';
+      }
+    }, 2000);
+  });
+  $('resetBtn').addEventListener('click', () => {
+    st.streak = 0; st.best = 0; st.redCount = 0; st.hist = [];
+    if (st.mode === 'mic') save();
+  });
+
+  // 전체 화면(프로젝터)
+  function enterFull(){
+    document.body.classList.add('full');
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  }
+  function exitFull(){
+    document.body.classList.remove('full');
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    setTimeout(() => { fitCanvas(); }, 50);
+  }
+  $('fullBtn').addEventListener('click', enterFull);
+  $('exitFull').addEventListener('click', exitFull);
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) { document.body.classList.remove('full'); fitCanvas(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('full')) exitFull(); });
+
+  setInterval(save, 5000);
+  window.addEventListener('resize', fitCanvas);
+  fitCanvas(); prefill(); setMode('demo'); decide(performance.now());
+  requestAnimationFrame(tick);
+  window.__noiseLight = st; // 자체 테스트용
+})();
+</script>
+</body>
+</html>

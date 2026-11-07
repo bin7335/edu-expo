@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>세줄쏙 - 가정통신문 3줄 요약 (콘셉트)</title>
+<meta name="description" content="긴 가정통신문을 AI가 3줄로 요약하고 준비물·마감일을 달력 칩으로 뽑아주는 서비스 콘셉트 페이지">
+<style>
+  :root{--v:#6a4cff;--v2:#efebff;--pk:#ff7ab8;--ink:#1d1640;--mut:#625b80;--bg:#fbfaff;--line:#e3def8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;word-break:keep-all}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  nav{display:flex;align-items:center;gap:12px;height:60px}
+  .logo{font-weight:900;font-size:21px;display:flex;gap:8px;align-items:center}
+  .logo i{font-style:normal;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--v),var(--pk));color:#fff;display:grid;place-items:center;font-size:15px;font-weight:900}
+  .badge{background:#fff3b0;color:#4a3a00;border:2px dashed #c9a200;font-weight:800;font-size:13px;padding:3px 11px;border-radius:8px}
+  nav .links{margin-left:auto;display:flex;gap:20px;font-size:14px;color:var(--mut)}
+  nav a{text-decoration:none;color:inherit}
+  .hero{text-align:center;padding:6px 0 0}
+  .hero h1{font-size:40px;letter-spacing:-1.4px;line-height:1.2;margin:10px 0 6px}
+  .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--v),var(--pk));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.lead{color:var(--mut);font-size:16px;margin-bottom:14px}
+  .cta{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .btn{border:0;border-radius:999px;padding:11px 22px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn.p{background:var(--v);color:#fff;box-shadow:0 8px 20px #6a4cff40}
+  .btn.s{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .mock{display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left;background:linear-gradient(135deg,#e9e3ff,#ffe3f1);padding:16px;border-radius:24px}
+  .paper{background:#fff;border-radius:16px;padding:16px 18px;height:330px;overflow:auto;font-size:13px;color:#3b3558;box-shadow:0 6px 18px #1d164012;position:relative}
+  .paper h3{font-size:15px;text-align:center;margin-bottom:4px;color:var(--ink)}
+  .paper .meta{text-align:center;font-size:11.5px;color:var(--mut);margin-bottom:8px}
+  .paper p{margin-bottom:7px}
+  .paper .ft{font-size:11.5px;color:var(--mut)}
+  .res{background:#fff;border-radius:16px;padding:16px 18px;height:330px;display:flex;flex-direction:column;box-shadow:0 6px 18px #1d164012}
+  .res-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .res-h b{font-size:15px}
+  .go{background:linear-gradient(90deg,var(--v),var(--pk));color:#fff;border:0;border-radius:999px;padding:9px 18px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;animation:pulse 1.8s infinite}
+  .go:disabled{animation:none;opacity:.6;cursor:default}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 #6a4cff66}50%{box-shadow:0 0 0 10px #6a4cff00}}
+  ol.sum{list-style:none;display:flex;flex-direction:column;gap:8px;flex:1}
+  ol.sum li{background:var(--v2);border-radius:12px;padding:9px 12px 9px 40px;font-size:14px;position:relative;min-height:42px}
+  ol.sum li::before{content:attr(data-n);position:absolute;left:10px;top:9px;width:22px;height:22px;border-radius:50%;background:var(--v);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
+  ol.sum li.sk{background:repeating-linear-gradient(90deg,#f1eefc 0 40%,#f7f5ff 40% 100%)}
+  .caret::after{content:"▍";color:var(--v);animation:blink .7s infinite}
+  @keyframes blink{50%{opacity:0}}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;min-height:58px}
+  .chip{display:flex;align-items:center;gap:7px;border:1.5px solid var(--line);border-radius:12px;padding:5px 10px 5px 5px;font-size:12.5px;background:#fff;opacity:0;transform:translateY(6px);transition:.35s}
+  .chip.on{opacity:1;transform:none}
+  .chip .cal{width:38px;border-radius:7px;overflow:hidden;text-align:center;border:1px solid var(--line);line-height:1.1}
+  .chip .cal small{display:block;background:var(--pk);color:#fff;font-size:9.5px;padding:1px 0}
+  .chip .cal b{font-size:14px}
+  .chip.prep .cal small{background:#16a37a}
+  .hint{font-size:12px;color:var(--mut);margin-top:4px}
+  section{padding:56px 0}
+  .tag{color:var(--v);font-weight:900;font-size:13px;letter-spacing:1px}
+  h2{font-size:30px;letter-spacing:-.8px;margin:6px 0 24px}
+  .ps{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .ps>div{border-radius:20px;padding:26px}
+  .ps .a{background:#fff;border:1px solid var(--line)}
+  .ps .b{background:var(--ink);color:#fff}
+  .ps h3{font-size:18px;margin-bottom:10px}
+  .ps ul{padding-left:18px;font-size:15px}.ps li{margin:5px 0}
+  .feat{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .feat div{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;border-top:5px solid var(--v)}
+  .feat div:nth-child(2n){border-top-color:var(--pk)}
+  .feat span{font-size:28px}.feat h3{font-size:16px;margin:10px 0 6px}.feat p{font-size:14px;color:var(--mut)}
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .flow div{background:var(--v2);border-radius:20px;padding:22px}
+  .flow b{font-size:36px;color:var(--v);font-weight:900;line-height:1}
+  .flow h3{font-size:16px;margin:8px 0 6px}.flow p{font-size:14px;color:var(--mut)}
+  .note{font-size:13px;color:var(--mut);margin-top:18px}
+  footer{border-top:1px solid var(--line);padding:26px 0 40px;font-size:13px;color:var(--mut)}
+  footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  footer a{font-weight:800;color:var(--v)}
+  @media (max-width:900px){.mock{grid-template-columns:1fr}.feat{grid-template-columns:1fr 1fr}nav .links{display:none}}
+  @media (max-width:600px){
+    .wrap{padding:0 14px}.hero h1{font-size:29px}.mock{padding:10px}
+    .paper{height:260px}.res{height:auto;min-height:360px}
+    .ps,.feat,.flow{grid-template-columns:1fr}h2{font-size:24px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo"><i>3</i>세줄쏙</div>
+    <span class="badge">💡 콘셉트</span>
+    <div class="links"><a href="#problem">왜 필요할까</a><a href="#features">기능</a><a href="#flow">사용 흐름</a></div>
+  </nav>
+  <header class="hero">
+    <span class="badge">💡 콘셉트 · 아이디어 시연 페이지</span>
+    <h1>긴 가정통신문, <em>딱 3줄</em>이면 충분해요</h1>
+    <p class="lead">AI가 핵심만 3줄로 요약하고, 준비물과 마감일은 달력 칩으로 쏙 뽑아드려요.</p>
+    <div class="cta"><a class="btn p" href="#demo">아래에서 요약해 보기 ↓</a><a class="btn s" href="#features">기능 보기</a></div>
+    <div class="mock" id="demo">
+      <div class="paper" aria-label="예시 가정통신문">
+        <h3>가을 학습발표회 및 학부모 공개수업 안내</h3>
+        <div class="meta">햇살초등학교 · 가정통신문 제2026-87호 (가상의 예시)</div>
+        <p>학부모님, 안녕하십니까? 깊어 가는 가을, 가정에 건강과 행복이 가득하시길 바랍니다. 우리 학교에서는 한 해 동안 학생들이 갈고닦은 배움을 나누는 가을 학습발표회와 학부모 공개수업을 아래와 같이 운영하고자 합니다.</p>
+        <p>올해 발표회는 '함께 자라는 우리'라는 주제로 학년별 합창, 연극, 리코더 합주 등으로 꾸며지며, 발표회 이후에는 각 교실에서 학부모 공개수업이 이어집니다. 학생들이 무대에 서는 경험을 통해 자신감을 기르고, 가정에서도 아이의 성장을 함께 확인하는 뜻깊은 시간이 되기를 바랍니다.</p>
+        <p><b>일시:</b> 2026년 11월 20일(금) 오전 10시 - 12시 (발표회 10:00, 공개수업 11:00)<br><b>장소:</b> 본교 강당 및 각 학급 교실</p>
+        <p>원활한 행사 준비를 위해 하단의 참석 회신서를 작성하시어 <b>11월 13일(금)까지</b> 담임 선생님께 제출해 주시기 바랍니다. 주차 공간이 부족하오니 가급적 대중교통을 이용해 주시고, 강당 내 음식물 반입은 삼가 주시기 바랍니다.</p>
+        <p>학생들은 발표 의상으로 <b>흰색 무지 티셔츠</b>를 준비하여 <b>11월 19일(목)까지</b> 이름을 적은 봉투에 담아 보내 주시기 바랍니다. 당일에는 개인 물병을 지참하도록 지도해 주십시오.</p>
+        <p>그 밖의 문의 사항은 각 학급 담임 선생님께 알림장으로 연락 주시면 안내해 드리겠습니다. 감사합니다.</p>
+        <p class="ft">2026. 11. 6. 햇살초등학교장 (가상)</p>
+      </div>
+      <div class="res">
+        <div class="res-h"><b>✨ 세줄 요약</b><button class="go" id="go">요약하기</button></div>
+        <ol class="sum" id="sum">
+          <li class="sk" data-n="1"></li><li class="sk" data-n="2"></li><li class="sk" data-n="3"></li>
+        </ol>
+        <div class="chips" id="chips">
+          <div class="chip"><div class="cal"><small>11월</small><b>13</b></div>참석 회신 마감</div>
+          <div class="chip prep"><div class="cal"><small>11월</small><b>19</b></div>흰 티셔츠 제출</div>
+          <div class="chip"><div class="cal"><small>11월</small><b>20</b></div>발표회 10:00</div>
+          <div class="chip prep"><div class="cal"><small>당일</small><b>🧴</b></div>개인 물병</div>
+        </div>
+        <div class="hint" id="hint">👆 버튼을 누르면 미리 준비된 예시 요약이 나타나요 (실제 AI 호출 없음)</div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<section id="problem">
+  <div class="wrap">
+    <div class="tag">PROBLEM → SOLUTION</div>
+    <h2>A4 두 장 속 "그래서 뭘 하면 되지?"</h2>
+    <div class="ps">
+      <div class="a"><h3>📄 지금은</h3><ul><li>인사말과 취지 설명 사이에 숨은 날짜·준비물</li><li>여러 자녀, 여러 통신문이 한꺼번에 도착</li><li>마감일을 놓쳐 다시 연락하는 일이 반복</li></ul></div>
+      <div class="b"><h3>✨ 세줄쏙이 하면</h3><ul><li>무엇을 · 언제 · 무엇을 준비할지 3줄로 정리</li><li>마감일과 준비물은 달력 칩으로 자동 추출</li><li>원문은 그대로 두고, 요약은 옆에서 빠르게 확인</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">FEATURES</div>
+    <h2>주요 기능</h2>
+    <div class="feat">
+      <div><span>📝</span><h3>3줄 핵심 요약</h3><p>무엇을 하는지, 언제인지, 가정에서 할 일을 정확히 세 문장으로.</p></div>
+      <div><span>📅</span><h3>날짜·준비물 칩</h3><p>"까지", "지참" 같은 표현을 찾아 마감일과 준비물을 칩으로 뽑아냅니다.</p></div>
+      <div><span>🔔</span><h3>마감 전날 알림</h3><p>칩을 누르면 내 달력에 저장되고, 마감 하루 전에 알려 줍니다.</p></div>
+      <div><span>🌏</span><h3>쉬운 말 · 다국어</h3><p>어려운 행정 용어는 쉬운 말로, 다문화 가정을 위해 여러 언어로 바꿔 줍니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="flow">
+  <div class="wrap">
+    <div class="tag">HOW IT WORKS</div>
+    <h2>사용 흐름 3단계</h2>
+    <div class="flow">
+      <div><b>01</b><h3>통신문 올리기</h3><p>받은 가정통신문을 사진으로 찍거나 파일·링크로 넣습니다.</p></div>
+      <div><b>02</b><h3>3줄 요약 확인</h3><p>요약과 날짜 칩을 확인하고, 필요하면 원문의 해당 문장으로 바로 이동합니다.</p></div>
+      <div><b>03</b><h3>달력에 담기</h3><p>칩을 눌러 일정에 저장하면 마감 전에 알림을 받습니다.</p></div>
+    </div>
+    <p class="note">※ 이 페이지의 요약은 미리 작성해 둔 예시이며, 실제 AI나 서버와 통신하지 않습니다. AI 요약은 틀릴 수 있으므로 실제 서비스라면 원문 확인을 함께 안내해야 합니다.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>세줄쏙 · 실제 운영 중인 서비스가 아닌 아이디어 시연용 페이지입니다. 통신문 내용과 학교는 모두 가상입니다.</span>
+    <a href="../">← 전체 데모 보기</a>
+  </div>
+</footer>
+
+<script>
+const LINES=[
+  "11월 20일(금) 오전 10시, 강당에서 학습발표회 후 교실에서 공개수업이 열려요.",
+  "참석 회신서를 11월 13일(금)까지 담임 선생님께 내 주세요.",
+  "흰색 무지 티셔츠를 11월 19일(목)까지 이름 봉투에 담아 보내고, 당일 물병을 챙겨요."
+];
+const go=document.getElementById('go'),sum=document.getElementById('sum'),chips=[...document.querySelectorAll('.chip')],hint=document.getElementById('hint');
+let running=false;
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function run(){
+  if(running)return;running=true;go.disabled=true;go.textContent='요약 중…';
+  chips.forEach(c=>c.classList.remove('on'));
+  const lis=[...sum.children];lis.forEach(l=>{l.textContent='';l.classList.add('sk')});
+  for(let i=0;i<3;i++){
+    const li=lis[i];li.classList.remove('sk');li.classList.add('caret');
+    for(const ch of LINES[i]){li.textContent+=ch;await sleep(22)}
+    li.classList.remove('caret');
+  }
+  for(const c of chips){c.classList.add('on');await sleep(180)}
+  hint.textContent='✅ 요약 완료! 칩 4개가 추출되었어요. (예시 데이터)';
+  go.disabled=false;go.textContent='다시 요약';running=false;
+}
+go.addEventListener('click',run);
+</script>
+</body>
+</html>

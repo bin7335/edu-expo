@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마주봄 - 학부모 상담 예약 (콘셉트)</title>
+<meta name="description" content="교사가 상담 가능 시간을 열면 학부모가 원하는 시간을 고르고 자동 알림을 받는 상담 예약 서비스 콘셉트 페이지">
+<style>
+  :root{--t:#0e7c7b;--t2:#e2f3f2;--pe:#ff9f6e;--pe2:#fff1e8;--ink:#123332;--mut:#5a706f;--bg:#fffaf5;--line:#e7ddd3}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;word-break:keep-all}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  nav{display:flex;align-items:center;gap:12px;height:60px}
+  .logo{font-weight:900;font-size:21px;display:flex;gap:8px;align-items:center;color:var(--t)}
+  .logo svg{width:34px;height:34px}
+  .badge{background:var(--pe);color:#3a1600;font-weight:800;font-size:13px;padding:4px 12px;border-radius:999px;box-shadow:0 2px 0 #c96a3a}
+  nav .links{margin-left:auto;display:flex;gap:20px;font-size:14px;color:var(--mut)}
+  nav a{text-decoration:none;color:inherit}
+  .hero{display:grid;grid-template-columns:.9fr 1.25fr;gap:34px;align-items:center;padding:14px 0 40px}
+  .hero h1{font-size:42px;line-height:1.2;letter-spacing:-1.4px;margin:14px 0 12px}
+  .hero h1 em{font-style:normal;color:var(--t);box-shadow:inset 0 -14px 0 var(--pe2)}
+  .lead{font-size:16.5px;color:var(--mut);margin-bottom:22px}
+  .btn{border:0;border-radius:14px;padding:13px 22px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn.p{background:var(--t);color:#fff}
+  .btn.s{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .cta{display:flex;gap:10px;flex-wrap:wrap}
+  .trust{margin-top:22px;display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--mut)}
+  .trust span::before{content:"✓ ";color:var(--t);font-weight:900}
+  .mock{background:#fff;border-radius:22px;border:1px solid var(--line);box-shadow:0 22px 50px #12333218;padding:16px;display:grid;grid-template-columns:1fr 210px;gap:14px}
+  .mh{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .mh b{font-size:15px}
+  .seg{display:flex;background:var(--t2);border-radius:10px;padding:3px}
+  .seg button{border:0;background:none;font:inherit;font-size:12.5px;padding:5px 10px;border-radius:8px;cursor:pointer;color:var(--mut)}
+  .seg button.on{background:#fff;color:var(--t);font-weight:800;box-shadow:0 1px 4px #0002}
+  .cal{display:grid;grid-template-columns:44px repeat(5,1fr);gap:5px;font-size:12.5px}
+  .cal .hd{text-align:center;font-weight:800;padding:4px 0;border-radius:8px}
+  .cal .hd small{display:block;font-weight:500;color:var(--mut);font-size:11px}
+  .cal .tm{color:var(--mut);font-size:11.5px;display:flex;align-items:center}
+  .slot{border-radius:9px;height:38px;border:1.5px solid var(--t);background:#fff;color:var(--t);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:.15s}
+  .slot:hover{background:var(--t2)}
+  .slot.taken{border:1.5px dashed #cfc6bd;color:#b3a89d;background:#faf7f3;cursor:not-allowed;font-weight:500}
+  .slot.off{border:0;background:repeating-linear-gradient(45deg,#f6f1ec 0 6px,#fff 6px 12px);cursor:default}
+  .slot.sel{background:var(--t);color:#fff}
+  .side{background:var(--pe2);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+  .side h4{font-size:14px}
+  .side .empty{color:var(--mut);margin:auto 0;text-align:center}
+  .side .empty div{font-size:34px}
+  .conf{background:#fff;border-radius:12px;padding:12px;border-left:5px solid var(--pe)}
+  .conf .big{font-size:18px;font-weight:900;color:var(--t);line-height:1.3}
+  .conf p{margin-top:4px;color:var(--mut)}
+  .rem{display:flex;flex-direction:column;gap:4px}
+  .rem span{background:#fff;border-radius:8px;padding:5px 8px;font-size:12px}
+  .ok{background:var(--t);color:#fff;border:0;border-radius:10px;padding:10px;font:inherit;font-weight:800;cursor:pointer}
+  .done{background:#e6f6ec;color:#17643a;border-radius:10px;padding:8px;text-align:center;font-weight:700}
+  .legend{grid-column:1/2;display:flex;gap:12px;font-size:11.5px;color:var(--mut)}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:3px;border:1.5px solid var(--t)}
+  .legend i.t{border:1.5px dashed #cfc6bd;background:#faf7f3}
+  section{padding:56px 0}
+  .tag{color:var(--pe);font-weight:900;font-size:13px;letter-spacing:1px}
+  h2{font-size:30px;letter-spacing:-.8px;margin:6px 0 24px}
+  .ps{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .ps>div{border-radius:22px;padding:26px}
+  .ps .a{background:#fff;border:1px solid var(--line)}
+  .ps .b{background:var(--t);color:#fff}
+  .ps h3{font-size:18px;margin-bottom:10px}.ps ul{padding-left:18px;font-size:15px}.ps li{margin:5px 0}
+  .feat{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .feat div{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px}
+  .feat span{display:inline-grid;place-items:center;width:46px;height:46px;border-radius:14px;background:var(--t2);font-size:24px}
+  .feat h3{font-size:16px;margin:12px 0 6px}.feat p{font-size:14px;color:var(--mut)}
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .flow div{border:2px solid var(--t);border-radius:22px;padding:22px;background:#fff}
+  .flow em{font-style:normal;background:var(--pe);color:#3a1600;font-weight:900;font-size:12px;padding:3px 10px;border-radius:999px}
+  .flow h3{font-size:16px;margin:10px 0 6px}.flow p{font-size:14px;color:var(--mut)}
+  .note{font-size:13px;color:var(--mut);margin-top:18px}
+  footer{border-top:1px solid var(--line);padding:26px 0 40px;font-size:13px;color:var(--mut)}
+  footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  footer a{font-weight:800;color:var(--t)}
+  @media (max-width:980px){.hero{grid-template-columns:1fr}.feat{grid-template-columns:1fr 1fr}nav .links{display:none}}
+  @media (max-width:600px){
+    .wrap{padding:0 14px}.hero h1{font-size:31px}
+    .mock{grid-template-columns:1fr;padding:12px}
+    .cal{grid-template-columns:36px repeat(5,1fr);gap:3px}
+    .slot{font-size:10.5px;height:34px}
+    .ps,.feat,.flow{grid-template-columns:1fr}h2{font-size:24px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo"><svg viewBox="0 0 40 40"><circle cx="14" cy="20" r="11" fill="#0e7c7b"/><circle cx="26" cy="20" r="11" fill="#ff9f6e" opacity=".9"/></svg>마주봄</div>
+    <span class="badge">💡 콘셉트</span>
+    <div class="links"><a href="#problem">왜 필요할까</a><a href="#features">기능</a><a href="#flow">사용 흐름</a></div>
+  </nav>
+  <header class="hero">
+    <div>
+      <span class="badge">💡 콘셉트 · 아이디어 시연</span>
+      <h1>상담 시간 맞추기,<br><em>문자 열 통</em> 대신<br>클릭 한 번</h1>
+      <p class="lead">선생님은 가능한 시간만 열고, 학부모님은 편한 시간을 고르세요. 확정·변경·하루 전 알림까지 마주봄이 챙깁니다.</p>
+      <div class="cta"><a class="btn p" href="#demo">시간 골라 보기 →</a><a class="btn s" href="#flow">사용 흐름</a></div>
+      <div class="trust"><span>개인 연락처 노출 없이</span><span>중복 예약 자동 차단</span><span>대면·전화·화상</span></div>
+    </div>
+    <div class="mock" id="demo">
+      <div class="mh"><b>📅 햇살초 3학년 2반 · 상담주간 (11/16-11/20)</b>
+        <div class="seg" id="seg"><button class="on">🏫 대면</button><button>📞 전화</button><button>💻 화상</button></div>
+      </div>
+      <div class="cal" id="cal"></div>
+      <aside class="side" id="side"></aside>
+      <div class="legend"><span><i></i>예약 가능</span><span><i class="t"></i>예약됨</span><span>빗금 = 교사 미개설</span></div>
+    </div>
+  </header>
+</div>
+
+<section id="problem" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">PROBLEM → SOLUTION</div>
+    <h2>상담주간마다 반복되는 시간 조율</h2>
+    <div class="ps">
+      <div class="a"><h3>😮‍💨 지금은</h3><ul><li>신청서 회수 → 시간표 작성 → 개별 연락까지 며칠</li><li>같은 시간 겹침, 갑작스러운 변경 요청</li><li>상담 당일 깜빡하는 일도 생김</li></ul></div>
+      <div class="b"><h3>🤝 마주봄에서는</h3><ul><li>교사가 연 시간 중에서 학부모가 직접 선택</li><li>먼저 고른 사람에게 확정, 겹치면 자동 차단</li><li>하루 전·1시간 전 자동 알림</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="tag">FEATURES</div>
+    <h2>주요 기능</h2>
+    <div class="feat">
+      <div><span>🗓️</span><h3>시간 열기</h3><p>교사는 수업 후 가능한 시간을 드래그로 열고, 상담 길이(20·30분)를 정합니다.</p></div>
+      <div><span>👆</span><h3>원클릭 선택</h3><p>학부모는 링크 하나로 들어와 남은 시간 중 하나를 고르면 끝.</p></div>
+      <div><span>🔔</span><h3>자동 알림</h3><p>확정·변경 안내와 하루 전 알림을 자동으로 보내 깜빡함을 줄입니다.</p></div>
+      <div><span>📝</span><h3>사전 질문</h3><p>상담 전 궁금한 점을 미리 받아 짧은 시간도 알차게 씁니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="flow" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">HOW IT WORKS</div>
+    <h2>사용 흐름 3단계</h2>
+    <div class="flow">
+      <div><em>STEP 1 · 교사</em><h3>상담 가능 시간 열기</h3><p>상담주간 일정에서 가능한 칸만 체크해 공개 링크를 만듭니다.</p></div>
+      <div><em>STEP 2 · 학부모</em><h3>원하는 시간 선택</h3><p>상담 방식과 시간을 고르고 사전 질문을 남깁니다.</p></div>
+      <div><em>STEP 3 · 자동</em><h3>확정 & 알림</h3><p>양쪽 일정에 등록되고, 상담 전 알림이 자동으로 갑니다.</p></div>
+    </div>
+    <p class="note">※ 이 미리보기는 화면 안에서만 동작하며 어떤 정보도 전송하거나 저장하지 않습니다. 학급과 일정은 모두 가상의 예시입니다.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>마주봄 · 실제 운영 중인 서비스가 아닌 아이디어 시연용 페이지입니다.</span>
+    <a href="../">← 전체 데모 보기</a>
+  </div>
+</footer>
+
+<script>
+const DAYS=[["월","11/16"],["화","11/17"],["수","11/18"],["목","11/19"],["금","11/20"]];
+const TIMES=["14:30","15:10","15:50","16:30","19:00"];
+// 0=open 1=taken 2=off
+const MAP=[[0,1,0,2,2],[1,0,0,1,0],[2,2,1,0,0],[0,0,1,2,0],[1,0,2,2,2]]; // MAP[time][day]
+const cal=document.getElementById('cal'),side=document.getElementById('side'),seg=document.getElementById('seg');
+let mode='대면',pick=null,booked=false;
+function draw(){
+  cal.innerHTML='<div></div>'+DAYS.map(([d,dt])=>`<div class="hd">${d}<small>${dt}</small></div>`).join('');
+  TIMES.forEach((t,ti)=>{
+    cal.insertAdjacentHTML('beforeend',`<div class="tm">${t}</div>`);
+    DAYS.forEach((_,di)=>{
+      const s=MAP[ti][di],sel=pick&&pick[0]===ti&&pick[1]===di;
+      const lab=s===1?'예약됨':s===2?'':sel?'선택됨':'가능';
+      cal.insertAdjacentHTML('beforeend',`<button class="slot ${s===1?'taken':s===2?'off':''} ${sel?'sel':''}" data-t="${ti}" data-d="${di}" ${s?'disabled':''} aria-label="${DAYS[di][0]} ${t} ${lab}">${lab}</button>`);
+    });
+  });
+  side.innerHTML=!pick?`<h4>예약 확인</h4><div class="empty"><div>🕒</div>왼쪽 달력에서<br><b>‘가능’</b> 칸을 눌러 보세요</div>`
+  :`<h4>예약 확인</h4><div class="conf"><div class="big">${DAYS[pick[1]][1]}(${DAYS[pick[1]][0]})<br>${TIMES[pick[0]]} · 20분</div><p>${mode} 상담 · 3학년 2반 담임</p></div>
+   <div class="rem"><span>🔔 하루 전 오후 6시 알림</span><span>⏰ 1시간 전 알림</span></div>
+   ${booked?'<div class="done">✓ 예약 완료(시연)<br><small>실제 전송 없음</small></div>':'<button class="ok" id="ok">이 시간으로 예약</button>'}`;
+  const ok=document.getElementById('ok');if(ok)ok.onclick=()=>{booked=true;draw()};
+}
+cal.addEventListener('click',e=>{const b=e.target.closest('.slot');if(!b||b.disabled)return;pick=[+b.dataset.t,+b.dataset.d];booked=false;draw()});
+seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...seg.children].forEach(x=>x.classList.toggle('on',x===b));mode=b.textContent.slice(-2);booked=false;draw()});
+draw();
+</script>
+</body>
+</html>

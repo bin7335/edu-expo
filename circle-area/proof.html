@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>원의 넓이 시각적 증명</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
+    canvas { background-color: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); width: 100%; max-width: 800px; height: 400px; }
+  </style>
+</head>
+<body class="text-slate-800">
+
+  <header class="bg-indigo-600 text-white py-8 px-6 text-center shadow-md">
+    <h1 class="text-4xl font-extrabold mb-2"><i class="fa-solid fa-chart-pie mr-3"></i>원의 넓이, 왜 πr² 일까요?</h1>
+    <p class="text-indigo-100 text-lg">원을 무수히 많은 피자 조각으로 쪼개서 지그재그로 붙여보세요!</p>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    
+    <!-- Canvas Area -->
+    <div class="flex justify-center relative">
+      <canvas id="simCanvas" width="800" height="400"></canvas>
+      
+      <!-- Math Labels (Controlled by JS) -->
+      <div id="label-height" class="absolute left-[330px] top-[180px] text-red-600 font-bold text-lg opacity-0 transition-opacity duration-300">세로 = r</div>
+      <div id="label-width" class="absolute left-[520px] top-[300px] text-blue-600 font-bold text-lg opacity-0 transition-opacity duration-300">가로 = π × r (원주의 절반)</div>
+    </div>
+
+    <!-- Controls Area -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        
+        <!-- Slices Slider -->
+        <div class="space-y-4">
+          <label class="block text-lg font-bold text-slate-700 flex justify-between">
+            <span>조각 개수 (쪼개기)</span>
+            <span id="val-n" class="text-indigo-600">8개</span>
+          </label>
+          <input type="range" id="slider-n" min="4" max="100" step="2" value="8" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+          <p class="text-xs text-slate-500">개수를 100개까지 늘려보면 테두리가 직선에 가까워집니다.</p>
+        </div>
+
+        <!-- Transform Slider -->
+        <div class="space-y-4">
+          <label class="block text-lg font-bold text-slate-700 flex justify-between">
+            <span>도형 변환 (펼치기)</span>
+            <span id="val-t" class="text-green-600">0%</span>
+          </label>
+          <div class="flex gap-3">
+            <input type="range" id="slider-t" min="0" max="100" step="1" value="0" class="flex-1 h-3 mt-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-green-500">
+            <button id="btn-play" class="bg-slate-800 text-white px-4 py-1.5 rounded-lg shadow hover:bg-slate-700 focus:outline-none transition"><i class="fa-solid fa-play"></i> 자동</button>
+          </div>
+          <p class="text-xs text-slate-500">슬라이더를 우측으로 당기면 직사각형 모양으로 재배열됩니다.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Explanation Box -->
+    <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100 flex gap-4 items-start">
+      <i class="fa-solid fa-lightbulb text-3xl text-yellow-500 mt-1"></i>
+      <div>
+        <h3 class="text-xl font-bold text-indigo-900 mb-2">시뮬레이션 결과 정리</h3>
+        <ul class="list-disc list-inside space-y-2 text-slate-700 text-lg">
+          <li>원을 잘게 쪼개어 이어 붙이면 <strong>점점 직사각형</strong>과 비슷한 모양이 됩니다.</li>
+          <li>이 사각형의 <strong>세로</strong>는 원래 원의 <strong>반지름(<span class="text-red-500 font-bold">r</span>)</strong>과 같습니다.</li>
+          <li>이 사각형의 <strong>가로</strong>는 원의 테두리(원주 = 2πr)의 딱 절반이므로 <strong><span class="text-blue-500 font-bold">πr</span></strong>이 됩니다.</li>
+          <li class="mt-4 p-3 bg-white rounded shadow-sm inline-block">
+            직사각형의 넓이 = <span class="text-blue-500 font-bold">가로(πr)</span> × <span class="text-red-500 font-bold">세로(r)</span> = <strong>πr²</strong>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const sliderN = document.getElementById('slider-n');
+    const sliderT = document.getElementById('slider-t');
+    const valN = document.getElementById('val-n');
+    const valT = document.getElementById('val-t');
+    const btnPlay = document.getElementById('btn-play');
+    
+    const labelHeight = document.getElementById('label-height');
+    const labelWidth = document.getElementById('label-width');
+
+    let animationId = null;
+
+    function lerpAngle(a, b, t) {
+      let diff = b - a;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      return a + diff * t;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const N = parseInt(sliderN.value);
+      const t = parseInt(sliderT.value) / 100;
+      
+      valN.textContent = `${N}개`;
+      valT.textContent = `${Math.round(t * 100)}%`;
+
+      const theta = 2 * Math.PI / N;
+      const R = 130;
+      
+      // Origins
+      const cx = 180; 
+      const cy = 200;
+      
+      // Rectangle placement start
+      // We want the rectangle centered dynamically based on width
+      const step = R * theta;
+      const rectWidth = (N / 2) * step;
+      const startX = 370 + (400 - rectWidth)/2; // Right side area
+      const startY = 200 - R/2;
+
+      for (let i = 0; i < N; i++) {
+        // Circle state
+        let x0 = cx;
+        let y0 = cy;
+        let a0 = i * theta + theta / 2;
+        
+        // Rectangle state
+        let x1, y1, a1;
+        if (i % 2 === 0) {
+          x1 = startX + (i / 2) * step + step / 2;
+          y1 = startY + R;
+          a1 = -Math.PI / 2; // Point UP
+        } else {
+          x1 = startX + ((i - 1) / 2) * step + step;
+          y1 = startY;
+          a1 = Math.PI / 2; // Point DOWN
+        }
+        
+        // Interpolate
+        let curX = x0 + (x1 - x0) * t;
+        let curY = y0 + (y1 - y0) * t;
+        let curA = lerpAngle(a0, a1, t);
+        
+        // Draw
+        ctx.save();
+        ctx.translate(curX, curY);
+        ctx.rotate(curA);
+        
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, R, -theta / 2, theta / 2);
+        ctx.closePath();
+        
+        // Color even/odd differently
+        ctx.fillStyle = (i % 2 === 0) ? '#fca5a5' : '#93c5fd';
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        ctx.restore();
+      }
+
+      // Draw Radius indicator on the circle
+      ctx.save();
+      ctx.globalAlpha = 1 - t; // Fades out as it transforms
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + R * Math.cos(Math.PI/4), cy + R * Math.sin(Math.PI/4));
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText('r', cx + R/2 + 5, cy + R/2 + 20);
+      ctx.restore();
+
+      // Fade in labels
+      if (t > 0.9) {
+        labelHeight.style.opacity = 1;
+        labelWidth.style.opacity = 1;
+      } else {
+        labelHeight.style.opacity = 0;
+        labelWidth.style.opacity = 0;
+      }
+    }
+
+    sliderN.addEventListener('input', draw);
+    sliderT.addEventListener('input', draw);
+
+    btnPlay.addEventListener('click', () => {
+      if (animationId) return;
+      sliderT.value = 0;
+      let val = 0;
+      
+      function animate() {
+        val += 1.5;
+        if (val > 100) val = 100;
+        sliderT.value = val;
+        draw();
+        
+        if (val < 100) {
+          animationId = requestAnimationFrame(animate);
+        } else {
+          animationId = null;
+        }
+      }
+      animate();
+    });
+
+    // Initial draw
+    draw();
+  </script>
+<nav style="position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:8px;font:600 14px system-ui,'Malgun Gothic',sans-serif"><a href="./" style="background:#2563eb;color:#fff;padding:8px 14px;border-radius:999px;text-decoration:none">탐구 교실로 →</a><a href="../" style="background:#0f172a;color:#fff;padding:8px 14px;border-radius:999px;text-decoration:none">← 전체 데모 보기</a></nav>
+</body>
+</html>

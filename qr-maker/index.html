@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>척척 QR 이름표 - 모둠·사물함 QR 만들기</title>
+<meta name="description" content="모둠 이름, 사물함 번호, 링크를 한 줄씩 적으면 이름표가 붙은 QR 코드를 A4 한 장에 모아 인쇄할 수 있게 만들어 줍니다. 한글 지원, 인터넷 없이 동작.">
+<style>
+  :root{
+    --bg:#f4f6fb; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb;
+    --brand:#4f46e5; --brand2:#7c3aed; --soft:#eef2ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;background:var(--bg);color:var(--ink)}
+  header{
+    display:flex;align-items:center;gap:14px;padding:14px 24px;
+    background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;
+  }
+  .logo{width:42px;height:42px;background:#fff;border-radius:10px;display:grid;place-items:center;flex:none}
+  h1{margin:0;font-size:24px;letter-spacing:-0.5px}
+  header p{margin:2px 0 0;font-size:14px;opacity:.9}
+  .head-btns{margin-left:auto;display:flex;gap:8px}
+  .btn{font:inherit;font-weight:700;font-size:15px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:10px 16px;cursor:pointer}
+  .btn:hover{filter:brightness(.97)}
+  .btn.primary{background:#fff;color:var(--brand);border:0;box-shadow:0 2px 0 #0002}
+  .btn.ghost{background:#ffffff22;color:#fff;border:1px solid #ffffff66}
+  .btn.small{font-size:13px;padding:7px 10px;border-radius:10px}
+
+  .wrap{display:grid;grid-template-columns:360px minmax(0,1fr);gap:20px;padding:18px 24px;max-width:1400px;margin:0 auto}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;align-self:start}
+  .panel h2{font-size:16px;margin:0 0 6px}
+  .panel .help{font-size:13px;color:var(--muted);margin:0 0 10px;line-height:1.5}
+  .panel code{background:var(--soft);color:var(--brand);padding:1px 5px;border-radius:5px;font-size:12px}
+  textarea{width:100%;height:220px;font:inherit;font-size:14px;line-height:1.55;border:1px solid #d1d5db;border-radius:10px;padding:10px;resize:vertical}
+  textarea:focus,input:focus,select:focus{outline:2px solid #a5b4fc;border-color:transparent}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .row label{font-size:14px;font-weight:600}
+  .seg{display:inline-flex;border:1px solid #d1d5db;border-radius:10px;overflow:hidden}
+  .seg button{font:inherit;font-size:14px;border:0;background:#fff;padding:7px 12px;cursor:pointer;color:var(--ink)}
+  .seg button+button{border-left:1px solid #d1d5db}
+  .seg button.on{background:var(--brand);color:#fff;font-weight:700}
+  .quick{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+  .quick input{width:64px;font:inherit;padding:6px 8px;border:1px solid #d1d5db;border-radius:8px}
+  .quick input.wide{width:120px}
+  .count{font-size:13px;color:var(--muted);margin-top:8px}
+  .err{color:#b91c1c}
+
+  /* 미리보기 = A4 용지 */
+  .preview{min-width:0}
+  .preview-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap}
+  .preview-head b{font-size:15px}
+  .preview-head span{font-size:13px;color:var(--muted)}
+  .paper-scroll{overflow:auto;border-radius:6px}
+  .paper{
+    background:#fff;width:100%;max-width:780px;margin:0 auto;aspect-ratio:210/297;
+    box-shadow:0 6px 24px #0002;padding:5.5%;
+  }
+  .sheet-title{font-size:15px;font-weight:800;text-align:center;margin:0 0 3%;color:#111}
+  .grid{display:grid;gap:10px}
+  .tag{
+    border:1.5px dashed #cbd5e1;border-radius:10px;padding:8px 6px 6px;text-align:center;
+    display:flex;flex-direction:column;align-items:center;break-inside:avoid;page-break-inside:avoid;cursor:zoom-in;background:#fff;min-width:0
+  }
+  .tag:hover{border-color:var(--brand)}
+  .tag svg{width:100%;height:auto;display:block;max-width:220px}
+  .tag .lb{font-weight:800;color:#111;margin-top:4px;line-height:1.25;word-break:keep-all;overflow-wrap:anywhere}
+  .tag .sub{font-size:10px;color:#6b7280;margin-top:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tag.bad{border-color:#fca5a5;color:#b91c1c;font-size:12px;justify-content:center}
+
+  /* 확대 보기 */
+  .modal{position:fixed;inset:0;background:#0f172acc;display:none;align-items:center;justify-content:center;z-index:10;padding:20px}
+  .modal.show{display:flex}
+  .modal .box{background:#fff;border-radius:18px;padding:22px;text-align:center;width:min(420px,100%)}
+  .modal svg{width:100%;height:auto}
+  .modal .lb{font-size:24px;font-weight:800;margin-top:6px}
+  .modal .sub{font-size:13px;color:var(--muted);word-break:break-all;margin:6px 0 12px}
+
+  footer{text-align:right;padding:0 24px 18px;font-size:13px}
+  footer a{color:var(--muted);text-decoration:none}
+  footer a:hover{color:var(--brand)}
+
+  @media (max-width: 860px){
+    header{flex-wrap:wrap;padding:12px 14px}
+    h1{font-size:21px}
+    .head-btns{margin-left:0;width:100%}
+    .wrap{grid-template-columns:minmax(0,1fr);padding:12px;gap:14px}
+    textarea{height:170px}
+    .paper{padding:4%}
+    .grid{gap:6px}
+  }
+
+  @media print{
+    @page{size:A4;margin:10mm}
+    body{background:#fff}
+    header,.panel,.preview-head,footer,.modal{display:none!important}
+    .wrap{display:block;padding:0;max-width:none}
+    .paper-scroll{overflow:visible}
+    .paper{box-shadow:none;padding:0;max-width:none;aspect-ratio:auto;width:auto}
+    .tag{cursor:default}
+    .tag:hover{border-color:#cbd5e1}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">
+    <svg width="28" height="28" viewBox="0 0 7 7" shape-rendering="crispEdges"><path fill="#4f46e5" d="M0 0h3v3h-3zM4 0h3v3h-3zM0 4h3v3h-3zM4 4h1v1h-1zM6 4h1v1h-1zM5 5h1v1h-1zM4 6h1v1h-1zM6 6h1v1h-1z"/><path fill="#fff" d="M.75 .75h1.5v1.5h-1.5zM4.75 .75h1.5v1.5h-1.5zM.75 4.75h1.5v1.5h-1.5z"/><path fill="#4f46e5" d="M1.15 1.15h.7v.7h-.7zM5.15 1.15h.7v.7h-.7zM1.15 5.15h.7v.7h-.7z"/></svg>
+  </div>
+  <div>
+    <h1>척척 QR 이름표</h1>
+    <p>한 줄에 하나씩 적으면, 이름표 붙은 QR을 A4 한 장에 모아 드려요</p>
+  </div>
+  <div class="head-btns">
+    <button class="btn primary" id="printBtn">🖨 A4로 인쇄하기</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="panel">
+    <h2>✏️ 목록 적기</h2>
+    <p class="help">한 줄 = QR 하나. <code>이름표 | 링크 또는 내용</code> 형식이에요. <code>|</code> 없이 적으면 이름표 글자가 그대로 QR에 담겨요. 한글도 OK!</p>
+    <textarea id="input" spellcheck="false"></textarea>
+    <div class="count" id="count"></div>
+
+    <div class="row">
+      <label>QR 크기</label>
+      <div class="seg" id="sizeSeg">
+        <button data-c="5">작게</button><button data-c="4" class="on">보통</button><button data-c="3">크게</button><button data-c="2">아주 크게</button>
+      </div>
+    </div>
+    <div class="row">
+      <label for="sheetTitle">용지 제목</label>
+      <input id="sheetTitle" style="flex:1;min-width:0;font:inherit;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px" value="햇살초 3학년 2반 모둠 QR">
+    </div>
+
+    <div class="quick">
+      <h2>⚡ 번호 빠르게 만들기</h2>
+      <div class="row" style="margin-top:6px">
+        <input class="wide" id="qPrefix" value="사물함"> <input id="qFrom" type="number" value="1" min="1"> ~ <input id="qTo" type="number" value="12" min="1"> 번
+      </div>
+      <div class="row">
+        <button class="btn small" id="qReplace">목록 바꾸기</button>
+        <button class="btn small" id="qAppend">아래에 추가</button>
+        <button class="btn small" id="sample">예시로 되돌리기</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="preview-head">
+      <b>📄 A4 미리보기</b>
+      <span>QR을 누르면 크게 보여요 — 휴대폰 카메라로 찍어 보세요!</span>
+    </div>
+    <div class="paper-scroll">
+      <div class="paper" id="paper">
+        <div class="sheet-title" id="titleOut"></div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="box">
+    <div id="mQr"></div>
+    <div class="lb" id="mLb"></div>
+    <div class="sub" id="mSub"></div>
+    <button class="btn" id="mClose">닫기</button>
+  </div>
+</div>
+
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<script>
+/*
+ * 작은 QR 코드 인코더 (바이트 모드, 오류 정정 M, 버전 1-40)
+ * 이 앱을 위해 새로 작성. 알고리즘 구조는 ISO/IEC 18004 표준 및
+ * Project Nayuki "QR Code generator library"(MIT License, Copyright (c) Project Nayuki)의
+ * 공개된 설계를 참고했습니다.
+ */
+const QR = (() => {
+  // [버전] 블록당 ECC 코드워드 수 / 블록 수 (오류 정정 레벨 M)
+  const ECC_PER_BLOCK = [-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28];
+  const NUM_BLOCKS    = [-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49];
+  const FORMAT_M = 0; // 레벨 M의 형식 비트 값
+
+  function rawModules(v){
+    let r = (16*v + 128)*v + 64;
+    if (v >= 2){ const n = Math.floor(v/7) + 2; r -= (25*n - 10)*n - 55; if (v >= 7) r -= 36; }
+    return r;
+  }
+  const dataCodewords = v => Math.floor(rawModules(v)/8) - ECC_PER_BLOCK[v]*NUM_BLOCKS[v];
+
+  function gfMul(x, y){ let z = 0; for (let i = 7; i >= 0; i--){ z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z & 0xFF; }
+  function rsDivisor(deg){
+    const r = new Array(deg).fill(0); r[deg-1] = 1; let root = 1;
+    for (let i = 0; i < deg; i++){
+      for (let j = 0; j < r.length; j++){ r[j] = gfMul(r[j], root); if (j+1 < r.length) r[j] ^= r[j+1]; }
+      root = gfMul(root, 2);
+    }
+    return r;
+  }
+  function rsRemainder(data, div){
+    const r = div.map(() => 0);
+    for (const b of data){ const f = b ^ r.shift(); r.push(0); div.forEach((c, i) => r[i] ^= gfMul(c, f)); }
+    return r;
+  }
+
+  function encode(text){
+    const bytes = Array.from(new TextEncoder().encode(text));
+    const nonAscii = bytes.some(b => b > 127);
+    // 버전 결정
+    let ver = 0, bitsNeeded = 0;
+    for (let v = 1; v <= 40; v++){
+      const cc = v < 10 ? 8 : 16;
+      bitsNeeded = (nonAscii ? 12 : 0) + 4 + cc + bytes.length*8;
+      if (bitsNeeded <= dataCodewords(v)*8){ ver = v; break; }
+    }
+    if (!ver) throw new Error('너무 길어요');
+    // 비트열
+    const bb = [];
+    const put = (val, len) => { for (let i = len-1; i >= 0; i--) bb.push((val >>> i) & 1); };
+    if (nonAscii){ put(0b0111, 4); put(26, 8); }   // ECI 26 = UTF-8
+    put(0b0100, 4); put(bytes.length, ver < 10 ? 8 : 16);
+    bytes.forEach(b => put(b, 8));
+    const cap = dataCodewords(ver)*8;
+    put(0, Math.min(4, cap - bb.length));
+    put(0, (8 - bb.length % 8) % 8);
+    for (let p = 0xEC; bb.length < cap; p ^= 0xEC ^ 0x11) put(p, 8);
+    const data = [];
+    for (let i = 0; i < bb.length; i += 8){ let x = 0; for (let j = 0; j < 8; j++) x = (x << 1) | bb[i+j]; data.push(x); }
+
+    // ECC + 인터리브
+    const nb = NUM_BLOCKS[ver], el = ECC_PER_BLOCK[ver], raw = Math.floor(rawModules(ver)/8);
+    const nShort = nb - raw % nb, shortLen = Math.floor(raw / nb);
+    const div = rsDivisor(el), blocks = [];
+    for (let i = 0, k = 0; i < nb; i++){
+      const d = data.slice(k, k + shortLen - el + (i < nShort ? 0 : 1)); k += d.length;
+      const e = rsRemainder(d, div);
+      if (i < nShort) d.push(0);
+      blocks.push(d.concat(e));
+    }
+    const cw = [];
+    for (let i = 0; i < blocks[0].length; i++)
+      for (let j = 0; j < nb; j++)
+        if (i !== shortLen - el || j >= nShort) cw.push(blocks[j][i]);
+
+    // 행렬
+    const size = ver*4 + 17;
+    const mod = Array.from({length:size}, () => new Array(size).fill(false));
+    const fn  = Array.from({length:size}, () => new Array(size).fill(false));
+    const set = (x, y, d) => { mod[y][x] = d; fn[y][x] = true; };
+
+    for (let i = 0; i < size; i++){ set(6, i, i%2 === 0); set(i, 6, i%2 === 0); }
+    const finder = (cx, cy) => {
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++){
+        const x = cx+dx, y = cy+dy, d = Math.max(Math.abs(dx), Math.abs(dy));
+        if (x >= 0 && x < size && y >= 0 && y < size) set(x, y, d !== 2 && d !== 4);
+      }
+    };
+    finder(3,3); finder(size-4,3); finder(3,size-4);
+    // 정렬 패턴
+    let al = [];
+    if (ver > 1){
+      const n = Math.floor(ver/7) + 2;
+      const step = ver === 32 ? 26 : Math.ceil((ver*4 + 4) / (n*2 - 2)) * 2;
+      al = [6];
+      for (let p = size - 7; al.length < n; p -= step) al.splice(1, 0, p);
+    }
+    al.forEach((ax, i) => al.forEach((ay, j) => {
+      if ((i === 0 && j === 0) || (i === 0 && j === al.length-1) || (i === al.length-1 && j === 0)) return;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++)
+        set(ax+dx, ay+dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+    }));
+    const drawFormat = mask => {
+      const d = (FORMAT_M << 3) | mask; let r = d;
+      for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+      const bits = ((d << 10) | r) ^ 0x5412;
+      const g = i => ((bits >>> i) & 1) !== 0;
+      for (let i = 0; i <= 5; i++) set(8, i, g(i));
+      set(8, 7, g(6)); set(8, 8, g(7)); set(7, 8, g(8));
+      for (let i = 9; i < 15; i++) set(14 - i, 8, g(i));
+      for (let i = 0; i < 8; i++) set(size - 1 - i, 8, g(i));
+      for (let i = 8; i < 15; i++) set(8, size - 15 + i, g(i));
+      set(8, size - 8, true);
+    };
+    drawFormat(0);
+    if (ver >= 7){
+      let r = ver;
+      for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1F25);
+      const bits = (ver << 12) | r;
+      for (let i = 0; i < 18; i++){
+        const b = ((bits >>> i) & 1) !== 0, a = size - 11 + i % 3, c = Math.floor(i / 3);
+        set(a, c, b); set(c, a, b);
+      }
+    }
+    // 데이터 배치 (지그재그)
+    let bi = 0;
+    for (let right = size - 1; right >= 1; right -= 2){
+      if (right === 6) right = 5;
+      for (let vert = 0; vert < size; vert++){
+        for (let j = 0; j < 2; j++){
+          const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - vert : vert;
+          if (!fn[y][x] && bi < cw.length*8){ mod[y][x] = ((cw[bi >>> 3] >>> (7 - (bi & 7))) & 1) !== 0; bi++; }
+        }
+      }
+    }
+    // 마스크 선택
+    const maskFn = [
+      (x,y) => (x+y)%2 === 0, (x,y) => y%2 === 0, (x,y) => x%3 === 0, (x,y) => (x+y)%3 === 0,
+      (x,y) => (Math.floor(x/3)+Math.floor(y/2))%2 === 0, (x,y) => x*y%2 + x*y%3 === 0,
+      (x,y) => (x*y%2 + x*y%3)%2 === 0, (x,y) => ((x+y)%2 + x*y%3)%2 === 0,
+    ];
+    const applyMask = m => { for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!fn[y][x] && maskFn[m](x,y)) mod[y][x] = !mod[y][x]; };
+    const penalty = () => {
+      let p = 0, dark = 0;
+      const lineScore = get => {
+        for (let a = 0; a < size; a++){
+          let run = 1, s = '';
+          for (let b = 0; b < size; b++){
+            const v = get(a, b); s += v ? '1' : '0';
+            if (b > 0){ if (v === get(a, b-1)){ run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; }
+          }
+          const t = '0000' + s + '0000';
+          for (let i = t.indexOf('1011101'); i !== -1; i = t.indexOf('1011101', i + 1))
+            if (t.substr(i-4, 4) === '0000' || t.substr(i+7, 4) === '0000') p += 40;
+        }
+      };
+      lineScore((a,b) => mod[a][b]); lineScore((a,b) => mod[b][a]);
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
+        if (mod[y][x]) dark++;
+        if (x < size-1 && y < size-1){ const c = mod[y][x]; if (c === mod[y][x+1] && c === mod[y+1][x] && c === mod[y+1][x+1]) p += 3; }
+      }
+      const total = size*size;
+      p += Math.max(0, Math.ceil(Math.abs(dark*20 - total*10) / total) - 1) * 10;
+      return p;
+    };
+    let best = 0, bestP = Infinity;
+    for (let m = 0; m < 8; m++){
+      applyMask(m); drawFormat(m);
+      const pv = penalty();
+      if (pv < bestP){ bestP = pv; best = m; }
+      applyMask(m);
+    }
+    applyMask(best); drawFormat(best);
+    return { size, ver, mask: best, modules: mod };
+  }
+
+  function toSvg(text, quiet = 4){
+    const q = encode(text), n = q.size + quiet*2;
+    let d = '';
+    for (let y = 0; y < q.size; y++) for (let x = 0; x < q.size; x++)
+      if (q.modules[y][x]) d += `M${x+quiet} ${y+quiet}h1v1h-1z`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" role="img"><rect width="${n}" height="${n}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+  }
+  return { encode, toSvg };
+})();
+
+// ---------------- 앱 ----------------
+(() => {
+  const $ = id => document.getElementById(id);
+  const STORE = 'qr-maker-v1';
+  const SAMPLE = [
+    '1모둠 별빛 | https://example.org/class/group-1',
+    '2모둠 무지개 | https://example.org/class/group-2',
+    '3모둠 새싹 | https://example.org/class/group-3',
+    '4모둠 바람 | https://example.org/class/group-4',
+    '도서 코너 | 이번 주 추천 책: 「마당을 나온 암탉」',
+    '과학 실험 순서 | 1. 보안경 쓰기 2. 재료 확인 3. 선생님 신호 기다리기',
+    '학급 누리집 | https://example.org/class',
+    '사물함 1번 | 3학년 2반 사물함 1번',
+    '사물함 2번 | 3학년 2반 사물함 2번',
+    '사물함 3번 | 3학년 2반 사물함 3번',
+    '오늘의 퀴즈 | 정답은 "고래"! 잘 찾았어요 🐳',
+    '청소 당번표 | 월: 1모둠 / 화: 2모둠 / 수: 3모둠 / 목: 4모둠',
+  ].join('\n');
+
+  const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+  let cols = saved?.cols ?? 4;
+  $('input').value = saved?.text ?? SAMPLE;
+  if (saved?.title != null) $('sheetTitle').value = saved.title;
+
+  const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function parse(){
+    return $('input').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const i = l.indexOf('|');
+      if (i < 0) return { label: l, data: l };
+      const label = l.slice(0, i).trim(), data = l.slice(i + 1).trim();
+      return { label: label || data, data: data || label };
+    });
+  }
+
+  let items = [];
+  function render(){
+    items = parse();
+    const grid = $('grid');
+    grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+    const fs = {5:12, 4:14, 3:17, 2:22}[cols];
+    $('titleOut').textContent = $('sheetTitle').value;
+    let bad = 0;
+    grid.innerHTML = items.map((it, i) => {
+      try {
+        const svg = QR.toSvg(it.data);
+        const sub = it.data !== it.label ? `<div class="sub">${esc(it.data)}</div>` : '';
+        return `<div class="tag" data-i="${i}" title="크게 보기">${svg}<div class="lb" style="font-size:${fs}px">${esc(it.label)}</div>${sub}</div>`;
+      } catch (e) {
+        bad++;
+        return `<div class="tag bad">${esc(it.label)}<br>내용이 너무 길어요</div>`;
+      }
+    }).join('');
+    $('count').innerHTML = `QR <b>${items.length - bad}</b>개` + (bad ? ` · <span class="err">${bad}개는 너무 길어서 못 만들었어요</span>` : '') +
+      (items.length > cols * Math.round(cols * 1.25) ? ' · 인쇄하면 여러 장으로 나뉘어요' : '');
+    localStorage.setItem(STORE, JSON.stringify({ text: $('input').value, cols, title: $('sheetTitle').value }));
+  }
+
+  let t;
+  $('input').addEventListener('input', () => { clearTimeout(t); t = setTimeout(render, 200); });
+  $('sheetTitle').addEventListener('input', render);
+  $('sizeSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    cols = +b.dataset.c;
+    [...$('sizeSeg').children].forEach(x => x.classList.toggle('on', x === b));
+    render();
+  });
+  [...$('sizeSeg').children].forEach(x => x.classList.toggle('on', +x.dataset.c === cols));
+
+  function quickLines(){
+    const p = $('qPrefix').value.trim() || '번호';
+    let a = Math.max(1, +$('qFrom').value || 1), b = Math.max(1, +$('qTo').value || 1);
+    if (b < a) [a, b] = [b, a];
+    b = Math.min(b, a + 199);
+    const out = [];
+    for (let i = a; i <= b; i++) out.push(`${p} ${i}번 | ${p} ${i}번`);
+    return out.join('\n');
+  }
+  $('qReplace').addEventListener('click', () => { $('input').value = quickLines(); render(); });
+  $('qAppend').addEventListener('click', () => { const v = $('input').value.trim(); $('input').value = (v ? v + '\n' : '') + quickLines(); render(); });
+  $('sample').addEventListener('click', () => { $('input').value = SAMPLE; render(); });
+  $('printBtn').addEventListener('click', () => window.print());
+
+  // 확대 보기
+  $('grid').addEventListener('click', e => {
+    const tag = e.target.closest('.tag[data-i]'); if (!tag) return;
+    const it = items[+tag.dataset.i];
+    $('mQr').innerHTML = QR.toSvg(it.data);
+    $('mLb').textContent = it.label;
+    $('mSub').textContent = it.data;
+    $('modal').classList.add('show');
+  });
+  const close = () => $('modal').classList.remove('show');
+  $('mClose').addEventListener('click', close);
+  $('modal').addEventListener('click', e => { if (e.target === $('modal')) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  render();
+})();
+</script>
+</body>
+</html>

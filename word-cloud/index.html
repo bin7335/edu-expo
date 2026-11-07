@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>생각꽃밭 - 한 기기로 모으는 워드클라우드·투표</title>
+<meta name="description" content="한 대의 기기로 지나가는 사람들의 생각을 모아 실시간 워드클라우드와 투표 그래프로 보여 주는 부스·교실용 도구.">
+<style>
+  :root{--bg:#f3f1ff;--card:#fff;--ink:#231f3a;--sub:#6b6787;--line:#e4e0f7;--pri:#6c4cf5;--pri2:#ece7ff}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:radial-gradient(circle at 15% 0%,#ffe9f3 0,transparent 40%),radial-gradient(circle at 90% 100%,#e0f4ff 0,transparent 45%),var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;gap:12px;padding:10px 22px;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ff6fae,#6c4cf5);display:grid;place-items:center;font-size:22px}
+  header h1{margin:0;font-size:21px}
+  header small{display:block;color:var(--sub);font-size:12.5px}
+  .tabs{display:flex;gap:4px;background:#fff;border:1px solid var(--line);padding:4px;border-radius:13px;margin-left:auto}
+  .tabs button{border:0;background:transparent;font:inherit;font-weight:700;font-size:15px;padding:8px 16px;border-radius:9px;cursor:pointer;color:var(--sub)}
+  .tabs button.on{background:var(--pri);color:#fff}
+  .icon-btn{border:1px solid var(--line);background:#fff;font:inherit;font-size:14px;font-weight:700;color:var(--sub);padding:8px 12px;border-radius:11px;cursor:pointer}
+  .icon-btn:hover{color:var(--pri)}
+  main{flex:1;display:flex;flex-direction:column;padding:4px 22px 10px;gap:12px;min-height:0}
+  .q{display:flex;align-items:center;justify-content:center;gap:8px;text-align:center}
+  .q h2{margin:0;font-size:clamp(20px,3vw,32px);font-weight:900;word-break:keep-all;letter-spacing:-.5px}
+  .q h2[contenteditable=true]{outline:2px dashed var(--pri);border-radius:8px;padding:0 8px;background:#fff}
+  .q button{border:0;background:var(--pri2);color:var(--pri);border-radius:9px;padding:6px 9px;cursor:pointer;font-size:14px;font-weight:700;flex-shrink:0}
+  .view{display:none;flex:1;flex-direction:column;gap:12px;min-height:0}
+  .view.on{display:flex}
+
+  /* 워드클라우드 */
+  .cloud{flex:1;position:relative;background:var(--card);border-radius:24px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(108,76,245,.08);overflow:hidden;min-height:300px}
+  .cloud span{position:absolute;white-space:nowrap;font-weight:800;line-height:1;transition:left .6s cubic-bezier(.2,.8,.2,1),top .6s cubic-bezier(.2,.8,.2,1),font-size .6s;cursor:pointer;user-select:none;letter-spacing:-.5px}
+  .cloud span:hover{filter:brightness(1.15)}
+  .cloud.noanim span{transition:none}
+  .cloud span.new{animation:pop .9s ease}
+  @keyframes pop{0%{transform:scale(.2);opacity:0}60%{transform:scale(1.25)}100%{transform:scale(1);opacity:1}}
+  .cloud .empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--sub);font-size:20px;font-weight:700;cursor:default}
+  .stats{position:absolute;left:14px;bottom:10px;font-size:13px;color:var(--sub);font-weight:700;pointer-events:none}
+  .send{display:flex;gap:8px;max-width:720px;width:100%;margin:0 auto}
+  .send input{flex:1;min-width:0;font:inherit;font-size:20px;padding:14px 18px;border-radius:16px;border:2px solid var(--line);background:#fff;color:var(--ink)}
+  .send input:focus{outline:none;border-color:var(--pri)}
+  .send button{border:0;font:inherit;font-size:19px;font-weight:800;padding:0 26px;border-radius:16px;background:var(--pri);color:#fff;cursor:pointer;box-shadow:0 4px 0 #4b2fd0}
+  .send button:active{transform:translateY(2px);box-shadow:0 2px 0 #4b2fd0}
+  .hint{text-align:center;color:var(--sub);font-size:13px}
+
+  /* 투표 */
+  .vote{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;min-height:0}
+  .vbtns{display:flex;flex-direction:column;gap:10px;justify-content:center}
+  .vbtn{border:0;font:inherit;font-size:clamp(17px,2vw,22px);font-weight:800;color:#fff;border-radius:18px;padding:16px 18px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;box-shadow:0 5px 0 rgba(0,0,0,.18);word-break:keep-all;transition:transform .1s}
+  .vbtn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+  .vbtn .k{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.28);display:grid;place-items:center;flex-shrink:0;font-size:17px}
+  .vbtn.flash{animation:flash .5s}
+  @keyframes flash{50%{filter:brightness(1.35);transform:scale(1.03)}}
+  .chart{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px 22px;display:flex;flex-direction:column;justify-content:center;gap:14px;box-shadow:0 10px 30px rgba(108,76,245,.08)}
+  .chart h3{margin:0;font-size:16px;color:var(--sub);display:flex;justify-content:space-between}
+  .barrow .lab{display:flex;justify-content:space-between;font-weight:800;font-size:16px;margin-bottom:5px;gap:8px}
+  .barrow .lab span:last-child{color:var(--sub);white-space:nowrap}
+  .track{height:30px;background:#f3f1fb;border-radius:10px;overflow:hidden}
+  .fill{height:100%;border-radius:10px;width:0;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+  .barrow.top .lab span:first-child::after{content:" 👑"}
+
+  .modal{position:fixed;inset:0;background:rgba(35,31,58,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+  .modal.on{display:flex}
+  .box{background:#fff;border-radius:20px;padding:22px;width:100%;max-width:460px;display:flex;flex-direction:column;gap:10px}
+  .box h3{margin:0}
+  .box p{margin:0;color:var(--sub);font-size:14px}
+  .box input{font:inherit;font-size:16px;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;width:100%}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .b{border:0;font:inherit;font-weight:800;font-size:15px;padding:10px 16px;border-radius:11px;cursor:pointer;background:var(--pri2);color:var(--pri)}
+  .b.pri{background:var(--pri);color:#fff}
+  .b.red{background:#ff4d6d;color:#fff}
+  .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:30}
+  .toast.on{opacity:1}
+  footer{text-align:right;padding:0 22px 8px}
+  footer a{color:var(--sub);font-size:13px;text-decoration:none}
+
+  @media (max-width:760px){
+    header{padding:10px 12px}
+    .tabs{margin-left:0;order:3;width:100%}
+    .tabs button{flex:1}
+    .tools{margin-left:auto}
+    main{padding:4px 12px 10px}
+    .vote{grid-template-columns:minmax(0,1fr)}
+    .send input{font-size:17px;padding:12px 14px}
+    .send button{padding:0 18px;font-size:17px}
+    .cloud{min-height:360px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🌸</div>
+  <div><h1>생각꽃밭</h1><small>한 사람씩 남긴 생각이 꽃처럼 피어나요</small></div>
+  <div class="tabs" id="tabs">
+    <button class="on" data-v="cloud">☁️ 단어 구름</button>
+    <button data-v="vote">📊 투표</button>
+  </div>
+  <div class="tools row">
+    <button class="icon-btn" id="full" title="전체 화면">⛶ 크게</button>
+    <button class="icon-btn" id="reset" title="초기화">↺ 초기화</button>
+  </div>
+</header>
+
+<main>
+  <div class="q"><h2 id="qText"></h2><button id="qEdit" title="질문 바꾸기">✎ 질문</button></div>
+
+  <section class="view on" id="v-cloud">
+    <div class="cloud" id="cloud"><div class="stats" id="stats"></div></div>
+    <form class="send" id="sendForm" autocomplete="off">
+      <input id="word" maxlength="14" placeholder="단어 하나를 적어 주세요" aria-label="단어 입력">
+      <button type="submit">피우기 🌸</button>
+    </form>
+    <div class="hint">한 번에 단어 하나 · 같은 단어가 많을수록 크게 피어나요 · 단어를 누르면 지울 수 있어요</div>
+  </section>
+
+  <section class="view" id="v-vote">
+    <div class="vote">
+      <div class="vbtns" id="vbtns"></div>
+      <div class="chart" id="chart"></div>
+    </div>
+    <div class="hint">버튼을 눌러 한 표! · <a href="#" id="optEdit" style="color:var(--pri);font-weight:700">선택지 바꾸기</a></div>
+  </section>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<div class="modal" id="modal"><div class="box" id="box"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const KEY = "saenggak-kkotbat-v1";
+const VCOLORS = ["#6c4cf5","#ff5c8a","#12b5a5","#ff9f1c","#3a86ff"];
+const CCOLORS = ["#6c4cf5","#ff5c8a","#12a594","#f08c00","#3a86ff","#c2255c","#7048e8","#2b8a3e","#e8590c","#1971c2"];
+
+function sample(){
+  return {
+    view: "cloud",
+    cq: "AI와 함께하는 교실, 떠오르는 단어는?",
+    words: {"창의력":6,"질문":5,"협업":4,"호기심":4,"재미":4,"맞춤학습":3,"탐구":3,"상상력":3,"편리함":2,"윤리":2,"대화":2,"코딩":2,"피드백":2,"자기주도":1,"새로움":1,"걱정":1},
+    vq: "수업에서 AI 도구, 얼마나 써 봤나요?",
+    opts: ["매일 써요","가끔 써요","한두 번 써 봤어요","아직 안 써 봤어요"],
+    votes: [3,9,6,4],
+    last: null
+  };
+}
+let S;
+try{ S = JSON.parse(localStorage.getItem(KEY)) || sample(); }catch(e){ S = sample(); }
+if(!S.words || !S.opts || !S.votes) S = sample();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+let toastT;
+function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 1700); }
+function modal(html){ $("#box").innerHTML = html; $("#modal").classList.add("on"); }
+function closeModal(){ $("#modal").classList.remove("on"); }
+$("#modal").addEventListener("click", e => { if(e.target.id === "modal" || e.target.dataset.close != null) closeModal(); });
+
+// 소리
+let actx;
+function chime(n=2){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    [784,1047,1319].slice(0,n).forEach((f,i) => {
+      const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i*0.09;
+      o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.12,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.4);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t+0.45);
+    });
+  }catch(e){}
+}
+
+// 화면 전환
+function setView(v){
+  S.view = v; save();
+  $$("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  $("#v-cloud").classList.toggle("on", v === "cloud");
+  $("#v-vote").classList.toggle("on", v === "vote");
+  renderQ();
+  if(v === "cloud") layout(); else renderVote(false);
+}
+$$("#tabs button").forEach(b => b.onclick = () => setView(b.dataset.v));
+
+// 질문 편집
+function renderQ(){ $("#qText").textContent = S.view === "cloud" ? S.cq : S.vq; }
+$("#qEdit").onclick = () => {
+  const h = $("#qText");
+  if(h.isContentEditable){ finishQ(); return; }
+  h.contentEditable = "true"; h.focus();
+  const r = document.createRange(); r.selectNodeContents(h); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  $("#qEdit").textContent = "✔ 완료";
+};
+function finishQ(){
+  const h = $("#qText"); h.contentEditable = "false"; $("#qEdit").textContent = "✎ 질문";
+  const t = h.textContent.trim().slice(0,60) || (S.view === "cloud" ? sample().cq : sample().vq);
+  if(S.view === "cloud") S.cq = t; else S.vq = t;
+  save(); renderQ();
+}
+$("#qText").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); finishQ(); } });
+$("#qText").addEventListener("blur", () => { if($("#qText").isContentEditable) setTimeout(finishQ, 150); });
+
+// ---------- 단어 구름 ----------
+function norm(w){
+  w = w.replace(/\s+/g," ").trim().replace(/^[#.,!?~"'\s]+|[#.,!?~"'\s]+$/g,"");
+  if(/^[a-z0-9 ]+$/i.test(w)) w = w.toLowerCase();
+  return w.slice(0,14);
+}
+function hashCode(s){ let h = 0; for(const c of s) h = (h*31 + c.codePointAt(0)) | 0; return Math.abs(h); }
+let resizeT;
+function layout(){
+  const box = $("#cloud");
+  const W = box.clientWidth, H = box.clientHeight;
+  if(!W || !H) return;
+  const entries = Object.entries(S.words).sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
+  const old = {}; $$("#cloud span[data-w]").forEach(el => old[el.dataset.w] = el);
+  let em = box.querySelector(".empty");
+  if(!entries.length){
+    Object.values(old).forEach(el => el.remove());
+    if(!em){ em = document.createElement("div"); em.className = "empty"; em.textContent = "🌱 첫 번째 단어를 심어 주세요!"; box.appendChild(em); }
+  } else if(em) em.remove();
+  const total = entries.reduce((s,e) => s + e[1], 0);
+  $("#stats").textContent = entries.length ? `참여 ${total}번 · 단어 ${entries.length}개` : "";
+  if(!entries.length) return;
+  const maxC = entries[0][1], minC = entries[entries.length-1][1];
+  const area = W*H;
+  // 단어 수에 맞춰 크기 범위 조정
+  let maxF = Math.min(H*0.24, W*0.13, 96), minF = Math.max(14, Math.min(26, maxF*0.3));
+  const shrink = Math.min(1, Math.sqrt(area / (entries.length * 9000)));
+  maxF *= Math.max(.55, shrink); minF = Math.max(13, minF*Math.max(.7, shrink));
+  let placed, tries = 0;
+  const meas = document.createElement("span"); meas.style.visibility = "hidden"; meas.style.transition = "none"; meas.style.left = "0"; meas.style.top = "0"; box.appendChild(meas);
+  while(true){
+    placed = [];
+    let ok = true;
+    for(const [w,c] of entries){
+      const t = maxC === minC ? 0.6 : Math.sqrt((c-minC)/(maxC-minC));
+      const fs = Math.round(minF + (maxF-minF)*t);
+      meas.style.fontSize = fs + "px"; meas.textContent = w;
+      const bw = meas.offsetWidth + 6, bh = meas.offsetHeight + 2;
+      const pos = spiral(bw, bh, W, H, placed, hashCode(w));
+      if(!pos){ ok = false; break; }
+      placed.push({w, c, fs, x:pos.x, y:pos.y, bw, bh});
+    }
+    if(ok || ++tries > 8) break;
+    maxF *= .86; minF = Math.max(11, minF*.92);
+  }
+  meas.remove();
+  // 전체 묶음을 상자 가운데로 옮기기
+  if(placed.length){
+    const x0 = Math.min(...placed.map(p => p.x)), x1 = Math.max(...placed.map(p => p.x + p.bw));
+    const y0 = Math.min(...placed.map(p => p.y)), y1 = Math.max(...placed.map(p => p.y + p.bh));
+    const dx = (W - (x1 - x0))/2 - x0, dy = (H - 20 - (y1 - y0))/2 - y0;
+    placed.forEach(p => { p.x += dx; p.y += dy; });
+  }
+  const keep = new Set();
+  placed.forEach((p,i) => {
+    keep.add(p.w);
+    let el = old[p.w];
+    if(!el){ el = document.createElement("span"); el.dataset.w = p.w; el.textContent = p.w; box.appendChild(el);
+      el.style.left = (W/2 - p.bw/2) + "px"; el.style.top = (H/2 - p.bh/2) + "px"; el.style.fontSize = p.fs + "px"; void el.offsetWidth; }
+    el.style.color = CCOLORS[hashCode(p.w) % CCOLORS.length];
+    el.style.fontSize = p.fs + "px";
+    el.style.left = (p.x + 3) + "px"; el.style.top = (p.y + 1) + "px";
+    el.style.fontWeight = p.c === maxC ? 900 : 800;
+    el.title = `${p.w} · ${p.c}번`;
+  });
+  Object.keys(old).forEach(w => { if(!keep.has(w)) old[w].remove(); });
+}
+function spiral(bw, bh, W, H, placed, seed){
+  const cx = W/2, cy = H/2, ratio = W/H;
+  const a0 = (seed % 628)/100;
+  for(let i=0;i<2600;i++){
+    const t = i*0.11, r = 3.2*t;
+    const x = cx + r*Math.cos(t+a0)*Math.min(ratio,1.9) - bw/2;
+    const y = cy + r*Math.sin(t+a0)*0.85 - bh/2;
+    if(x < 6 || y < 6 || x + bw > W - 6 || y + bh > H - 26) continue;
+    let hit = false;
+    for(const p of placed){ if(x < p.x + p.bw && x + bw > p.x && y < p.y + p.bh && y + bh > p.y){ hit = true; break; } }
+    if(!hit) return {x, y};
+  }
+  return null;
+}
+$("#sendForm").onsubmit = e => {
+  e.preventDefault();
+  const w = norm($("#word").value);
+  if(!w){ toast("단어를 적어 주세요"); return; }
+  S.words[w] = (S.words[w] || 0) + 1; S.last = w; save();
+  $("#word").value = "";
+  layout();
+  const el = $(`#cloud span[data-w="${CSS.escape(w)}"]`);
+  if(el){ el.classList.remove("new"); void el.offsetWidth; el.classList.add("new"); }
+  chime(S.words[w] > 1 ? 3 : 2);
+  toast(S.words[w] > 1 ? `'${w}' 꽃이 더 커졌어요! (${S.words[w]}번)` : `'${w}' 꽃이 피었어요 🌸`);
+  $("#word").focus();
+};
+$("#cloud").addEventListener("click", e => {
+  const w = e.target.dataset && e.target.dataset.w; if(!w) return;
+  modal(`<h3>'${esc(w)}' (${S.words[w]}번)</h3><p>이 단어를 어떻게 할까요?</p>
+    <div class="row"><button class="b" id="m1">하나 줄이기</button><button class="b red" id="mDel">완전히 지우기</button><button class="b" data-close>닫기</button></div>`);
+  $("#m1").onclick = () => { if(--S.words[w] <= 0) delete S.words[w]; save(); layout(); closeModal(); };
+  $("#mDel").onclick = () => { delete S.words[w]; save(); layout(); closeModal(); };
+});
+const relayout = () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if(S.view === "cloud") layout(); }, 120); };
+if(window.ResizeObserver) new ResizeObserver(relayout).observe($("#cloud")); else window.addEventListener("resize", relayout);
+
+// ---------- 투표 ----------
+function renderVote(animFrom0){
+  $("#vbtns").innerHTML = S.opts.map((o,i) => `<button class="vbtn" data-i="${i}" style="background:${VCOLORS[i]}"><span class="k">${i+1}</span>${esc(o)}</button>`).join("");
+  const total = S.votes.reduce((a,b) => a+b, 0), mx = Math.max(...S.votes);
+  $("#chart").innerHTML = `<h3><span>실시간 결과</span><span id="vTotal">총 ${total}표</span></h3>` + S.opts.map((o,i) => {
+    const pct = total ? Math.round(S.votes[i]/total*100) : 0;
+    return `<div class="barrow ${total && S.votes[i] === mx ? "top" : ""}" data-i="${i}"><div class="lab"><span>${esc(o)}</span><span>${S.votes[i]}표 · ${pct}%</span></div><div class="track"><div class="fill" style="background:${VCOLORS[i]};width:${animFrom0 ? 0 : (mx ? S.votes[i]/mx*100 : 0)}%"></div></div></div>`;
+  }).join("");
+  if(animFrom0) requestAnimationFrame(() => requestAnimationFrame(() => updBars()));
+  $$(".vbtn").forEach(b => b.onclick = () => {
+    const i = +b.dataset.i; S.votes[i]++; save(); updBars(); chime(2);
+    b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash");
+    toast(`'${S.opts[i]}'에 한 표! 🗳️`);
+  });
+}
+function updBars(){
+  const total = S.votes.reduce((a,b) => a+b, 0), mx = Math.max(...S.votes);
+  $("#vTotal").textContent = `총 ${total}표`;
+  $$(".barrow").forEach(r => {
+    const i = +r.dataset.i, pct = total ? Math.round(S.votes[i]/total*100) : 0;
+    r.querySelector(".fill").style.width = (mx ? S.votes[i]/mx*100 : 0) + "%";
+    r.querySelector(".lab span:last-child").textContent = `${S.votes[i]}표 · ${pct}%`;
+    r.classList.toggle("top", total > 0 && S.votes[i] === mx);
+  });
+}
+$("#optEdit").onclick = e => {
+  e.preventDefault();
+  modal(`<h3>선택지 바꾸기</h3><p>2-5개까지 적어 주세요. 바꾸면 표가 0부터 다시 시작해요.</p>
+    ${[0,1,2,3,4].map(i => `<input class="oi" maxlength="20" placeholder="선택지 ${i+1}${i>=2?" (비워 두면 없음)":""}" value="${esc(S.opts[i]||"")}">`).join("")}
+    <div class="row"><button class="b pri" id="oSave">저장</button><button class="b" data-close>취소</button></div>`);
+  $("#oSave").onclick = () => {
+    const opts = $$(".oi").map(x => x.value.trim()).filter(Boolean);
+    if(opts.length < 2){ toast("선택지는 2개 이상 필요해요"); return; }
+    S.opts = opts; S.votes = opts.map(() => 0); save(); closeModal(); renderVote(false); toast("새 투표 준비 완료!");
+  };
+};
+
+// ---------- 초기화 / 전체화면 ----------
+$("#reset").onclick = () => {
+  const isCloud = S.view === "cloud";
+  modal(`<h3>↺ ${isCloud ? "단어 구름" : "투표"} 초기화</h3><p>되돌릴 수 없어요. 어떻게 할까요?</p>
+    <div class="row"><button class="b red" id="rEmpty">모두 비우기</button><button class="b" id="rSample">예시 데이터로</button><button class="b" data-close>취소</button></div>`);
+  $("#rEmpty").onclick = () => { if(isCloud) S.words = {}; else S.votes = S.opts.map(() => 0); save(); closeModal(); isCloud ? layout() : renderVote(false); toast("깨끗하게 비웠어요"); };
+  $("#rSample").onclick = () => { const s = sample(); if(isCloud){ S.words = s.words; S.cq = s.cq; } else { S.opts = s.opts; S.votes = s.votes; S.vq = s.vq; } save(); closeModal(); renderQ(); isCloud ? layout() : renderVote(true); };
+};
+$("#full").onclick = () => {
+  if(document.fullscreenElement) document.exitFullscreen();
+  else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => toast("이 브라우저는 전체 화면을 지원하지 않아요"));
+};
+document.addEventListener("fullscreenchange", () => setTimeout(() => { if(S.view === "cloud") layout(); }, 200));
+
+// 시작 (주소 끝 #vote 로 투표 화면 바로 열기)
+renderVote(false);
+$("#cloud").classList.add("noanim");
+setTimeout(() => { if(S.view === "cloud") layout(); }, 400);
+setTimeout(() => $("#cloud").classList.remove("noanim"), 1500);
+setView(location.hash === "#vote" ? "vote" : location.hash === "#cloud" ? "cloud" : S.view || "cloud");
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if(S.view === "cloud") layout(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>냠냠가드 - 급식 알레르기 알리미 (콘셉트)</title>
+<meta name="description" content="학교 급식 공개 식단의 알레르기 번호(1-19)를 우리 아이 정보와 맞춰 위험 메뉴를 미리 알려주는 서비스 콘셉트 페이지">
+<style>
+  :root{--g:#1f9d63;--g2:#e7f7ee;--r:#e5484d;--r2:#fdeced;--ink:#14301f;--mut:#5b6f63;--bg:#f8fbf6;--line:#d9e8dd}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;word-break:keep-all}
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  nav{display:flex;align-items:center;gap:12px;height:60px}
+  .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:20px}
+  .logo i{font-style:normal;width:34px;height:34px;border-radius:10px;background:var(--g);display:grid;place-items:center;font-size:18px}
+  .badge{display:inline-flex;align-items:center;gap:6px;background:#ffcf3f;color:#3d2c00;font-weight:800;font-size:13px;padding:4px 11px;border-radius:999px;border:2px solid #3d2c00}
+  nav .links{margin-left:auto;display:flex;gap:20px;font-size:14px;color:var(--mut)}
+  nav .links a{text-decoration:none}
+  .hero{display:grid;grid-template-columns:1fr 1.15fr;gap:36px;align-items:center;padding:18px 0 40px}
+  .hero h1{font-size:46px;line-height:1.15;letter-spacing:-1.5px;margin:14px 0 12px}
+  .hero h1 em{font-style:normal;color:var(--g)}
+  .hero p.lead{font-size:17px;color:var(--mut);margin-bottom:22px}
+  .cta{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{border:0;border-radius:12px;padding:13px 22px;font:inherit;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn.p{background:var(--g);color:#fff;box-shadow:0 6px 18px #1f9d6340}
+  .btn.s{background:#fff;border:1.5px solid var(--line)}
+  .stats{display:flex;gap:22px;margin-top:24px;font-size:13px;color:var(--mut)}
+  .stats b{display:block;font-size:22px;color:var(--ink)}
+  /* mockup */
+  .mock{background:#fff;border-radius:20px;box-shadow:0 20px 50px #14301f1f;border:1px solid var(--line);padding:16px 18px;position:relative}
+  .mock-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .mock-h b{font-size:15px}
+  .mock-h small{color:var(--mut);font-size:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+  .chips label{font-size:12px;border:1.5px solid var(--line);border-radius:999px;padding:3px 9px;cursor:pointer;user-select:none;background:#fff}
+  .chips input{display:none}
+  .chips label:has(input:checked){background:var(--r);border-color:var(--r);color:#fff;font-weight:700}
+  .week{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .day{background:var(--g2);border-radius:12px;padding:8px 7px}
+  .day h4{font-size:12px;color:var(--g);margin-bottom:5px}
+  .dish{word-break:break-all;font-size:12.5px;background:#fff;border-radius:7px;padding:5px 6px;margin-bottom:4px;border:1.5px solid transparent;transition:.2s}
+  .dish sup{color:var(--mut);font-size:9.5px;display:block;line-height:1.2}
+  .dish.bad{border-color:var(--r);background:var(--r2);color:#a3161b;font-weight:700}
+  .dish.bad::before{content:"⚠ "}
+  .summary{margin-top:10px;font-size:13.5px;background:#14301f;color:#fff;border-radius:10px;padding:9px 12px;display:flex;gap:8px;align-items:center}
+  .summary b{color:#ffcf3f}
+  section{padding:56px 0}
+  .tag{color:var(--g);font-weight:800;font-size:13px;letter-spacing:1px}
+  h2{font-size:30px;letter-spacing:-.8px;margin:6px 0 24px}
+  .ps{display:grid;grid-template-columns:1fr 60px 1fr;gap:12px;align-items:stretch}
+  .ps .card{border-radius:18px;padding:24px}
+  .ps .prob{background:#fff;border:1px solid var(--line)}
+  .ps .sol{background:var(--g);color:#fff}
+  .ps .arrow{display:grid;place-items:center;font-size:30px;color:var(--g)}
+  .card h3{font-size:18px;margin-bottom:10px}
+  .card ul{padding-left:18px;font-size:15px}
+  .card li{margin:5px 0}
+  .feat{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .feat div{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px}
+  .feat span{font-size:28px}
+  .feat h3{font-size:16px;margin:10px 0 6px}
+  .feat p{font-size:14px;color:var(--mut)}
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:s}
+  .flow div{background:var(--g2);border-radius:18px;padding:22px;position:relative}
+  .flow div::before{counter-increment:s;content:counter(s);width:34px;height:34px;border-radius:50%;background:var(--g);color:#fff;display:grid;place-items:center;font-weight:800;margin-bottom:10px}
+  .flow h3{font-size:16px;margin-bottom:6px}
+  .flow p{font-size:14px;color:var(--mut)}
+  .note{font-size:13px;color:var(--mut);margin-top:18px}
+  footer{border-top:1px solid var(--line);padding:26px 0 40px;font-size:13px;color:var(--mut)}
+  footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  footer a{font-weight:700;color:var(--g)}
+  @media (max-width:900px){
+    .hero{grid-template-columns:1fr}
+    .feat{grid-template-columns:1fr 1fr}
+    nav .links{display:none}
+  }
+  @media (max-width:600px){
+    .wrap{padding:0 16px}
+    .hero h1{font-size:34px}
+    .week{grid-template-columns:1fr}
+    .day{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+    .day h4{width:100%;margin:0}
+    .dish{margin:0}
+    .ps{grid-template-columns:1fr}
+    .ps .arrow{transform:rotate(90deg);height:30px}
+    .feat,.flow{grid-template-columns:1fr}
+    h2{font-size:24px}
+    .stats{gap:14px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo"><i>🥄</i>냠냠가드</div>
+    <span class="badge">💡 콘셉트</span>
+    <div class="links"><a href="#problem">왜 필요할까</a><a href="#features">기능</a><a href="#flow">사용 흐름</a></div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <span class="badge">💡 콘셉트 · 아이디어 시연</span>
+      <h1>오늘 급식,<br><em>우리 아이에게</em> 괜찮을까요?</h1>
+      <p class="lead">학교가 공개하는 급식 식단의 알레르기 번호(1-19번)를 아이 정보와 맞춰 주의할 메뉴만 콕 집어 아침마다 알려드려요.</p>
+      <div class="cta">
+        <a class="btn p" href="#demo">오른쪽에서 직접 체험 →</a>
+        <a class="btn s" href="#features">기능 살펴보기</a>
+      </div>
+      <div class="stats"><div><b>19종</b>알레르기 번호 자동 인식</div><div><b>매일 아침</b>주의 메뉴 알림</div><div><b>0번</b>식단표 일일이 확인</div></div>
+    </div>
+
+    <div class="mock" id="demo" aria-label="알레르기 알리미 미리보기">
+      <div class="mock-h"><b>① 아이 알레르기 선택</b><small>햇살초등학교 · 이번 주 식단(예시)</small></div>
+      <div class="chips" id="chips"></div>
+      <div class="mock-h"><b>② 이번 주 급식</b><small>⚠ 빨간 메뉴 = 주의</small></div>
+      <div class="week" id="week"></div>
+      <div class="summary" id="summary"></div>
+    </div>
+  </header>
+</div>
+
+<section id="problem" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">PROBLEM → SOLUTION</div>
+    <h2>식단표의 작은 숫자, 매일 확인하기 어렵잖아요</h2>
+    <div class="ps">
+      <div class="card prob">
+        <h3>😟 지금은</h3>
+        <ul>
+          <li>월간 식단표 속 <b>"5.6.10.13"</b> 같은 번호를 일일이 해석</li>
+          <li>식단 변경 공지를 놓치기 쉬움</li>
+          <li>바쁜 아침, 확인을 깜빡하면 걱정이 하루 종일</li>
+        </ul>
+      </div>
+      <div class="arrow">➜</div>
+      <div class="card sol">
+        <h3>😊 냠냠가드와 함께라면</h3>
+        <ul>
+          <li>공개 급식 데이터의 번호를 <b>메뉴 이름 옆 경고</b>로 바꿔서 보여줌</li>
+          <li>식단이 바뀌면 바뀐 메뉴만 다시 확인</li>
+          <li>등교 전 "오늘 주의 메뉴 1개" 한 줄 알림</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="tag">FEATURES</div>
+    <h2>주요 기능</h2>
+    <div class="feat">
+      <div><span>🔢</span><h3>알레르기 번호 해석</h3><p>식단의 1-19번 표기를 "우유", "새우"처럼 알아보기 쉬운 이름으로 바꿉니다.</p></div>
+      <div><span>🎯</span><h3>우리 아이 맞춤 필터</h3><p>아이별로 피해야 할 항목을 저장하면 해당 메뉴만 빨갛게 표시됩니다.</p></div>
+      <div><span>⏰</span><h3>등교 전 알림</h3><p>매일 아침 정해진 시간에 오늘의 주의 메뉴를 한 줄로 받아봅니다.</p></div>
+      <div><span>👨‍👩‍👧</span><h3>형제자매 한 번에</h3><p>학교가 달라도 여러 자녀의 식단을 한 화면에서 확인합니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="flow" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">HOW IT WORKS</div>
+    <h2>사용 흐름 3단계</h2>
+    <div class="flow">
+      <div><h3>학교 선택</h3><p>지역과 학교 이름으로 검색해 아이의 학교를 등록합니다.</p></div>
+      <div><h3>알레르기 체크</h3><p>19개 항목 중 해당하는 것을 고르면 끝. 정보는 기기 안에만 보관하는 방식을 구상합니다.</p></div>
+      <div><h3>알림 받기</h3><p>공개된 식단이 갱신될 때마다 주의 메뉴를 자동으로 골라 알려줍니다.</p></div>
+    </div>
+    <p class="note">※ 구상: 교육 행정 정보 시스템(NEIS)의 공개 급식 식단 정보(알레르기 번호 포함)를 활용하는 아이디어입니다. 이 페이지는 실제 데이터와 연동되지 않으며, 식단은 모두 가상의 예시입니다. 알레르기 판단은 반드시 학교·의료진 안내를 따르세요.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>🥄 냠냠가드 · 실제 운영 중인 서비스가 아닌 아이디어 시연용 페이지입니다.</span>
+    <a href="../">← 전체 데모 보기</a>
+  </div>
+</footer>
+
+<script>
+const ALG=["난류","우유","메밀","땅콩","대두","밀","고등어","게","새우","돼지고기","복숭아","토마토","아황산류","호두","닭고기","쇠고기","오징어","조개류","잣"];
+const MENU=[
+  ["월",[["현미밥",[]],["쇠고기미역국",[5,6,16]],["돈육김치볶음",[5,6,9,10,13]],["계란말이",[1,5]]]],
+  ["화",[["카레라이스",[2,5,6,10,12]],["유부된장국",[5,6]],["새우튀김",[1,5,6,9]],["요구르트",[2]]]],
+  ["수",[["잡곡밥",[]],["닭곰탕",[15]],["오징어볶음",[5,6,17]],["흰우유",[2]]]],
+  ["목",[["짜장밥",[5,6,10,13]],["달걀국",[1,5]],["땅콩멸치볶음",[4,5,6]],["복숭아",[11]]]],
+  ["금",[["토마토스파게티",[5,6,10,12,16]],["양송이수프",[2,5,6]],["마늘빵",[1,2,6]],["오이피클",[13]]]]
+];
+const chips=document.getElementById('chips'),week=document.getElementById('week'),sum=document.getElementById('summary');
+const saved=JSON.parse(localStorage.getItem('nyamguard')||'[2,9]');
+ALG.forEach((n,i)=>{const l=document.createElement('label');l.innerHTML=`<input type="checkbox" value="${i+1}" ${saved.includes(i+1)?'checked':''}>${i+1}.${n}`;chips.appendChild(l)});
+function render(){
+  const sel=[...chips.querySelectorAll('input:checked')].map(x=>+x.value);
+  localStorage.setItem('nyamguard',JSON.stringify(sel));
+  let bad=0;week.innerHTML='';
+  MENU.forEach(([d,dishes])=>{
+    const el=document.createElement('div');el.className='day';
+    el.innerHTML=`<h4>${d}요일</h4>`+dishes.map(([n,a])=>{
+      const hit=a.filter(x=>sel.includes(x));if(hit.length)bad++;
+      return `<div class="dish ${hit.length?'bad':''}" title="${hit.map(x=>ALG[x-1]).join(', ')}">${n}<sup>${a.length?a.join('.'):'-'}${hit.length?' · '+hit.map(x=>ALG[x-1]).join(','):''}</sup></div>`}).join('');
+    week.appendChild(el)});
+  sum.innerHTML=sel.length?`🔔 이번 주 주의 메뉴 <b>${bad}개</b> · 선택: ${sel.map(x=>ALG[x-1]).join(', ')}`:'알레르기 항목을 눌러 선택해 보세요.';
+}
+chips.addEventListener('change',render);render();
+</script>
+</body>
+</html>

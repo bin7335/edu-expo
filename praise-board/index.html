@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>별총총 칭찬판 - 학급 칭찬 포인트</title>
+<meta name="description" content="학생 카드를 톡 누르면 칭찬 별이 쌓이는 학급 칭찬 포인트판. 협력·배려·도전 항목, 모둠 합계, 학급 목표 달성 시 축하 효과.">
+<style>
+  :root{--bg:#1d2340;--bg2:#272f55;--card:#fff;--ink:#23263a;--sub:#6b6f86;--gold:#ffc83d;--line:#e6e8f2}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);min-height:100vh;
+    background:radial-gradient(circle at 15% 10%,#3a4685 0,transparent 40%),radial-gradient(circle at 90% 0,#4b2f6e 0,transparent 35%),var(--bg)}
+  header{display:flex;align-items:center;gap:10px;padding:10px 18px;color:#fff}
+  header .logo{font-size:28px;filter:drop-shadow(0 0 8px rgba(255,200,61,.7))}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header small{opacity:.7;font-size:12.5px;display:block}
+  .grow{flex:1}
+  .hbtn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:8px 12px;font:inherit;font-size:13.5px;cursor:pointer;white-space:nowrap}
+  .hbtn:hover{background:rgba(255,255,255,.22)}
+  .hbtn:disabled{opacity:.4;cursor:default}
+  .wrap{padding:0 18px 40px;max-width:1400px;margin:0 auto}
+  .top{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-bottom:10px}
+  .goal,.teams{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 14px;color:#fff}
+  .goal .line1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .goal b.num{font-size:26px;color:var(--gold)}
+  .goal .of{opacity:.8;font-size:14px}
+  .goal .reward{margin-left:auto;font-size:13.5px;background:rgba(255,200,61,.15);border:1px dashed rgba(255,200,61,.6);padding:3px 10px;border-radius:20px}
+  .bar{position:relative;height:16px;background:rgba(255,255,255,.12);border-radius:10px;margin-top:8px;overflow:hidden}
+  .bar i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,#ffb02e,#ffe27a);border-radius:10px;transition:width .5s cubic-bezier(.3,1.4,.5,1);box-shadow:0 0 14px rgba(255,200,61,.7)}
+  .bar span{position:absolute;right:8px;top:0;font-size:11px;line-height:16px;font-weight:700;color:#1d2340}
+  .teams{display:flex;gap:8px;align-items:stretch}
+  .team{flex:1;border-radius:10px;padding:6px 8px;text-align:center;background:rgba(255,255,255,.06);border-top:4px solid var(--c);min-width:0}
+  .team .tn{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .team .tp{font-size:22px;font-weight:800}
+  .team.lead .tp::after{content:" 👑";font-size:14px}
+  .cats{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .cats .lbl{color:#c9cdf0;font-size:13px;margin-right:2px}
+  .chip{border:2px solid transparent;background:#fff;color:var(--ink);border-radius:30px;padding:7px 14px;font:inherit;font-size:14.5px;font-weight:700;cursor:pointer}
+  .chip.on{border-color:var(--gold);background:#fff6d8;box-shadow:0 0 0 3px rgba(255,200,61,.35)}
+  .cats .tip{color:#aab0d8;font-size:12.5px;margin-left:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+  .card{position:relative;background:var(--card);border-radius:14px;padding:10px 8px 8px;text-align:center;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;border-bottom:5px solid var(--c);box-shadow:0 4px 0 rgba(0,0,0,.18);transition:transform .1s}
+  .card:active{transform:scale(.97)}
+  .card .av{font-size:34px;line-height:1.1}
+  .card .nm{font-weight:700;font-size:15px;margin-top:2px}
+  .card .pt{font-size:24px;font-weight:900;color:#e29b00;line-height:1.2}
+  .card .pt small{font-size:12px;color:var(--sub);font-weight:600}
+  .card .bd{font-size:11px;color:var(--sub);min-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .minus{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#f6f7fb;color:#888;font-size:16px;line-height:22px;cursor:pointer;padding:0}
+  .card .tm{position:absolute;top:6px;left:8px;font-size:10px;font-weight:700;color:var(--c)}
+  .card.bump{animation:bump .35s}
+  .card.down{animation:shake .3s}
+  .card.holding{box-shadow:0 0 0 3px #ff8a8a}
+  @keyframes bump{40%{transform:scale(1.08) rotate(-2deg)}100%{transform:none}}
+  @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .float{position:fixed;pointer-events:none;font-weight:900;font-size:22px;color:#ffb300;text-shadow:0 2px 0 #fff,0 0 8px rgba(255,180,0,.6);animation:fly .9s ease-out forwards;z-index:30;transform:translate(-50%,-50%)}
+  .float.neg{color:#e5484d}
+  @keyframes fly{to{transform:translate(-50%,-160%) scale(1.3);opacity:0}}
+  #fx{position:fixed;inset:0;pointer-events:none;z-index:60}
+  .modal{position:fixed;inset:0;background:rgba(10,12,30,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal.show{display:flex}
+  .box{background:#fff;border-radius:16px;padding:20px;max-width:440px;width:100%;max-height:90vh;overflow:auto}
+  .box h3{margin:0 0 8px}
+  .box p{color:var(--sub);margin:0 0 14px;line-height:1.5}
+  .box label{display:block;font-size:13px;font-weight:700;margin:10px 0 4px}
+  .box input,.box textarea,.box select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:14px}
+  .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+  .b{border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer;background:#eef0f7}
+  .b.pri{background:var(--gold);color:#3a2a00}
+  .b.danger{background:#e5484d;color:#fff}
+  .celebrate .box{text-align:center}
+  .celebrate .big{font-size:56px}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:#dfe2ff;background:rgba(0,0,0,.35);padding:5px 10px;border-radius:20px;text-decoration:none;z-index:20}
+  @media (max-width:820px){
+    header{padding:10px 12px;flex-wrap:wrap}
+    header small{display:none}
+    header h1{font-size:19px}
+    .hbtn{padding:7px 9px;font-size:12.5px}
+    .wrap{padding:0 10px 50px}
+    .top{grid-template-columns:1fr}
+    .goal .reward{margin-left:0}
+    .cats .tip{display:none}
+    .chip{padding:6px 11px;font-size:13.5px}
+    .grid{grid-template-columns:repeat(3,1fr);gap:8px}
+    .card .av{font-size:28px}
+    .card .pt{font-size:20px}
+    .card .nm{font-size:14px}
+    .team .tp{font-size:18px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🌟</div>
+  <div><h1>별총총 칭찬판</h1><small>톡 누르면 별 하나, 꾹 누르면 별 하나 빼기</small></div>
+  <div class="grow"></div>
+  <button class="hbtn" id="undoBtn" type="button" disabled>↶ 되돌리기</button>
+  <button class="hbtn" id="soundBtn" type="button" aria-label="소리 켜기/끄기">🔔</button>
+  <button class="hbtn" id="setBtn" type="button">⚙ 설정</button>
+  <button class="hbtn" id="resetBtn" type="button">초기화</button>
+</header>
+
+<div class="wrap">
+  <section class="top">
+    <div class="goal">
+      <div class="line1"><span>학급 목표</span><b class="num" id="sum">0</b><span class="of" id="goalTxt">/ 100점</span><span class="reward" id="reward">🎁</span></div>
+      <div class="bar" aria-label="목표 진행률"><i id="barFill"></i><span id="barPct">0%</span></div>
+    </div>
+    <div class="teams" id="teams"></div>
+  </section>
+  <section class="cats" id="cats"><span class="lbl">칭찬 항목</span></section>
+  <section class="grid" id="grid"></section>
+</div>
+
+<canvas id="fx"></canvas>
+
+<div class="modal" id="confirmM" role="dialog" aria-modal="true">
+  <div class="box"><h3>점수를 모두 지울까요?</h3><p>모든 학생의 칭찬 점수가 0점이 됩니다. 이 작업은 되돌릴 수 없어요.</p>
+    <div class="acts"><button class="b" data-close>취소</button><button class="b danger" id="doReset">모두 지우기</button></div></div>
+</div>
+
+<div class="modal" id="setM" role="dialog" aria-modal="true">
+  <div class="box"><h3>⚙ 칭찬판 설정</h3>
+    <label for="sNames">학생 이름 (한 줄에 한 명)</label>
+    <textarea id="sNames" rows="7"></textarea>
+    <label for="sTeams">모둠 수</label>
+    <select id="sTeams"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+    <label for="sGoal">학급 목표 점수</label>
+    <input id="sGoal" type="number" min="5" max="9999">
+    <label for="sReward">목표 달성 보상</label>
+    <input id="sReward" type="text" maxlength="40">
+    <div class="acts"><button class="b" id="sample">예시로 되돌리기</button><button class="b" data-close>취소</button><button class="b pri" id="saveSet">저장</button></div>
+  </div>
+</div>
+
+<div class="modal celebrate" id="winM" role="dialog" aria-modal="true">
+  <div class="box"><div class="big">🎉</div><h3>학급 목표 달성!</h3><p id="winTxt"></p>
+    <div class="acts" style="justify-content:center"><button class="b" data-close>닫기</button><button class="b pri" id="nextGoal">다음 목표 +50</button></div></div>
+</div>
+
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+(function(){
+  'use strict';
+  var KEY='praiseboard-v1';
+  var CATS=[{k:'co',n:'협력',e:'🤝'},{k:'ca',n:'배려',e:'💗'},{k:'ch',n:'도전',e:'🔥'},{k:'re',n:'책임',e:'📚'},{k:'cl',n:'정리',e:'🧹'}];
+  var TEAMS=[{n:'해님',c:'#ff8a3d'},{n:'달님',c:'#7b8cff'},{n:'별님',c:'#e0b100'},{n:'구름',c:'#3fb6c9'},{n:'무지개',c:'#d45bd0'},{n:'바람',c:'#4caf50'}];
+  var AV=['🐶','🐱','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐧','🐤','🦄','🐳','🐙','🦋','🐢','🦔','🐹','🦉','🐝','🐞','🦖','🐬','🦒','🐿️','🦜'];
+  var SAMPLE=['김하늘','이서준','박지호','최민준','정예린','강시우','조하윤','윤도현','장서아','임지안','한유찬','오다은','서준혁','신채원','권태윤','황보람','안지후','송가온','류하람','홍이현','전소율','고은호','문서진','배나래'];
+  var $=function(id){return document.getElementById(id)};
+
+  function sampleState(){
+    // deterministic pseudo-random prefill
+    var seed=7;function rnd(){seed=(seed*9301+49297)%233280;return seed/233280}
+    var st={goal:80,reward:'운동장 자유 놀이 20분',teams:4,cat:'co',sound:true,reached:false,students:[]};
+    var total=0;
+    SAMPLE.forEach(function(n,i){
+      var p={};CATS.forEach(function(c){p[c.k]=0});
+      var k=1+Math.floor(rnd()*5);for(var j=0;j<k;j++){p[CATS[Math.floor(rnd()*CATS.length)].k]++;total++}
+      st.students.push({name:n,av:AV[i%AV.length],p:p});
+    });
+    return st; // total 70, goal 80: 10 taps to celebrate
+  }
+  var S;
+  try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){S=null}
+  if(!S||!S.students) S=sampleState();
+  var hist=[];
+
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+  function tot(s){var t=0;for(var k in s.p)t+=s.p[k];return t}
+  function sum(){return S.students.reduce(function(a,s){return a+tot(s)},0)}
+  function team(i){return TEAMS[i%S.teams]}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+  function renderCats(){
+    var h='<span class="lbl">칭찬 항목</span>';
+    CATS.forEach(function(c){h+='<button type="button" class="chip'+(S.cat===c.k?' on':'')+'" data-k="'+c.k+'">'+c.e+' '+c.n+'</button>'});
+    h+='<span class="tip">항목을 고르고 학생 카드를 누르세요</span>';
+    $('cats').innerHTML=h;
+  }
+  function cardHTML(s,i){
+    var t=team(i),bd=CATS.filter(function(c){return s.p[c.k]>0}).map(function(c){return c.e+s.p[c.k]}).join(' ');
+    return '<div class="card" style="--c:'+t.c+'" data-i="'+i+'" role="button" tabindex="0" aria-label="'+esc(s.name)+' 칭찬 더하기">'+
+      '<span class="tm">'+t.n+'</span><button type="button" class="minus" aria-label="'+esc(s.name)+' 1점 빼기">−</button>'+
+      '<div class="av">'+s.av+'</div><div class="nm">'+esc(s.name)+'</div><div class="pt">'+tot(s)+'<small> 점</small></div><div class="bd">'+(bd||'&nbsp;')+'</div></div>';
+  }
+  function renderGrid(){$('grid').innerHTML=S.students.map(cardHTML).join('')}
+  function renderCard(i){var c=$('grid').children[i];if(!c)return;var tmp=document.createElement('div');tmp.innerHTML=cardHTML(S.students[i],i);$('grid').replaceChild(tmp.firstChild,c);return $('grid').children[i]}
+  function renderTop(){
+    var t=sum(),pct=Math.min(100,Math.round(t/S.goal*100));
+    $('sum').textContent=t;$('goalTxt').textContent='/ '+S.goal+'점';
+    $('reward').textContent='🎁 '+S.reward;
+    $('barFill').style.width=pct+'%';$('barPct').textContent=pct+'%';
+    var tt=[];for(var k=0;k<S.teams;k++)tt.push(0);
+    S.students.forEach(function(s,i){tt[i%S.teams]+=tot(s)});
+    var mx=Math.max.apply(null,tt);
+    $('teams').innerHTML=tt.map(function(v,k){return '<div class="team'+(v===mx&&v>0?' lead':'')+'" style="--c:'+TEAMS[k].c+'"><div class="tn">'+TEAMS[k].n+' 모둠</div><div class="tp">'+v+'</div></div>'}).join('');
+    $('undoBtn').disabled=!hist.length;
+    $('soundBtn').textContent=S.sound?'🔔':'🔕';
+  }
+  function renderAll(){renderCats();renderGrid();renderTop()}
+
+  // sound
+  var ac=null;
+  function beep(up){
+    if(!S.sound)return;
+    try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();var o=ac.createOscillator(),g=ac.createGain();
+      o.type='triangle';o.frequency.setValueAtTime(up?660:300,ac.currentTime);o.frequency.exponentialRampToValueAtTime(up?1320:200,ac.currentTime+.12);
+      g.gain.setValueAtTime(.15,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.25);
+      o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.26)}catch(e){}
+  }
+  function floatAt(el,txt,neg){
+    var r=el.getBoundingClientRect(),f=document.createElement('div');
+    f.className='float'+(neg?' neg':'');f.textContent=txt;f.style.left=(r.left+r.width/2)+'px';f.style.top=(r.top+r.height*.45)+'px';
+    document.body.appendChild(f);setTimeout(function(){f.remove()},950);
+  }
+  function snapshot(){hist.push(JSON.stringify(S.students));if(hist.length>30)hist.shift()}
+
+  function add(i,d){
+    var s=S.students[i];if(!s)return;
+    var cat=CATS.filter(function(c){return c.k===S.cat})[0]||CATS[0];
+    if(d<0){
+      if(tot(s)<=0){var c0=$('grid').children[i];c0.classList.add('down');setTimeout(function(){c0.classList.remove('down')},320);return}
+      snapshot();
+      var k=s.p[cat.k]>0?cat.k:Object.keys(s.p).sort(function(a,b){return s.p[b]-s.p[a]})[0];
+      s.p[k]--;
+    }else{snapshot();s.p[cat.k]=(s.p[cat.k]||0)+1}
+    var el=renderCard(i);el.classList.add(d>0?'bump':'down');
+    floatAt(el,d>0?'+1 '+cat.e:'−1',d<0);beep(d>0);
+    var before=S.reached;renderTop();
+    if(sum()>=S.goal&&!before){S.reached=true;celebrate()}
+    if(sum()<S.goal)S.reached=false;
+    save();
+  }
+
+  // pointer: tap +1, long-press -1
+  var press=null;
+  var grid=$('grid');
+  grid.addEventListener('contextmenu',function(e){if(e.target.closest('.card'))e.preventDefault()});
+  grid.addEventListener('pointerdown',function(e){
+    var c=e.target.closest('.card');if(!c||e.button>0)return;
+    if(e.target.closest('.minus'))return;
+    var i=+c.dataset.i;
+    press={i:i,x:e.clientX,y:e.clientY,long:false,el:c};
+    c.classList.add('holding');
+    press.t=setTimeout(function(){if(press&&press.i===i){press.long=true;c.classList.remove('holding');add(i,-1)}},600);
+  });
+  function endPress(e,cancel){
+    if(!press)return;var p=press;press=null;clearTimeout(p.t);p.el.classList.remove('holding');
+    if(cancel||p.long)return;
+    if(Math.hypot(e.clientX-p.x,e.clientY-p.y)>12)return;
+    add(p.i,1);
+  }
+  grid.addEventListener('pointerup',function(e){endPress(e,false)});
+  grid.addEventListener('pointercancel',function(e){endPress(e,true)});
+  grid.addEventListener('pointerleave',function(e){if(press)endPress(e,true)});
+  grid.addEventListener('click',function(e){var m=e.target.closest('.minus');if(m){add(+m.closest('.card').dataset.i,-1)}});
+  grid.addEventListener('keydown',function(e){
+    var c=e.target.closest('.card');if(!c||e.target.closest('.minus'))return;
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();add(+c.dataset.i,1)}
+    if(e.key==='Backspace'||e.key==='-'){e.preventDefault();add(+c.dataset.i,-1)}
+  });
+  $('cats').addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;S.cat=b.dataset.k;renderCats();save()});
+
+  // header buttons
+  $('undoBtn').onclick=function(){if(!hist.length)return;S.students=JSON.parse(hist.pop());if(sum()<S.goal)S.reached=false;renderGrid();renderTop();save()};
+  $('soundBtn').onclick=function(){S.sound=!S.sound;renderTop();save()};
+  function open(id){$(id).classList.add('show')}
+  function close(id){$(id).classList.remove('show')}
+  document.querySelectorAll('.modal').forEach(function(m){
+    m.addEventListener('click',function(e){if(e.target===m||e.target.hasAttribute('data-close'))m.classList.remove('show')});
+  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.modal.show').forEach(function(m){m.classList.remove('show')})});
+  $('resetBtn').onclick=function(){open('confirmM')};
+  $('doReset').onclick=function(){S.students.forEach(function(s){for(var k in s.p)s.p[k]=0});hist=[];S.reached=false;renderAll();save();close('confirmM')};
+  $('setBtn').onclick=function(){
+    $('sNames').value=S.students.map(function(s){return s.name}).join('\n');
+    $('sTeams').value=String(S.teams);$('sGoal').value=S.goal;$('sReward').value=S.reward;open('setM');
+  };
+  $('saveSet').onclick=function(){
+    var old={};S.students.forEach(function(s){old[s.name]=s});
+    var names=[],seen={};$('sNames').value.split(/[\n,]+/).forEach(function(n){n=n.trim();if(n&&!seen[n]){seen[n]=1;names.push(n)}});
+    if(!names.length){alert('학생 이름을 한 명 이상 입력해 주세요.');return}
+    S.students=names.slice(0,60).map(function(n,i){if(old[n])return old[n];var p={};CATS.forEach(function(c){p[c.k]=0});return {name:n,av:AV[i%AV.length],p:p}});
+    S.teams=Math.max(2,Math.min(6,+$('sTeams').value||4));
+    S.goal=Math.max(5,parseInt($('sGoal').value,10)||100);
+    S.reward=$('sReward').value.trim()||'학급 보상';
+    S.reached=sum()>=S.goal;hist=[];renderAll();save();close('setM');
+  };
+  $('sample').onclick=function(){S=sampleState();hist=[];renderAll();save();close('setM')};
+  $('nextGoal').onclick=function(){S.goal+=50;S.reached=false;renderTop();save();close('winM')};
+
+  // confetti
+  var cv=$('fx'),cx=cv.getContext('2d'),parts=[],raf=0;
+  function size(){cv.width=innerWidth;cv.height=innerHeight}
+  addEventListener('resize',size);size();
+  function celebrate(){
+    $('winTxt').textContent='모두 함께 '+sum()+'점을 모았어요! 보상: '+S.reward;
+    setTimeout(function(){open('winM')},500);
+    var cols=['#ffc83d','#ff6b6b','#4dd4ac','#7b8cff','#ff8ad8','#ffffff'];
+    for(var i=0;i<220;i++){
+      parts.push({x:innerWidth*(i%2?0.15:0.85),y:innerHeight*0.9,vx:(Math.random()-.5)*14+(i%2?4:-4),vy:-(10+Math.random()*12),w:6+Math.random()*6,h:8+Math.random()*8,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:cols[i%cols.length],life:0});
+    }
+    if(!raf)raf=requestAnimationFrame(tick);
+  }
+  function tick(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    parts=parts.filter(function(p){return p.life<260&&p.y<cv.height+40});
+    parts.forEach(function(p){p.life++;p.vy+=.32;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
+      cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.life/8)));cx.restore()});
+    raf=parts.length?requestAnimationFrame(tick):0;
+  }
+
+  renderAll();
+  window.__praise={add:add,S:function(){return S},sum:sum};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>귀쫑긋 받아쓰기 - 읽어 주고 채점해 주는 받아쓰기 출제기</title>
+<meta name="description" content="문장을 넣으면 기기 음성으로 또박또박 읽어 주고, 학생이 쓴 답을 자동 채점해 틀린 글자까지 표시해 주는 받아쓰기 출제기.">
+<style>
+  :root{--bg:#eef6f1;--ink:#1f2d2a;--sub:#5f716c;--line:#d5e4dd;--main:#1f8a5b;--main2:#e9f7ef;--accent:#ff8a3d;--bad:#e5484d;--good:#1f8a5b}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;
+    background-image:linear-gradient(transparent 31px,#dcebe4 32px);background-size:100% 32px}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:#fff;border-bottom:3px solid var(--main)}
+  header .logo{width:40px;height:40px;border-radius:50%;background:var(--main);display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;color:var(--main);letter-spacing:-.5px}
+  header p{margin:0;font-size:12.5px;color:var(--sub)}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 330px;align-items:start;gap:16px;padding:14px 20px 40px;max-width:1300px;margin:0 auto}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .panel h2{font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:6px}
+  .panel h2 .cnt{font-size:12px;color:var(--main);font-weight:600}
+  textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:13.5px;line-height:1.55;resize:vertical}
+  .hint{font-size:11.5px;color:var(--sub);margin-top:3px}
+  .opts{display:grid;gap:7px;margin-top:10px;font-size:13.5px}
+  .opts label{display:flex;align-items:center;gap:7px;cursor:pointer}
+  .opts input[type=checkbox]{width:17px;height:17px;accent-color:var(--main)}
+  .rate{display:flex;align-items:center;gap:8px}
+  .rate input{flex:1;accent-color:var(--main)}
+  .rate b{min-width:40px;text-align:right;font-size:13px}
+  select{border:1px solid var(--line);border-radius:8px;padding:5px;font:inherit;font-size:12.5px;max-width:100%;flex:1;min-width:0}
+  .side{display:flex;flex-direction:column;gap:12px}
+  .stage{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+  .tabs{display:flex;gap:6px;background:var(--main2);padding:4px;border-radius:12px;align-self:flex-start}
+  .tabs button{border:0;background:transparent;padding:8px 14px;border-radius:9px;font:inherit;font-size:14px;font-weight:700;color:var(--sub);cursor:pointer}
+  .tabs button.on{background:#fff;color:var(--main);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .qhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .qno{font-size:40px;font-weight:900;color:var(--main);line-height:1}
+  .qno small{font-size:16px;color:var(--sub);font-weight:600}
+  .orig{font-size:12px;color:var(--sub);background:var(--main2);padding:2px 8px;border-radius:10px}
+  .dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+  .dots button{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:#fff;font:inherit;font-size:11px;font-weight:700;color:var(--sub);cursor:pointer;padding:0}
+  .dots button.cur{border-color:var(--main);color:var(--main)}
+  .dots button.done{background:var(--main);color:#fff;border-color:var(--main)}
+  .dots button.ok{background:var(--good);border-color:var(--good);color:#fff}
+  .dots button.no{background:var(--bad);border-color:var(--bad);color:#fff}
+  .player{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .speak{position:relative;width:96px;height:96px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:40px;cursor:pointer;box-shadow:0 6px 0 #d96a21;flex:none}
+  .speak:active{transform:translateY(3px);box-shadow:0 3px 0 #d96a21}
+  .speak.talking::before,.speak.talking::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:3px solid var(--accent);animation:ring 1.2s infinite;opacity:0}
+  .speak.talking::after{animation-delay:.6s}
+  @keyframes ring{0%{transform:scale(.9);opacity:.8}100%{transform:scale(1.35);opacity:0}}
+  .pbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;font:inherit;font-size:14.5px;font-weight:700;cursor:pointer;color:var(--ink)}
+  .btn:hover{background:#f6faf8}
+  .btn.main{background:var(--main);color:#fff;border-color:var(--main)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .answer{display:flex;align-items:center;gap:10px;background:var(--main2);border-radius:12px;padding:12px 14px;min-height:58px}
+  .answer .txt{font-size:24px;font-weight:700;letter-spacing:1px;flex:1}
+  .answer .txt.hide{color:#a7c3b6;letter-spacing:4px}
+  .toggle{white-space:nowrap}
+  .write{display:flex;flex-direction:column;gap:6px}
+  .write label{font-size:13px;color:var(--sub);font-weight:700}
+  .write input{width:100%;font:inherit;font-size:24px;padding:10px 14px;border:2px solid var(--line);border-radius:12px;background:
+    repeating-linear-gradient(90deg,#fff 0 38px,#f1f7f4 38px 39px)}
+  .write input:focus{outline:none;border-color:var(--main)}
+  .gradebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .gradebar .info{font-size:13px;color:var(--sub);flex:1}
+  .notice{display:none;background:#fff6e0;border:1px solid #f1d38a;color:#7a5600;border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.5}
+  .notice.show{display:block}
+  .result{display:none;flex-direction:column;gap:8px}
+  .result.show{display:flex}
+  .score{display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,#fff5e8,#fff);border:2px solid var(--accent);border-radius:14px;padding:10px 16px}
+  .score .big{font-size:40px;font-weight:900;color:var(--accent)}
+  .rlist{display:flex;flex-direction:column;gap:6px}
+  .ritem{display:grid;grid-template-columns:34px 1fr;gap:4px 8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:15px}
+  .ritem .mk{grid-row:span 2;font-size:22px;text-align:center}
+  .ritem .l{color:var(--sub);font-size:12px;margin-right:6px}
+  .miss{background:#ffd8d9;color:#b4161b;border-radius:3px;font-weight:700;padding:0 1px}
+  .extra{color:var(--bad);text-decoration:line-through;text-decoration-thickness:2px;background:#fff0f0;border-radius:3px}
+  .sp{display:inline-block;min-width:.5em;text-align:center}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.9);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line)}
+  [hidden]{display:none!important}
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;padding:10px}
+    .stage{order:-1;padding:14px}
+    header{padding:8px 12px}
+    header p{display:none}
+    .qno{font-size:32px}
+    .speak{width:76px;height:76px;font-size:32px}
+    .answer .txt,.write input{font-size:19px}
+    .dots{margin-left:0;width:100%}
+    .btn{padding:9px 11px;font-size:13.5px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">👂</div>
+  <div><h1>귀쫑긋 받아쓰기</h1><p>또박또박 읽어 주고, 틀린 글자까지 콕 짚어 주는 받아쓰기</p></div>
+</header>
+
+<main>
+  <section class="stage" aria-label="받아쓰기 진행">
+    <div class="tabs" role="tablist">
+      <button type="button" id="tabStu" class="on" role="tab">🧒 학생이 직접 풀기</button>
+      <button type="button" id="tabTea" role="tab">👩‍🏫 선생님 출제만</button>
+    </div>
+    <div class="qhead">
+      <div class="qno" id="qno">1<small>번 / 10</small></div>
+      <span class="orig" id="orig" hidden></span>
+      <div class="dots" id="dots" aria-label="문제 이동"></div>
+    </div>
+    <div class="player">
+      <button type="button" class="speak" id="speakBtn" aria-label="문장 듣기">🔊</button>
+      <div class="pbtns">
+        <button type="button" class="btn" id="againBtn">🔁 반복 듣기</button>
+        <button type="button" class="btn" id="prevBtn">◀ 이전</button>
+        <button type="button" class="btn main" id="nextBtn">다음 문제 ▶</button>
+      </div>
+    </div>
+    <div class="notice" id="notice"></div>
+    <div class="answer">
+      <div class="txt hide" id="ansTxt">● ● ● ● ●</div>
+      <button type="button" class="btn toggle" id="showBtn">👀 정답 보기</button>
+    </div>
+    <div class="write" id="writeBox">
+      <label for="stuInput">들은 문장을 써 보세요 (Enter = 다음 문제)</label>
+      <input id="stuInput" type="text" autocomplete="off" spellcheck="false" placeholder="여기에 쓰기">
+      <div class="gradebar">
+        <span class="info" id="doneInfo"></span>
+        <button type="button" class="btn" id="retryBtn">↺ 다시 풀기</button>
+        <button type="button" class="btn main" id="gradeBtn">✅ 채점하기</button>
+      </div>
+    </div>
+    <div class="result" id="result"></div>
+  </section>
+
+  <section class="side">
+    <div class="panel">
+      <h2>📝 문제 문장 <span class="cnt" id="cnt"></span></h2>
+      <textarea id="sentences" rows="10" aria-label="문제 문장 목록, 한 줄에 한 문장"></textarea>
+      <div class="hint">한 줄에 한 문장씩. 앞의 번호(1.)는 있어도 없어도 돼요.</div>
+    </div>
+    <div class="panel">
+      <h2>⚙ 읽기 설정</h2>
+      <div class="rate"><span>속도</span><input type="range" id="rate" min="0.5" max="1.3" step="0.05" value="0.8" aria-label="읽기 속도"><b id="rateTxt">0.8배</b></div>
+      <div class="opts">
+        <label><input type="checkbox" id="optRandom"> 🔀 문제 순서 섞기</label>
+        <label><input type="checkbox" id="optNum" checked> 🔢 번호도 읽어 주기</label>
+        <label><input type="checkbox" id="optTwice"> 🔁 한 번 누르면 두 번 읽기</label>
+        <label><input type="checkbox" id="optSpace" checked> ␣ 띄어쓰기도 채점하기</label>
+        <div class="rate"><span>음성</span><select id="voiceSel" aria-label="읽어 줄 음성"></select></div>
+      </div>
+    </div>
+  </section>
+</main>
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+(function(){
+  'use strict';
+  var KEY='dictation-v1';
+  var SAMPLE=['나는 학교에 갑니다.','하늘이 참 맑아요.','강아지가 멍멍 짖어요.','친구와 같이 놀았어요.','꽃밭에 나비가 날아요.','닭이 알을 낳았어요.','엄마께 편지를 썼어요.','동생이 활짝 웃어요.','옷을 깨끗이 빨았어요.','비가 와서 우산을 썼어요.'];
+  var $=function(id){return document.getElementById(id)};
+  var st={list:[],order:[],cur:0,answers:{},show:false,student:true,graded:null};
+  var cfg={text:SAMPLE.map(function(s,i){return (i+1)+'. '+s}).join('\n'),rate:0.8,random:false,num:true,twice:false,space:true,voice:''};
+  try{var sv=JSON.parse(localStorage.getItem(KEY)||'null');if(sv)for(var k in sv)cfg[k]=sv[k]}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg))}catch(e){}}
+
+  function parse(){
+    return $('sentences').value.split(/\n+/).map(function(l){return l.replace(/^\s*\d+\s*[.)번:]\s*/,'').trim()}).filter(Boolean);
+  }
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+  function rebuild(){
+    st.list=parse();
+    st.order=st.list.map(function(_,i){return i});
+    if(cfg.random)shuffle(st.order);
+    st.cur=0;st.answers={};st.graded=null;st.show=false;
+    $('cnt').textContent=st.list.length+'문장';
+    render();
+  }
+  function sentence(){return st.list[st.order[st.cur]]||''}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+  function render(){
+    var n=st.list.length;
+    if(!n){$('qno').innerHTML='0<small>번 / 0</small>';$('ansTxt').textContent='문제 문장을 입력해 주세요.';$('dots').innerHTML='';return}
+    $('qno').innerHTML=(st.cur+1)+'<small>번 / '+n+'</small>';
+    var o=$('orig');if(cfg.random){o.hidden=false;o.textContent='원래 '+(st.order[st.cur]+1)+'번 문장'}else o.hidden=true;
+    var d='';
+    for(var i=0;i<n;i++){
+      var c='';
+      if(st.graded) c=st.graded[i]?' ok':' no';
+      else if(st.student&&(st.answers[i]||'').trim()) c=' done';
+      d+='<button type="button" class="'+(i===st.cur?'cur':'')+c+'" data-i="'+i+'" aria-label="'+(i+1)+'번 문제로">'+(i+1)+'</button>';
+    }
+    $('dots').innerHTML=d;
+    var s=sentence();
+    var t=$('ansTxt');
+    if(st.show){t.textContent=s;t.classList.remove('hide')}else{t.textContent=s.replace(/\S+/g,function(w){return '●'.repeat(Math.min(w.length,6))});t.classList.add('hide')}
+    $('showBtn').textContent=st.show?'🙈 정답 가리기':'👀 정답 보기';
+    $('writeBox').hidden=!st.student;
+    $('tabStu').classList.toggle('on',st.student);$('tabTea').classList.toggle('on',!st.student);
+    $('stuInput').value=st.answers[st.cur]||'';
+    $('stuInput').disabled=!!st.graded;
+    var done=Object.keys(st.answers).filter(function(k){return (st.answers[k]||'').trim()}).length;
+    $('doneInfo').textContent=st.graded?'채점 완료! 아래 결과를 확인하세요.':done+' / '+n+' 문제 답을 썼어요.';
+    $('prevBtn').disabled=st.cur===0;
+    $('nextBtn').textContent=st.cur===n-1?(st.student&&!st.graded?'✅ 채점하기':'처음으로 ↺'):'다음 문제 ▶';
+    $('gradeBtn').disabled=!!st.graded;
+  }
+
+  // ---------- speech ----------
+  var synth=window.speechSynthesis, voices=[], koVoices=[];
+  function loadVoices(){
+    if(!synth)return;
+    voices=synth.getVoices()||[];
+    koVoices=voices.filter(function(v){return /^ko/i.test(v.lang)});
+    var sel=$('voiceSel');
+    if(koVoices.length){
+      sel.innerHTML=koVoices.map(function(v,i){return '<option value="'+esc(v.name)+'">'+esc(v.name.replace(/Microsoft |Google /,''))+'</option>'}).join('');
+      if(cfg.voice&&koVoices.some(function(v){return v.name===cfg.voice}))sel.value=cfg.voice;
+      sel.disabled=false;hideNotice();
+    }else{sel.innerHTML='<option>한국어 음성 없음</option>';sel.disabled=true}
+  }
+  function showNotice(html){var n=$('notice');n.innerHTML=html;n.classList.add('show')}
+  function hideNotice(){$('notice').classList.remove('show')}
+  var NOVOICE='🔇 이 기기(브라우저)에서 <b>한국어 음성</b>을 찾지 못했어요. 선생님이 직접 읽어 주시고 <b>정답 보기</b>로 확인해도 돼요. '+
+    '<br>Windows: 설정 › 시간 및 언어 › 음성에서 한국어 음성 추가 · 휴대폰: 크롬/사파리 최신 버전 권장';
+  if(synth){
+    loadVoices();
+    if(typeof synth.addEventListener==='function')synth.addEventListener('voiceschanged',loadVoices);else synth.onvoiceschanged=loadVoices;
+    setTimeout(function(){if(!koVoices.length)showNotice(NOVOICE)},1800);
+  }else{
+    $('voiceSel').innerHTML='<option>음성 기능 없음</option>';$('voiceSel').disabled=true;
+    showNotice('🔇 이 브라우저는 음성 읽기 기능을 지원하지 않아요. 선생님이 직접 읽어 주시고 <b>정답 보기</b>로 확인해 주세요.');
+  }
+  var talking=0;
+  function setTalking(on){$('speakBtn').classList.toggle('talking',on)}
+  function speak(){
+    var s=sentence();if(!s)return;
+    if(!synth){showNotice(NOVOICE);return}
+    if(!koVoices.length)showNotice(NOVOICE);
+    synth.cancel();
+    var parts=[];
+    var times=cfg.twice?2:1;
+    for(var t=0;t<times;t++){
+      if(cfg.num&&t===0)parts.push((st.cur+1)+'번.');
+      parts.push(s);
+    }
+    var v=koVoices.filter(function(x){return x.name===$('voiceSel').value})[0]||koVoices[0];
+    talking=parts.length;setTalking(true);
+    parts.forEach(function(p,i){
+      var u=new SpeechSynthesisUtterance(p);
+      u.lang='ko-KR';if(v)u.voice=v;u.rate=cfg.rate;u.pitch=1.05;
+      u.onend=u.onerror=function(){talking--;if(talking<=0)setTalking(false)};
+      if(i>0&&parts[i-1]===p){var pause=new SpeechSynthesisUtterance(' ');pause.lang='ko-KR';pause.rate=0.5;synth.speak(pause)}
+      synth.speak(u);
+    });
+    setTimeout(function(){if(talking>0&&synth&&!synth.speaking){talking=0;setTalking(false)}},4000);
+    if(st.student&&!st.graded)setTimeout(function(){$('stuInput').focus()},50);
+  }
+
+  // ---------- grading ----------
+  function norm(s){
+    s=String(s||'').replace(/[.,!?~'"“”‘’…·:;()\[\]\-]/g,' ').replace(/\s+/g,' ').trim();
+    if(!cfg.space)s=s.replace(/\s/g,'');
+    return s;
+  }
+  function lcsDiff(a,b){
+    var A=Array.from(a),B=Array.from(b),n=A.length,m=B.length,dp=[];
+    for(var i=0;i<=n;i++){dp.push(new Array(m+1).fill(0))}
+    for(i=n-1;i>=0;i--)for(var j=m-1;j>=0;j--)dp[i][j]=A[i]===B[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+    var ra=[],rb=[];i=0;j=0;
+    while(i<n&&j<m){
+      if(A[i]===B[j]){ra.push([A[i],0]);rb.push([B[j],0]);i++;j++}
+      else if(dp[i+1][j]>=dp[i][j+1]){ra.push([A[i],1]);i++}
+      else{rb.push([B[j],1]);j++}
+    }
+    while(i<n)ra.push([A[i++],1]);while(j<m)rb.push([B[j++],1]);
+    return {a:ra,b:rb};
+  }
+  function paint(arr,cls){
+    return arr.map(function(x){
+      var ch=x[0]===' '?(x[1]?'<span class="sp">∨</span>':' '):esc(x[0]);
+      return x[1]?'<span class="'+cls+'">'+ch+'</span>':ch;
+    }).join('');
+  }
+  function grade(){
+    if(st.student)st.answers[st.cur]=$('stuInput').value;
+    var n=st.list.length,ok=0,res=[],html='';
+    for(var i=0;i<n;i++){
+      var ans=st.list[st.order[i]],mine=st.answers[i]||'';
+      var A=norm(ans),B=norm(mine),good=A===B&&A!=='';
+      res.push(good);if(good)ok++;
+      var d=lcsDiff(A,B);
+      html+='<div class="ritem"><div class="mk">'+(good?'⭕':'❌')+'</div>'+
+        '<div><span class="l">정답</span>'+(good?esc(ans):paint(d.a,'miss'))+'</div>'+
+        '<div><span class="l">내 답</span>'+(B?(good?esc(mine):paint(d.b,'extra')):'<span class="l">(안 씀)</span>')+'</div></div>';
+    }
+    st.graded=res;
+    var sc=Math.round(ok/n*100);
+    $('result').innerHTML='<div class="score"><div class="big">'+sc+'점</div><div><b>'+n+'문제 중 '+ok+'문제 맞았어요!</b><br><span style="font-size:13px;color:#5f716c">'+
+      (sc===100?'완벽해요! 🎉':sc>=70?'아주 잘했어요! 빨간 글자만 다시 써 봐요.':'괜찮아요. 빨간 글자를 천천히 다시 들어 봐요.')+
+      '</span><br><span style="font-size:12px;color:#5f716c"><span class="miss">빨간 칸</span> = 빠지거나 틀린 글자 · <span class="extra">줄 그은 글자</span> = 잘못 쓴 글자 · ∨ = 띄어쓰기</span></div></div><div class="rlist">'+html+'</div>';
+    $('result').classList.add('show');
+    render();
+    $('result').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  // ---------- events ----------
+  function go(i){
+    if(st.student&&!st.graded)st.answers[st.cur]=$('stuInput').value;
+    st.cur=Math.max(0,Math.min(st.list.length-1,i));st.show=false;render();
+  }
+  $('speakBtn').onclick=speak;
+  $('againBtn').onclick=speak;
+  $('prevBtn').onclick=function(){go(st.cur-1)};
+  $('nextBtn').onclick=function(){
+    if(st.cur<st.list.length-1){go(st.cur+1);speak()}
+    else if(st.student&&!st.graded)grade();
+    else go(0);
+  };
+  $('showBtn').onclick=function(){st.show=!st.show;render()};
+  $('dots').addEventListener('click',function(e){var b=e.target.closest('button');if(b)go(+b.dataset.i)});
+  $('stuInput').addEventListener('input',function(){st.answers[st.cur]=this.value;var b=$('dots').children[st.cur];if(b)b.classList.toggle('done',!!this.value.trim())});
+  $('stuInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();$('nextBtn').click()}});
+  $('gradeBtn').onclick=grade;
+  $('retryBtn').onclick=function(){st.answers={};st.graded=null;st.cur=0;st.show=false;$('result').classList.remove('show');render()};
+  $('tabStu').onclick=function(){st.student=true;render()};
+  $('tabTea').onclick=function(){st.student=false;st.graded=null;$('result').classList.remove('show');render()};
+
+  $('sentences').value=cfg.text;
+  $('rate').value=cfg.rate;$('rateTxt').textContent=(+cfg.rate).toFixed(2).replace(/0$/,'')+'배';
+  $('optRandom').checked=cfg.random;$('optNum').checked=cfg.num;$('optTwice').checked=cfg.twice;$('optSpace').checked=cfg.space;
+  var tmr;
+  $('sentences').addEventListener('input',function(){cfg.text=this.value;save();clearTimeout(tmr);tmr=setTimeout(function(){rebuild();$('result').classList.remove('show')},500)});
+  $('rate').addEventListener('input',function(){cfg.rate=+this.value;$('rateTxt').textContent=cfg.rate.toFixed(2).replace(/0$/,'')+'배';save()});
+  $('optRandom').onchange=function(){cfg.random=this.checked;save();$('result').classList.remove('show');rebuild()};
+  $('optNum').onchange=function(){cfg.num=this.checked;save()};
+  $('optTwice').onchange=function(){cfg.twice=this.checked;save()};
+  $('optSpace').onchange=function(){cfg.space=this.checked;save();if(st.graded)grade()};
+  $('voiceSel').onchange=function(){cfg.voice=this.value;save()};
+
+  rebuild();
+  window.__dict={st:st,grade:grade,norm:norm,lcsDiff:lcsDiff};
+})();
+</script>
+</body>
+</html>

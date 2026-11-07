@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교실에서 바로 쓰는 웹 도구 22 · 찍먹 데모관</title>
+<meta name="description" content="초등 교사가 직접 만든 수업·업무용 웹앱, 확장프로그램, 아이디어 시연 페이지를 한곳에 모았습니다. 눌러서 바로 체험해 보세요.">
+<meta property="og:title" content="교실에서 바로 쓰는 웹 도구 22 · 찍먹 데모관">
+<meta property="og:image" content="thumbnails/08-classroom-tools.png">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f6f7fb;color:#0f172a;word-break:keep-all}
+  header{background:linear-gradient(135deg,#1e293b,#312e81);color:#fff;padding:48px 20px 40px;text-align:center}
+  header h1{margin:0 0 10px;font-size:clamp(26px,4vw,40px);letter-spacing:-1px}
+  header p{margin:0;opacity:.85;font-size:clamp(14px,2vw,18px)}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:24px auto 8px;padding:0 16px}
+  .filters button{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer}
+  .filters button.on{background:#0f172a;color:#fff;border-color:#0f172a}
+  main{max-width:1240px;margin:0 auto;padding:16px 16px 60px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+  a.card{display:flex;flex-direction:column;background:#fff;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;box-shadow:0 2px 10px rgba(15,23,42,.08);transition:transform .15s,box-shadow .15s}
+  a.card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(15,23,42,.16)}
+  a.card img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#e2e8f0}
+  .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .top{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .tag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:#e0e7ff;color:#3730a3}
+  .tag.c{background:#fce7f3;color:#be185d}
+  .tag.w{background:#dcfce7;color:#166534}
+  .tag.x{background:#fef3c7;color:#92400e}
+  h2{margin:2px 0 0;font-size:19px}
+  .desc{margin:0;font-size:14px;color:#475569;line-height:1.5}
+  .who{margin-top:auto;font-size:12px;color:#64748b;padding-top:6px}
+  footer{text-align:center;color:#64748b;font-size:13px;padding:0 16px 40px;line-height:1.7}
+</style>
+</head>
+<body>
+<header>
+  <h1>교실에서 바로 쓰는 웹 도구 22</h1>
+  <p>초등 교사가 AI와 함께 직접 만든 앱·확장프로그램·아이디어 시연 모음 · 카드를 눌러 바로 체험해 보세요</p>
+</header>
+<div class="filters" id="filters"></div>
+<main id="grid"></main>
+<footer>
+  "콘셉트" 표시가 있는 항목은 실제 운영 중인 서비스가 아니라 아이디어 시연용 페이지입니다.<br>
+  모든 시연은 로그인 없이 동작하며 입력한 내용은 이 기기의 브라우저에만 저장됩니다.
+</footer>
+<script>
+const APPS = [
+  // [썸네일, 이름, 종류, 한 줄 소개, 대상, 링크]
+  ["01-eye-tracking","시선의 힘","체험형","웹캠으로 시선을 보정한 뒤 30초 동안 초록 구슬만 따라가는 집중력 챌린지","학생·누구나","https://bin7335.github.io/eye-tracking/"],
+  ["02-leap-surgery-sim","로봇수술 시뮬레이션","체험형","양손 동작으로 3D 장기를 레이저로 절개·봉합해 보는 로봇수술 체험","학생·누구나","https://bin7335.github.io/leap-surgery-sim/"],
+  ["03-youtube-classroom","클래스룸 for YouTube","확장프로그램","교실 TV에서 유튜브 추천·댓글·계정 기록을 가리고, 끝나면 검은 화면으로 멈추는 크롬 확장","교사","https://github.com/bin7335/youtube-classroom/releases/latest"],
+  ["04-beom","교육해범","업무 도구","학교 주변 공공데이터로 우리 학교에 맞는 범교과·계기교육 주제를 추천","교사","https://beom-mu.vercel.app"],
+  ["05-gotgan","방과후 곳간","업무 도구","방과후 강사비 예산의 남은 지출과 추경 반납·증액액을 자동 계산","교사","https://bin7335.github.io/gotgan/?sample"],
+  ["06-circle-area","원의 넓이 마스터하기","수업 도구","반지름을 움직이며 원의 넓이를 탐구하고, 시각적 증명까지 따라가는 수업용 인터랙티브","학생·교사","circle-area/"],
+  ["07-guguddang","구구땅","체험형","구구단을 풀어 우리 학교의 땅을 넓혀 가는 학습 게임","학생","https://xn--2e0ba141d.kr/"],
+  ["08-classroom-tools","척척 교실판","수업 도구","큰 원형 타이머·랜덤 뽑기·모둠 편성을 탭 하나로 바꿔 쓰는 교실 화면 도구함","교사","classroom-tools/"],
+  ["09-word-game","낱말 놀이터","수업 도구","단어와 뜻만 넣으면 짝 맞추기·돌림판·4지선다 퀴즈가 바로 만들어지는 단어 게임 생성기","교사·학생","word-game/"],
+  ["10-word-cloud","생각꽃밭","체험형","한 기기로 차례차례 남긴 단어가 꽃처럼 커지는 실시간 워드클라우드와 투표","누구나","word-cloud/"],
+  ["11-seat-maker","자리척척","업무 도구","짝 고정·떨어뜨리기·앞자리 조건을 지키며 자리를 섞고, 끌어서 바꾸고 바로 인쇄","교사","seat-maker/"],
+  ["12-praise-board","별총총 칭찬판","수업 도구","학생 카드를 톡 누르면 별이 쌓이고, 학급 목표를 채우면 색종이가 터지는 칭찬판","교사","praise-board/"],
+  ["13-dictation","귀쫑긋 받아쓰기","수업 도구","문장을 또박또박 읽어 주고, 틀린 글자·띄어쓰기까지 짚어 자동 채점","교사·학생","dictation/"],
+  ["14-noise-light","쉿쉿 신호등","수업 도구","교실 소리 크기를 신호등으로 보여 주고 조용히 유지한 시간을 기록","교사","noise-light/"],
+  ["15-qr-maker","척척 QR 이름표","업무 도구","\"이름표 | 링크\"를 한 줄씩 적으면 이름표 붙은 QR을 A4 한 장에 모아 인쇄","교사","qr-maker/"],
+  ["16-allergy-alert","냠냠가드","콘셉트","급식 식단의 알레르기 번호를 우리 아이 정보와 맞춰 주의 메뉴만 콕 집어 알림","학부모·교사","allergy-alert/"],
+  ["17-notice-summary","세줄쏙","콘셉트","긴 가정통신문을 3줄로 요약하고 준비물·마감일을 달력 칩으로 뽑아 주는 AI 도우미","학부모·교사","notice-summary/"],
+  ["18-counseling-booking","마주봄","콘셉트","교사는 시간만 열고 학부모는 클릭 한 번으로 고르는 상담 예약","교사·학부모","counseling-booking/"],
+  ["19-fieldtrip-safety","든든길","콘셉트","현장체험학습 사전·당일·사후 안전 체크리스트와 인원 점검을 한 화면에서","교사","fieldtrip-safety/"],
+  ["20-afterschool-board","오후마루","콘셉트","학년·요일·분야 필터로 우리 아이에게 맞는 방과후 강좌를 한눈에","학부모·학생","afterschool-board/"],
+  ["21-teacher-calendar","한해살이","콘셉트","3월 학급 세우기부터 2월 새 학년 준비까지, 학교 1년 업무 흐름을 미리 보기","교사","teacher-calendar/"],
+  ["22-ai-prompts","프롬프트 책갈피","콘셉트","교과·학년·활동별로 골라 [빈칸]만 채워 쓰는 수업용 AI 프롬프트 카드","교사","ai-prompts/"],
+];
+const TAGCLS = {"콘셉트":"c","체험형":"w","확장프로그램":"x"};
+const KINDS = ["전체","체험형","수업 도구","업무 도구","확장프로그램","콘셉트"];
+let cur = "전체";
+function render(){
+  document.getElementById('grid').innerHTML = APPS.filter(a=>a[1]&&(cur==="전체"||a[2]===cur)).map(([t,n,k,d,w,u])=>`
+    <a class="card" href="${u}" ${u.startsWith('http')?'target="_blank" rel="noopener"':''}>
+      <img src="thumbnails/${t}.png" alt="${n} 화면" loading="lazy">
+      <div class="body"><div class="top"><span class="tag ${TAGCLS[k]||''}">${k}</span></div>
+      <h2>${n}</h2><p class="desc">${d}</p><div class="who">대상: ${w}</div></div></a>`).join('');
+  document.getElementById('filters').innerHTML = KINDS.map(k=>`<button class="${k===cur?'on':''}" onclick="cur='${k}';render()">${k}</button>`).join('');
+}
+render();
+</script>
+</body>
+</html>

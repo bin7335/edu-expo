@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>척척 교실판 - 타이머·뽑기·모둠 편성</title>
+<meta name="description" content="수업 시간에 바로 쓰는 교실 화면 도구함. 큰 타이머, 랜덤 뽑기, 모둠 편성을 한 화면에서.">
+<style>
+  :root{
+    --bg:#f4f7fb; --card:#fff; --ink:#1d2433; --sub:#5b6577; --line:#e3e8f0;
+    --pri:#2f6bff; --pri2:#e8efff; --ok:#16a36b; --warn:#ff7a1a; --bad:#e5484d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;min-height:100vh}
+  header{display:flex;align-items:center;gap:16px;padding:12px 24px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#2f6bff,#16c2a3);display:grid;place-items:center;color:#fff;font-size:22px}
+  .brand h1{font-size:22px;margin:0}
+  .brand small{display:block;color:var(--sub);font-size:13px;font-weight:500}
+  nav{display:flex;gap:6px;margin-left:auto;background:var(--bg);padding:5px;border-radius:14px}
+  nav button{border:0;background:transparent;font:inherit;font-size:17px;font-weight:700;padding:10px 18px;border-radius:10px;cursor:pointer;color:var(--sub)}
+  nav button.on{background:var(--card);color:var(--pri);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  main{flex:1;padding:20px 24px;display:flex}
+  section{display:none;flex:1;gap:20px}
+  section.on{display:flex}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px}
+  .btn{border:0;font:inherit;font-weight:700;font-size:18px;padding:12px 20px;border-radius:12px;cursor:pointer;background:var(--pri2);color:var(--pri)}
+  .btn.pri{background:var(--pri);color:#fff}
+  .btn.ok{background:var(--ok);color:#fff}
+  .btn:active{transform:scale(.97)}
+  label{font-weight:700;font-size:15px;color:var(--sub)}
+  textarea,input[type=number]{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;background:#fbfcfe;color:var(--ink)}
+  textarea{resize:vertical;min-height:120px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+  /* 타이머 */
+  #timer{flex-direction:column;align-items:center;justify-content:center}
+  .ring{position:relative;width:min(400px,78vw,calc(100vh - 440px));min-width:220px;aspect-ratio:1;container-type:inline-size}
+  .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring .time{position:absolute;inset:0;display:grid;place-items:center;font-variant-numeric:tabular-nums;font-weight:800;font-size:25cqw;letter-spacing:-1px}
+  .ring .time.end{color:var(--bad);animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.35}}
+  .presets{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:12px 0 8px}
+  .presets .btn{min-width:84px}
+  .adj{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .adj .btn{font-size:15px;padding:8px 14px;background:#f0f2f6;color:var(--sub)}
+  .ctrl{display:flex;gap:12px;justify-content:center;margin-top:14px}
+  .ctrl .btn{font-size:22px;padding:14px 34px}
+
+  /* 뽑기 */
+  #pick .side{width:340px;flex-shrink:0;display:flex;flex-direction:column;gap:12px}
+  #pick .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;position:relative;overflow:hidden}
+  .seg{display:flex;background:var(--bg);border-radius:12px;padding:4px}
+  .seg button{flex:1;border:0;background:transparent;font:inherit;font-weight:700;padding:9px;border-radius:9px;cursor:pointer;color:var(--sub)}
+  .seg button.on{background:#fff;color:var(--pri);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .result{font-size:clamp(56px,10vw,140px);font-weight:900;min-height:1.2em;text-align:center;line-height:1.1;word-break:keep-all}
+  .result.roll{color:#9aa4b5}
+  .result.done{color:var(--pri);animation:pop .45s ease}
+  @keyframes pop{0%{transform:scale(.6)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+  .hint{color:var(--sub);font-size:16px}
+  .history{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:90%}
+  .chip{background:var(--pri2);color:var(--pri);font-weight:700;padding:5px 12px;border-radius:99px;font-size:15px}
+  .chk{display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px;cursor:pointer}
+  .chk input{width:20px;height:20px}
+  .confetti{position:absolute;width:10px;height:14px;top:-20px;border-radius:2px;animation:fall 1.6s ease-in forwards;pointer-events:none}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.7}}
+
+  /* 모둠 */
+  #group .side{width:340px;flex-shrink:0;display:flex;flex-direction:column;gap:12px}
+  #group .board{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;align-content:start;overflow:auto}
+  .team{border-radius:18px;padding:14px;color:var(--ink);animation:pop .4s ease both}
+  .team h3{margin:0 0 8px;font-size:20px;display:flex;justify-content:space-between}
+  .team h3 span{font-size:14px;color:var(--sub);font-weight:600}
+  .team ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+  .team li{background:rgba(255,255,255,.8);padding:6px 11px;border-radius:10px;font-weight:700;font-size:17px}
+  .stepper{display:flex;align-items:center;gap:10px}
+  .stepper button{width:44px;height:44px;border-radius:12px;border:0;background:var(--pri2);color:var(--pri);font-size:24px;font-weight:800;cursor:pointer}
+  .stepper b{font-size:28px;min-width:48px;text-align:center}
+  .empty{color:var(--sub);text-align:center;grid-column:1/-1;padding:40px}
+
+  footer{text-align:right;padding:8px 24px 12px}
+  footer a{color:var(--sub);font-size:13px;text-decoration:none}
+  footer a:hover{color:var(--pri)}
+
+  @media (max-width:820px){
+    header{padding:10px 14px}
+    nav{margin-left:0;width:100%}
+    nav button{flex:1;padding:9px 6px;font-size:15px}
+    main{padding:12px}
+    section.on{flex-direction:column}
+    #pick .side,#group .side{width:100%}
+    #pick .stage{min-height:300px}
+    #group .board{flex:none;overflow:visible}
+    .ctrl .btn{padding:12px 22px;font-size:19px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">⏱</div>
+    <div><h1>척척 교실판</h1><small>수업 시간을 척척 돕는 화면 도구함</small></div>
+  </div>
+  <nav id="tabs">
+    <button class="on" data-t="timer">⏰ 타이머</button>
+    <button data-t="pick">🎯 랜덤 뽑기</button>
+    <button data-t="group">👥 모둠 편성</button>
+  </nav>
+</header>
+
+<main>
+  <!-- 타이머 -->
+  <section id="timer" class="on panel">
+    <div class="ring">
+      <svg viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="90" fill="none" stroke="#e8edf5" stroke-width="14"/>
+        <circle id="arc" cx="100" cy="100" r="90" fill="none" stroke="#2f6bff" stroke-width="14" stroke-linecap="round" stroke-dasharray="565.49" stroke-dashoffset="0"/>
+      </svg>
+      <div class="time" id="tDisp">03:00</div>
+    </div>
+    <div class="presets">
+      <button class="btn" data-m="1">1분</button>
+      <button class="btn" data-m="3">3분</button>
+      <button class="btn" data-m="5">5분</button>
+      <button class="btn" data-m="10">10분</button>
+    </div>
+    <div class="adj">
+      <button class="btn" data-a="-60">− 1분</button>
+      <button class="btn" data-a="-10">− 10초</button>
+      <button class="btn" data-a="10">+ 10초</button>
+      <button class="btn" data-a="60">+ 1분</button>
+    </div>
+    <div class="ctrl">
+      <button class="btn pri" id="tStart">▶ 시작</button>
+      <button class="btn" id="tReset">↺ 다시</button>
+    </div>
+  </section>
+
+  <!-- 뽑기 -->
+  <section id="pick">
+    <div class="side panel">
+      <div class="seg" id="pMode">
+        <button class="on" data-m="num">번호로</button>
+        <button data-m="name">이름으로</button>
+      </div>
+      <div id="numBox">
+        <label>번호 범위</label>
+        <div class="row" style="flex-wrap:nowrap">
+          <input type="number" id="nFrom" value="1" min="1"> <span>-</span>
+          <input type="number" id="nTo" value="25" min="1">
+        </div>
+      </div>
+      <div id="nameBox" style="display:none">
+        <label>이름 목록 (줄바꿈 또는 쉼표)</label>
+        <textarea id="pNames"></textarea>
+      </div>
+      <label class="chk"><input type="checkbox" id="noRep" checked> 한 번 뽑힌 사람은 다시 안 뽑기</label>
+      <div class="hint" id="remain"></div>
+      <button class="btn" id="pClear">뽑은 기록 지우기</button>
+    </div>
+    <div class="stage panel" id="stage">
+      <div class="hint">오늘의 주인공은?</div>
+      <div class="result" id="pRes">?</div>
+      <button class="btn pri" id="pGo" style="font-size:24px;padding:16px 44px">🎲 뽑기!</button>
+      <div class="history" id="pHist"></div>
+    </div>
+  </section>
+
+  <!-- 모둠 -->
+  <section id="group">
+    <div class="side panel">
+      <label>이름 목록 (줄바꿈 또는 쉼표)</label>
+      <textarea id="gNames" style="min-height:180px"></textarea>
+      <label>모둠 수</label>
+      <div class="stepper">
+        <button id="gMinus">−</button><b id="gN">4</b><button id="gPlus">+</button>
+        <span class="hint" id="gInfo"></span>
+      </div>
+      <button class="btn pri" id="gGo" style="font-size:20px">🔀 모둠 나누기</button>
+    </div>
+    <div class="board panel" id="gBoard"></div>
+  </section>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const ANIMALS = ["호랑이","토끼","다람쥐","부엉이","고래","펭귄","여우","판다","수달","코알라","기린","돌고래","햄스터","거북이","사슴","하마","너구리","고슴도치","알파카","치타","미어캣","북극곰","앵무새","오리"];
+$("#pNames").value = ANIMALS.join("\n");
+$("#gNames").value = ANIMALS.join("\n");
+
+// 탭
+$$("#tabs button").forEach(b => b.onclick = () => {
+  $$("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+  $$("main section").forEach(s => s.classList.toggle("on", s.id === b.dataset.t));
+});
+
+// 소리
+let actx;
+function beep(times=3){
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const now = actx.currentTime;
+    for(let i=0;i<times;i++){
+      [880,1175].forEach((f,j)=>{
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        const t = now + i*0.6 + j*0.18;
+        g.gain.setValueAtTime(0.0001,t);
+        g.gain.exponentialRampToValueAtTime(0.35,t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+0.35);
+        o.connect(g).connect(actx.destination); o.start(t); o.stop(t+0.4);
+      });
+    }
+  }catch(e){}
+}
+function tick(){
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.frequency.value = 520; g.gain.setValueAtTime(0.12,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.08);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t+0.1);
+  }catch(e){}
+}
+
+// 타이머
+const C = 565.49;
+let total = 180, left = 180, running = false, endAt = 0, raf = 0, lastSec = -1;
+function fmt(s){ s = Math.max(0, Math.ceil(s)); return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
+function draw(){
+  $("#tDisp").textContent = fmt(left);
+  const r = total ? left/total : 0;
+  const arc = $("#arc");
+  arc.setAttribute("stroke-dashoffset", (C*(1-r)).toFixed(2));
+  arc.setAttribute("stroke", r > .5 ? "#2f6bff" : r > .2 ? "#ff9f1a" : "#e5484d");
+  $("#tDisp").classList.toggle("end", left <= 0 && total > 0);
+  $("#tStart").textContent = running ? "⏸ 일시정지" : (left < total && left > 0 ? "▶ 이어서" : "▶ 시작");
+}
+function loop(){
+  left = (endAt - performance.now())/1000;
+  const s = Math.ceil(left);
+  if(s !== lastSec){ lastSec = s; if(s <= 5 && s > 0) tick(); }
+  if(left <= 0){ left = 0; running = false; draw(); beep(3); return; }
+  draw(); raf = setTimeout(loop, 100);
+}
+function setTime(sec){ clearTimeout(raf); running=false; total = left = Math.max(10, Math.min(5999, sec)); draw(); }
+$$(".presets .btn").forEach(b => b.onclick = () => setTime(+b.dataset.m*60));
+$$(".adj .btn").forEach(b => b.onclick = () => {
+  const d = +b.dataset.a;
+  if(running){ endAt += d*1000; total = Math.max(total + d, 1); }
+  else setTime(Math.round(left) + d);
+});
+$("#tStart").onclick = () => {
+  if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(running){ running = false; clearTimeout(raf); draw(); return; }
+  if(left <= 0) left = total;
+  running = true; endAt = performance.now() + left*1000; lastSec = -1; loop(); draw();
+};
+$("#tReset").onclick = () => setTime(total);
+document.addEventListener("keydown", e => {
+  if(e.code === "Space" && $("#timer").classList.contains("on") && e.target.tagName !== "TEXTAREA" && e.target.tagName !== "INPUT"){ e.preventDefault(); $("#tStart").click(); }
+});
+draw();
+
+// 뽑기
+let pMode = "num", picked = [];
+const parseNames = t => t.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+function pool(){
+  let all;
+  if(pMode === "num"){
+    let a = parseInt($("#nFrom").value)||1, b = parseInt($("#nTo").value)||1;
+    if(a > b) [a,b] = [b,a];
+    b = Math.min(b, a+999);
+    all = []; for(let i=a;i<=b;i++) all.push(i+"번");
+  } else all = parseNames($("#pNames").value);
+  return { all, avail: $("#noRep").checked ? all.filter(x => !picked.includes(x)) : all };
+}
+function updRemain(){
+  const {all, avail} = pool();
+  $("#remain").textContent = $("#noRep").checked ? `남은 후보 ${avail.length}명 / 전체 ${all.length}명` : `전체 후보 ${all.length}명`;
+}
+function renderHist(){ $("#pHist").innerHTML = picked.map(x => `<span class="chip">${esc(x)}</span>`).join(""); updRemain(); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+$$("#pMode button").forEach(b => b.onclick = () => {
+  pMode = b.dataset.m; picked = [];
+  $$("#pMode button").forEach(x => x.classList.toggle("on", x === b));
+  $("#numBox").style.display = pMode === "num" ? "" : "none";
+  $("#nameBox").style.display = pMode === "name" ? "" : "none";
+  $("#pRes").textContent = "?"; $("#pRes").className = "result"; renderHist();
+});
+["#nFrom","#nTo","#pNames","#noRep"].forEach(s => $(s).addEventListener("input", updRemain));
+let rolling = false;
+$("#pGo").onclick = () => {
+  if(rolling) return;
+  const {avail} = pool();
+  const res = $("#pRes");
+  if(!avail.length){ res.className = "result"; res.textContent = "모두 뽑았어요!"; res.style.fontSize = "48px"; return; }
+  res.style.fontSize = "";
+  rolling = true; res.className = "result roll";
+  const winner = avail[Math.floor(Math.random()*avail.length)];
+  let n = 0, steps = 22;
+  (function spin(){
+    res.textContent = avail[Math.floor(Math.random()*avail.length)];
+    tick();
+    if(++n < steps) setTimeout(spin, 30 + n*n*0.5);
+    else {
+      res.textContent = winner; res.className = "result done"; rolling = false;
+      picked.push(winner); renderHist(); beep(1); confetti();
+    }
+  })();
+};
+$("#pClear").onclick = () => { picked = []; renderHist(); $("#pRes").textContent = "?"; $("#pRes").className = "result"; };
+function confetti(){
+  const st = $("#stage"), cols = ["#2f6bff","#16c2a3","#ff9f1a","#e5484d","#a855f7","#facc15"];
+  for(let i=0;i<40;i++){
+    const d = document.createElement("i"); d.className = "confetti";
+    d.style.left = Math.random()*100+"%"; d.style.background = cols[i%cols.length];
+    d.style.animationDelay = Math.random()*0.4+"s"; d.style.animationDuration = 1.2+Math.random()*1+"s";
+    st.appendChild(d); setTimeout(() => d.remove(), 2800);
+  }
+}
+renderHist();
+
+// 모둠
+let gN = 4;
+const TEAM_COLORS = ["#dbe7ff","#d6f5ea","#ffe8cc","#fde2e4","#ece3ff","#fff4c2","#d9f2fb","#e8f5d0"];
+const TEAM_NAMES = ["1모둠","2모둠","3모둠","4모둠","5모둠","6모둠","7모둠","8모둠","9모둠","10모둠","11모둠","12모둠"];
+function gInfo(){
+  const n = parseNames($("#gNames").value).length;
+  $("#gN").textContent = gN;
+  $("#gInfo").textContent = n ? `${n}명 → 모둠당 ${Math.floor(n/gN)}${n%gN ? "-"+Math.ceil(n/gN) : ""}명` : "";
+}
+$("#gMinus").onclick = () => { gN = Math.max(2, gN-1); gInfo(); };
+$("#gPlus").onclick = () => { gN = Math.min(12, gN+1); gInfo(); };
+$("#gNames").addEventListener("input", gInfo);
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
+function makeGroups(){
+  const names = shuffle(parseNames($("#gNames").value));
+  const board = $("#gBoard");
+  if(!names.length){ board.innerHTML = `<div class="empty">왼쪽에 이름을 입력해 주세요.</div>`; return; }
+  const k = Math.min(gN, names.length);
+  const teams = Array.from({length:k}, () => []);
+  names.forEach((n,i) => teams[i%k].push(n));
+  board.innerHTML = teams.map((t,i) => `<div class="team" style="background:${TEAM_COLORS[i%TEAM_COLORS.length]};animation-delay:${i*0.07}s">
+    <h3>${TEAM_NAMES[i]} <span>${t.length}명</span></h3><ul>${t.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>`).join("");
+}
+$("#gGo").onclick = () => { makeGroups(); beep(1); };
+gInfo(); makeGroups();
+// 주소 끝에 #pick, #group 을 붙이면 해당 탭으로 바로 열림
+const startTab = document.querySelector(`#tabs button[data-t="${location.hash.slice(1)}"]`);
+if(startTab){ startTab.click(); setTimeout(() => scrollTo(0,0), 0); }
+</script>
+</body>
+</html>
