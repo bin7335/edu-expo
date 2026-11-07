@@ -115,12 +115,15 @@
       const cx = 180; 
       const cy = 200;
       
-      // Rectangle placement start
-      // We want the rectangle centered dynamically based on width
-      const step = R * theta;
-      const rectWidth = (N / 2) * step;
-      const startX = 370 + (400 - rectWidth)/2; // Right side area
-      const startY = 200 - R/2;
+      // Rectangle placement: 조각의 반지름 변(옆선)이 서로 딱 맞물리도록 배치
+      // 이웃 꼭짓점 간 가로 간격 = 현 길이 2R·sin(θ/2), 위·아래 줄 높이 차 = R·cos(θ/2)
+      // (호 길이 Rθ와 높이 R을 쓰면 조각이 적을 때 크게 겹침)
+      const step = 2 * R * Math.sin(theta / 2);
+      const bandH = R * Math.cos(theta / 2);
+      const rectWidth = (N / 2 + 0.5) * step;
+      const startX = Math.max(332, 565 - rectWidth / 2); // Right side area
+      const baseY = 200 + bandH / 2; // 아래 줄 꼭짓점
+      const topY = baseY - bandH;     // 위 줄 꼭짓점
 
       for (let i = 0; i < N; i++) {
         // Circle state
@@ -132,11 +135,11 @@
         let x1, y1, a1;
         if (i % 2 === 0) {
           x1 = startX + (i / 2) * step + step / 2;
-          y1 = startY + R;
+          y1 = baseY;
           a1 = -Math.PI / 2; // Point UP
         } else {
           x1 = startX + ((i - 1) / 2) * step + step;
-          y1 = startY;
+          y1 = topY;
           a1 = Math.PI / 2; // Point DOWN
         }
         
