@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이름척척 - 파일 이름 한꺼번에 바꾸기</title>
+<meta name="description" content="학생 제출 과제처럼 제각각인 파일 이름을 규칙(덧붙이기, 찾아 바꾸기, 번호, 날짜)을 쌓아 한 번에 정리하는 도구. 미리보기 표로 확인하고 폴더에 저장하거나 ZIP으로 받기. 내 PC에서만 처리됩니다.">
+<style>
+  :root{
+    --bg:#f6f1fb; --panel:#fff; --ink:#271f33; --sub:#6c6279; --line:#e4dcef;
+    --brand:#5b3a96; --brand2:#7d55c7; --soft:#efe8fa; --acc:#ff9f43; --ok:#1f8a5b; --warn:#d0442c; --new:#e9fbf1;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:linear-gradient(110deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.85}
+  .grow{flex:1}
+  .safe{display:inline-flex;align-items:center;gap:6px;background:#e9fbf1;color:#11603d;border:1px solid #a6dcbf;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 13px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.primary{background:var(--acc);color:#3d2200;border-color:transparent;font-size:15px;padding:10px 16px}
+  .btn.small{font-size:12.5px;padding:5px 9px}
+  .btn.ghost{background:#ffffff22;color:#fff;border-color:#ffffff66}
+  main{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:14px;padding:12px 20px 48px;max-width:1440px;margin:0 auto}
+  .side{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .panel h2{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .drop{border:2px dashed #c6b5e3;border-radius:12px;padding:12px;text-align:center;background:#faf7fe;cursor:pointer;font-size:13.5px;color:var(--sub);transition:.15s}
+  .drop b{color:var(--brand)}
+  .drop.over{background:#efe6ff;border-color:var(--brand2);transform:scale(1.01)}
+  .rules{display:flex;flex-direction:column;gap:7px}
+  .rule{border:1px solid var(--line);border-radius:10px;padding:7px 8px;background:#fdfcff;border-left:4px solid var(--brand2)}
+  .rule.off{opacity:.5;border-left-color:#bbb}
+  .rule-h{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:800}
+  .rule-h .no{width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:11.5px;display:grid;place-items:center;flex:none}
+  .rule-h .ic{border:0;background:none;cursor:pointer;font-size:13px;padding:2px 4px;color:#8a7f99}
+  .rule-h input[type=checkbox]{accent-color:var(--brand);margin:0}
+  .rule-b{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;margin-top:5px;font-size:12.5px;color:var(--sub)}
+  .rule-b input[type=text],.rule-b input[type=number],.rule-b input[type=date],.rule-b select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;color:var(--ink);background:#fff}
+  .rule-b input[type=text]{width:110px}
+  .rule-b input[type=number]{width:52px}
+  .rule-b label{display:inline-flex;align-items:center;gap:3px;cursor:pointer}
+  .adds{display:flex;flex-wrap:wrap;gap:5px}
+  .adds .btn{background:var(--soft);border-color:transparent;color:var(--brand)}
+  .opt{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;align-items:center}
+  .opt label{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+  .opt input{accent-color:var(--brand)}
+  .opt select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:6px}
+  .stage{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;min-width:0;overflow:hidden;align-self:start}
+  .stage-h{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .stage-h h2{margin:0;font-size:15px}
+  .pill{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--soft);color:var(--brand)}
+  .pill.bad{background:#fde7e3;color:var(--warn)}
+  .pill.good{background:var(--new);color:var(--ok)}
+  .tablewrap{overflow:auto;max-height:470px}
+  table.t{border-collapse:collapse;width:100%;font-size:13.5px}
+  table.t th,table.t td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:middle}
+  table.t th{background:#f8f5fd;position:sticky;top:0;z-index:1;font-size:12.5px;color:var(--sub)}
+  td.n{color:#a99fb6;font-size:12px;width:1%;text-align:right}
+  td.old{color:var(--sub);word-break:break-all}
+  td.arrow{color:#c1b4d6;width:1%;padding:0 2px}
+  td.new{font-weight:700;word-break:break-all}
+  td.new mark{background:var(--new);color:var(--ok);border-radius:3px;padding:0 1px}
+  td.st{white-space:nowrap;width:1%;font-size:12px;font-weight:700}
+  .st-ok{color:var(--ok)} .st-same{color:#a99fb6} .st-bad{color:var(--warn)}
+  tr.bad td{background:#fff4f2}
+  td.del button{border:0;background:none;cursor:pointer;color:#b9aec8;font-size:14px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);background:#fbf9fe}
+  .hint{font-size:12px;color:var(--sub);line-height:1.5}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#271f33;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:20;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.9);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:10}
+  @media (max-width:860px){
+    header{padding:10px 12px;gap:8px}
+    header p{display:none}
+    header h1{font-size:19px}
+    .safe{font-size:12px;padding:4px 9px}
+    main{grid-template-columns:minmax(0,1fr);padding:10px 10px 56px}
+    .stage{order:-1}
+    td.old{font-size:12px}
+    table.t th,table.t td{padding:6px 6px}
+    .tablewrap{max-height:380px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="이름척척">
+<meta property="og:description" content="제출 파일 이름을 번호·날짜 규칙으로 한 번에 정리해 폴더나 ZIP으로 저장">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/30-file-renamer.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/file-renamer/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🏷️</div>
+  <div>
+    <h1>이름척척</h1>
+    <p>제각각인 파일 이름, 규칙 몇 개로 한 번에 가지런히</p>
+  </div>
+  <span class="safe">🔒 내 PC에서만 처리 · 외부 전송 없음</span>
+  <div class="grow"></div>
+  <button class="btn small ghost" id="sampleBtn" type="button">↺ 샘플 목록</button>
+</header>
+
+<main>
+  <section class="side">
+    <div class="panel">
+      <div class="drop" id="drop" role="button" tabindex="0">📂 파일을 여기로 <b>끌어 놓거나 눌러서 고르기</b><br><span style="font-size:12px">여러 개 한 번에 · 원본 파일은 바뀌지 않아요</span></div>
+      <input type="file" id="fileIn" multiple hidden>
+    </div>
+    <div class="panel">
+      <h2>규칙 쌓기 <span class="hint" style="font-weight:400">위에서부터 차례로 적용</span></h2>
+      <div class="rules" id="rules"></div>
+      <div class="adds" style="margin-top:8px">
+        <button class="btn small" data-add="prefix" type="button">＋ 앞에 붙이기</button>
+        <button class="btn small" data-add="suffix" type="button">＋ 뒤에 붙이기</button>
+        <button class="btn small" data-add="replace" type="button">＋ 찾아 바꾸기</button>
+        <button class="btn small" data-add="number" type="button">＋ 번호</button>
+        <button class="btn small" data-add="date" type="button">＋ 날짜</button>
+        <button class="btn small" data-add="space" type="button">＋ 공백 정리</button>
+      </div>
+    </div>
+    <div class="panel opt">
+      <label><input type="checkbox" id="keepExt" checked> 확장자 유지 (.hwp, .pdf 그대로)</label>
+      <label>순서 <select id="sortSel"><option value="name">이름 가나다순</option><option value="added">추가한 순서</option><option value="date">수정한 날짜순</option></select></label>
+    </div>
+  </section>
+
+  <section class="stage">
+    <div class="stage-h">
+      <h2>새 이름 미리보기</h2>
+      <span class="pill" id="pCount">0개</span>
+      <span class="pill good" id="pChanged">바뀜 0</span>
+      <span class="pill bad" id="pBad" hidden>문제 0</span>
+      <div class="grow"></div>
+      <button class="btn small" id="clearBtn" type="button">목록 비우기</button>
+    </div>
+    <div class="tablewrap"><table class="t"><thead><tr><th>#</th><th>원래 이름</th><th></th><th>새 이름</th><th>상태</th><th></th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="actions">
+      <button class="btn primary" id="saveBtn" type="button">💾 바꾼 이름으로 저장</button>
+      <button class="btn" id="zipBtn" type="button">📦 ZIP으로 받기</button>
+      <span class="hint" id="saveHint"></span>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  var KEY='file-renamer-rules-v2';
+
+  // ---------- 샘플 (가상의 학생 이름) ----------
+  var SAMPLE_NAMES=['김하늘_독서감상문.hwp','이서준 독서감상문(최종).hwp','박지호-독서감상문.hwpx','최민준 독후감.docx','정예린_독서감상문_수정본.pdf','강시우 독서감상문.hwp','윤하은_독서감상문(최종).hwp','한도윤 독서 감상문.pdf'];
+  function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  var DEFAULT_RULES=[
+    {type:'replace',on:true,find:'[(]최종[)]|_수정본',to:'',regex:true},
+    {type:'replace',on:true,find:'독후감|독서 감상문',to:'독서감상문',regex:true},
+    {type:'space',on:true,to:'_'},
+    {type:'number',on:true,start:1,digits:2,pos:'front',sep:'_'},
+    {type:'date',on:true,src:'pick',day:today(),fmt:'YYYYMMDD',pos:'back',sep:'_'}
+  ];
+  var TYPE_LABEL={prefix:'앞에 붙이기',suffix:'뒤에 붙이기',replace:'찾아 바꾸기',number:'번호 매기기',date:'날짜 넣기',space:'공백·기호 정리'};
+  var NEW_RULE={
+    prefix:function(){return {type:'prefix',on:true,text:'3-1_'};},
+    suffix:function(){return {type:'suffix',on:true,text:'_제출'};},
+    replace:function(){return {type:'replace',on:true,find:'',to:'',regex:false};},
+    number:function(){return {type:'number',on:true,start:1,digits:2,pos:'front',sep:'_'};},
+    date:function(){return {type:'date',on:true,src:'pick',day:today(),fmt:'YYYYMMDD',pos:'back',sep:'_'};},
+    space:function(){return {type:'space',on:true,to:'_'};}
+  };
+
+  var files=[], rules, seq=0;
+  try{rules=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+  if(!Array.isArray(rules)||!rules.length) rules=JSON.parse(JSON.stringify(DEFAULT_RULES));
+
+  function loadSample(){
+    var base=new Date(2026,10,3,9,0).getTime();
+    files=SAMPLE_NAMES.map(function(n,i){return {id:++seq,name:n,file:null,sample:true,mtime:base+i*3600e3*7,size:0};});
+  }
+
+  // ---------- 규칙 적용 ----------
+  function pad(n,d){n=String(n);while(n.length<d)n='0'+n;return n;}
+  function fmtDate(d,fmt){
+    var Y=d.getFullYear(),M=pad(d.getMonth()+1,2),D=pad(d.getDate(),2);
+    return fmt.replace('YYYY',Y).replace('YY',String(Y).slice(2)).replace('MM',M).replace('DD',D);
+  }
+  function splitExt(name){var i=name.lastIndexOf('.');return i>0?{base:name.slice(0,i),ext:name.slice(i)}:{base:name,ext:''};}
+  function applyRules(name,idx,f){
+    var keep=$('keepExt').checked, p=keep?splitExt(name):{base:name,ext:''}, s=p.base, err='';
+    rules.forEach(function(r){
+      if(!r.on) return;
+      if(r.type==='prefix') s=(r.text||'')+s;
+      else if(r.type==='suffix') s=s+(r.text||'');
+      else if(r.type==='replace'){
+        if(!r.find) return;
+        if(r.regex){ try{s=s.replace(new RegExp(r.find,'g'),r.to||'');}catch(e){err='규칙 식 오류';} }
+        else s=s.split(r.find).join(r.to||'');
+      }
+      else if(r.type==='number'){
+        var n=pad((+r.start||0)+idx,Math.max(1,Math.min(6,+r.digits||1)));
+        s=r.pos==='back'? s+(r.sep||'')+n : n+(r.sep||'')+s;
+      }
+      else if(r.type==='date'){
+        var d=r.src==='mtime'&&f.mtime? new Date(f.mtime) : (r.day? new Date(r.day+'T00:00:00') : new Date());
+        if(isNaN(d)) d=new Date();
+        var t=fmtDate(d,r.fmt||'YYYYMMDD');
+        s=r.pos==='front'? t+(r.sep||'')+s : s+(r.sep||'')+t;
+      }
+      else if(r.type==='space'){
+        var to=r.to===undefined?'_':r.to;
+        s=s.replace(/[\s\-]+/g,to);
+        if(to) s=s.split(to+to).join(to);
+        s=s.replace(/_{2,}/g,'_').replace(/^[_\s]+|[_\s]+$/g,'');
+      }
+    });
+    return {name:s+p.ext,err:err};
+  }
+
+  function sorted(){
+    var a=files.slice(), mode=$('sortSel').value;
+    if(mode==='name') a.sort(function(x,y){return x.name.localeCompare(y.name,'ko',{numeric:true});});
+    else if(mode==='date') a.sort(function(x,y){return (x.mtime||0)-(y.mtime||0);});
+    return a;
+  }
+  var plan=[];
+  function compute(){
+    var list=sorted(),seen={};
+    plan=list.map(function(f,i){var r=applyRules(f.name,i,f);return {f:f,newName:r.name,err:r.err};});
+    plan.forEach(function(p){var k=p.newName.toLowerCase();seen[k]=(seen[k]||0)+1;});
+    plan.forEach(function(p){
+      if(p.err) return;
+      var b=splitExt(p.newName).base;
+      if(/[\\/:*?"<>|]/.test(p.newName)) p.err='쓸 수 없는 글자(\\ / : * ? " < > |)';
+      else if(!b.trim()) p.err='이름이 비었어요';
+      else if(seen[p.newName.toLowerCase()]>1) p.err='이름이 겹쳐요';
+    });
+    return plan;
+  }
+
+  // ---------- 화면 ----------
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function markNew(oldN,newN){
+    // 앞뒤 공통 부분을 빼고 새로 생긴 가운데를 표시 (간단 비교)
+    var a=0; while(a<oldN.length&&a<newN.length&&oldN[a]===newN[a]) a++;
+    var b=0; while(b<oldN.length-a&&b<newN.length-a&&oldN[oldN.length-1-b]===newN[newN.length-1-b]) b++;
+    var mid=newN.slice(a,newN.length-b);
+    return esc(newN.slice(0,a))+(mid?'<mark>'+esc(mid)+'</mark>':'')+esc(newN.slice(newN.length-b));
+  }
+  function render(){
+    compute();
+    var changed=0,bad=0;
+    $('tbody').innerHTML=plan.length? plan.map(function(p,i){
+      var same=p.newName===p.f.name; if(!same&&!p.err) changed++; if(p.err) bad++;
+      var st=p.err? '<span class="st-bad">⚠ '+esc(p.err)+'</span>' : same? '<span class="st-same">그대로</span>' : '<span class="st-ok">✔ 바뀜</span>';
+      return '<tr class="'+(p.err?'bad':'')+'"><td class="n">'+(i+1)+'</td><td class="old">'+esc(p.f.name)+'</td><td class="arrow">→</td><td class="new">'+markNew(p.f.name,p.newName)+'</td><td class="st">'+st+'</td><td class="del"><button type="button" data-id="'+p.f.id+'" title="목록에서 빼기" aria-label="목록에서 빼기">✕</button></td></tr>';
+    }).join('') : '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--sub)">왼쪽에서 파일을 고르면 새 이름이 여기에 나타나요.</td></tr>';
+    $('pCount').textContent=plan.length+'개';
+    $('pChanged').textContent='바뀜 '+changed;
+    $('pBad').hidden=!bad; $('pBad').textContent='문제 '+bad;
+    var sample=files.length&&files.every(function(f){return f.sample;});
+    $('saveBtn').disabled=$('zipBtn').disabled=!plan.length||bad>0;
+    $('saveHint').textContent= bad? '⚠ 문제가 있는 이름을 먼저 고쳐 주세요.' :
+      (sample? '지금은 샘플 목록이라 빈 연습 파일로 저장돼요. ' : '원본은 그대로 두고 새 이름의 사본을 만들어요. ')+
+      (window.showDirectoryPicker? '저장할 폴더를 고르면 바로 복사돼요.' : '이 브라우저는 폴더 저장을 지원하지 않아 ZIP으로 받아요.');
+    try{localStorage.setItem(KEY,JSON.stringify(rules));}catch(e){}
+  }
+
+  function ruleHtml(r,i){
+    var b='';
+    if(r.type==='prefix'||r.type==='suffix') b='<input type="text" data-k="text" value="'+esc(r.text||'')+'" placeholder="붙일 글자">';
+    else if(r.type==='replace') b='<input type="text" data-k="find" value="'+esc(r.find||'')+'" placeholder="찾을 글자"> → <input type="text" data-k="to" value="'+esc(r.to||'')+'" placeholder="(비우면 지우기)"><label><input type="checkbox" data-k="regex"'+(r.regex?' checked':'')+'> 정규식</label>';
+    else if(r.type==='number') b='<select data-k="pos"><option value="front"'+(r.pos!=='back'?' selected':'')+'>앞에</option><option value="back"'+(r.pos==='back'?' selected':'')+'>뒤에</option></select> 시작 <input type="number" data-k="start" min="0" value="'+(+r.start||0)+'"> 자릿수 <input type="number" data-k="digits" min="1" max="6" value="'+(+r.digits||1)+'"> 구분 <input type="text" data-k="sep" value="'+esc(r.sep||'')+'" style="width:36px">';
+    else if(r.type==='date') b='<select data-k="pos"><option value="front"'+(r.pos==='front'?' selected':'')+'>앞에</option><option value="back"'+(r.pos!=='front'?' selected':'')+'>뒤에</option></select>'+
+      '<select data-k="src"><option value="pick"'+(r.src!=='mtime'?' selected':'')+'>정한 날짜</option><option value="mtime"'+(r.src==='mtime'?' selected':'')+'>파일 수정일</option></select>'+
+      (r.src!=='mtime'?'<input type="date" data-k="day" value="'+esc(r.day||today())+'">':'')+
+      '<select data-k="fmt">'+['YYYYMMDD','YYYY-MM-DD','YYMMDD','MMDD'].map(function(f){return '<option'+(r.fmt===f?' selected':'')+'>'+f+'</option>';}).join('')+'</select> 구분 <input type="text" data-k="sep" value="'+esc(r.sep||'')+'" style="width:36px">';
+    else if(r.type==='space') b='띄어쓰기·하이픈(-)을 <input type="text" data-k="to" value="'+esc(r.to===undefined?'_':r.to)+'" style="width:36px"> 로 바꾸고 겹친 _ 정리';
+    return '<div class="rule'+(r.on?'':' off')+'" data-i="'+i+'"><div class="rule-h"><span class="no">'+(i+1)+'</span>'+
+      '<label style="display:inline-flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" data-k="on"'+(r.on?' checked':'')+' aria-label="규칙 켜기"> '+TYPE_LABEL[r.type]+'</label><span class="grow"></span>'+
+      '<button class="ic" type="button" data-act="up" title="위로" aria-label="위로">▲</button><button class="ic" type="button" data-act="down" title="아래로" aria-label="아래로">▼</button><button class="ic" type="button" data-act="del" title="삭제" aria-label="규칙 삭제">✕</button></div>'+
+      '<div class="rule-b">'+b+'</div></div>';
+  }
+  function renderRules(){
+    $('rules').innerHTML=rules.length? rules.map(ruleHtml).join('') : '<div class="hint">아래 버튼으로 규칙을 추가하세요.</div>';
+  }
+
+  $('rules').addEventListener('input',onRuleEdit);
+  $('rules').addEventListener('change',onRuleEdit);
+  function onRuleEdit(e){
+    var box=e.target.closest('.rule'),k=e.target.getAttribute('data-k'); if(!box||!k) return;
+    var r=rules[+box.getAttribute('data-i')];
+    r[k]=e.target.type==='checkbox'?e.target.checked:e.target.value;
+    if(k==='on') box.classList.toggle('off',!r.on);
+    if(k==='src'&&e.type==='change') renderRules();
+    render();
+  }
+  $('rules').addEventListener('click',function(e){
+    var act=e.target.getAttribute('data-act'); if(!act) return;
+    var i=+e.target.closest('.rule').getAttribute('data-i');
+    if(act==='del') rules.splice(i,1);
+    else { var j=act==='up'?i-1:i+1; if(j<0||j>=rules.length) return; var t=rules[i];rules[i]=rules[j];rules[j]=t; }
+    renderRules(); render();
+  });
+  document.querySelector('.adds').addEventListener('click',function(e){
+    var t=e.target.getAttribute('data-add'); if(!t) return;
+    rules.push(NEW_RULE[t]()); renderRules(); render();
+  });
+  $('keepExt').addEventListener('change',render);
+  $('sortSel').addEventListener('change',render);
+  $('tbody').addEventListener('click',function(e){
+    var id=e.target.getAttribute('data-id'); if(!id) return;
+    files=files.filter(function(f){return String(f.id)!==id;}); render();
+  });
+  $('clearBtn').addEventListener('click',function(){files=[];render();});
+  $('sampleBtn').addEventListener('click',function(){loadSample();rules=JSON.parse(JSON.stringify(DEFAULT_RULES));renderRules();render();toast('샘플 목록과 기본 규칙으로 되돌렸어요');});
+
+  // ---------- 파일 넣기 ----------
+  function addFiles(list){
+    list=[].slice.call(list||[]); if(!list.length) return;
+    files=files.filter(function(f){return !f.sample;});
+    list.forEach(function(f){files.push({id:++seq,name:f.name,file:f,mtime:f.lastModified,size:f.size});});
+    render(); toast(list.length+'개 파일을 넣었어요');
+  }
+  var drop=$('drop');
+  drop.addEventListener('click',function(){$('fileIn').click();});
+  drop.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();$('fileIn').click();}});
+  $('fileIn').addEventListener('change',function(e){addFiles(e.target.files);e.target.value='';});
+  ['dragenter','dragover'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault();drop.classList.add('over');});});
+  ['dragleave','drop'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault();if(t==='drop'||!e.relatedTarget)drop.classList.remove('over');});});
+  document.addEventListener('drop',function(e){if(e.dataTransfer&&e.dataTransfer.files) addFiles(e.dataTransfer.files);});
+
+  // ---------- ZIP (무압축 store, 직접 구현) ----------
+  var CRC_T=(function(){var t=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+  function crc32(u8){var c=0xFFFFFFFF;for(var i=0;i<u8.length;i++)c=CRC_T[(c^u8[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+  function dos(d){
+    d=d||new Date(); if(d.getFullYear()<1980) d=new Date(1980,0,1);
+    return {time:(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1), date:((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate()};
+  }
+  function makeZip(entries){ // [{name, data:Uint8Array, date:Date}]
+    var enc=new TextEncoder(),parts=[],central=[],offset=0;
+    entries.forEach(function(en){
+      var nb=enc.encode(en.name),data=en.data,crc=crc32(data),t=dos(en.date);
+      var lh=new DataView(new ArrayBuffer(30));
+      lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);
+      lh.setUint16(10,t.time,true);lh.setUint16(12,t.date,true);lh.setUint32(14,crc,true);
+      lh.setUint32(18,data.length,true);lh.setUint32(22,data.length,true);lh.setUint16(26,nb.length,true);lh.setUint16(28,0,true);
+      parts.push(new Uint8Array(lh.buffer),nb,data);
+      var ch=new DataView(new ArrayBuffer(46));
+      ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(10,0,true);
+      ch.setUint16(12,t.time,true);ch.setUint16(14,t.date,true);ch.setUint32(16,crc,true);
+      ch.setUint32(20,data.length,true);ch.setUint32(24,data.length,true);ch.setUint16(28,nb.length,true);
+      ch.setUint16(30,0,true);ch.setUint16(32,0,true);ch.setUint16(34,0,true);ch.setUint16(36,0,true);ch.setUint32(38,0,true);ch.setUint32(42,offset,true);
+      central.push(new Uint8Array(ch.buffer),nb);
+      offset+=30+nb.length+data.length;
+    });
+    var cdSize=central.reduce(function(a,b){return a+b.length;},0);
+    var eo=new DataView(new ArrayBuffer(22));
+    eo.setUint32(0,0x06054b50,true);eo.setUint16(4,0,true);eo.setUint16(6,0,true);
+    eo.setUint16(8,entries.length,true);eo.setUint16(10,entries.length,true);
+    eo.setUint32(12,cdSize,true);eo.setUint32(16,offset,true);eo.setUint16(20,0,true);
+    return new Blob(parts.concat(central,[new Uint8Array(eo.buffer)]),{type:'application/zip'});
+  }
+  function readData(p){
+    if(!p.f.file) return Promise.resolve(new Uint8Array(0));
+    return p.f.file.arrayBuffer().then(function(b){return new Uint8Array(b);});
+  }
+  function zipName(){var d=new Date();return '이름척척_'+fmtDate(d,'YYYYMMDD')+'.zip';}
+  function saveZip(){
+    compute(); if(!plan.length||plan.some(function(p){return p.err;})) return;
+    var total=plan.reduce(function(a,p){return a+(p.f.size||0);},0);
+    if(total>1.5*1024*1024*1024){toast('합계가 1.5GB를 넘어 ZIP으로 만들기 어려워요. 나눠서 해 주세요.');return;}
+    toast('ZIP 만드는 중…');
+    Promise.all(plan.map(readData)).then(function(datas){
+      var blob=makeZip(plan.map(function(p,i){return {name:p.newName,data:datas[i],date:p.f.mtime?new Date(p.f.mtime):new Date()};}));
+      var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=zipName();
+      document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},5000);
+      toast(plan.length+'개 파일을 ZIP으로 받았어요');
+    });
+  }
+  function saveFolder(){
+    compute(); if(!plan.length||plan.some(function(p){return p.err;})) return;
+    window.showDirectoryPicker({mode:'readwrite'}).then(function(dir){
+      var exists=0;
+      return Promise.all(plan.map(function(p){return dir.getFileHandle(p.newName).then(function(){exists++;},function(){});})).then(function(){
+        if(exists && !confirm('고른 폴더에 같은 이름의 파일이 '+exists+'개 있어요. 덮어쓸까요?')) return 'cancel';
+        var done=0;
+        return plan.reduce(function(chain,p){
+          return chain.then(function(){return readData(p);}).then(function(data){
+            return dir.getFileHandle(p.newName,{create:true}).then(function(h){return h.createWritable();}).then(function(w){return w.write(data).then(function(){return w.close();});}).then(function(){done++;});
+          });
+        },Promise.resolve()).then(function(){return done;});
+      });
+    }).then(function(r){
+      if(r==='cancel') toast('저장을 취소했어요');
+      else toast('✔ '+r+'개 파일을 새 이름으로 저장했어요');
+    },function(err){
+      if(err&&err.name==='AbortError') return;
+      toast('폴더 저장이 막혀 ZIP으로 대신 받아요'); saveZip();
+    });
+  }
+  $('saveBtn').addEventListener('click',function(){ if(window.showDirectoryPicker) saveFolder(); else saveZip(); });
+  $('zipBtn').addEventListener('click',saveZip);
+
+  function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},2200);}
+
+  window.__fr={get plan(){return compute();},makeZip:makeZip,crc32:crc32,rules:function(){return rules;},render:render};
+  loadSample(); renderRules(); render();
+})();
+</script>
+</body>
+</html>

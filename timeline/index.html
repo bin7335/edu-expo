@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시간줄 연표 - 사건을 실제 간격대로 놓아 보는 역사 연표</title>
+<meta name="description" content="연도와 사건을 넣으면 가로 연표에 실제 시간 간격대로 배치되는 사회·역사 수업 도구. 시대 띠, 확대·축소, 순서 맞히기 게임, 인쇄 지원.">
+<style>
+  :root{--bg:#fbf6ec;--card:#fff;--ink:#2b2420;--sub:#75685d;--line:#eadfcd;--pri:#c2552e;--pri2:#fbe3d6;--g:#2a9d68;--r:#d64545;--b:#3466c9}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--card);border-bottom:2px solid var(--line);flex-wrap:wrap}
+  .logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#c2552e,#e9a94b);display:grid;place-items:center;font-size:24px;flex-shrink:0}
+  header>div:nth-child(2){flex:1;min-width:0}
+  header h1{margin:0;font-size:23px;line-height:1.15}
+  header small{display:block;color:var(--sub);font-size:13px;font-weight:500}
+  .hbtns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:0;font:inherit;font-weight:700;font-size:15px;padding:9px 14px;border-radius:11px;cursor:pointer;background:var(--pri2);color:var(--pri);white-space:nowrap}
+  .btn.pri{background:var(--pri);color:#fff}
+  .btn.ghost{background:#f2ece2;color:var(--sub)}
+  .btn.g{background:var(--g);color:#fff}
+  .btn:active{transform:scale(.97)}
+  .btn:disabled{opacity:.5;cursor:default}
+  input{font:inherit;font-size:15px;border:1.5px solid var(--line);border-radius:9px;padding:7px 9px;background:#fffdf9;color:var(--ink);min-width:0}
+  input:focus{outline:2px solid var(--pri);border-color:transparent}
+  main{flex:1;display:flex;flex-direction:column;gap:10px;padding:12px 20px 8px;min-height:0}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .zoom{display:flex;gap:4px}
+  .zoom .btn{padding:7px 12px;font-size:17px}
+  .chips{display:flex;gap:5px;flex-wrap:wrap}
+  .chip{border:1.5px solid rgba(0,0,0,.08);font:inherit;font-size:13px;font-weight:700;padding:5px 10px;border-radius:99px;cursor:pointer;color:#4a3d33}
+  .hint{font-size:13px;color:var(--sub);margin-left:auto}
+
+  /* 연표 */
+  #vp{position:relative;flex:1;min-height:420px;background:#fff;border:2px solid var(--line);border-radius:18px;overflow:hidden;touch-action:none;cursor:grab;user-select:none}
+  #vp.drag{cursor:grabbing}
+  .era{position:absolute;top:0;bottom:0;border-right:1px dashed rgba(0,0,0,.12)}
+  .eralbl{position:absolute;top:6px;font-size:14px;font-weight:800;color:rgba(60,40,25,.75);white-space:nowrap;padding:2px 8px;background:rgba(255,255,255,.65);border-radius:99px}
+  .axis{position:absolute;left:0;right:0;height:4px;background:#4a3d33;border-radius:2px}
+  .tick{position:absolute;width:2px;height:12px;background:#4a3d33}
+  .tlbl{position:absolute;font-size:12px;color:#5d5045;transform:translateX(-50%);white-space:nowrap;font-weight:600}
+  .stem{position:absolute;width:2px;background:#a48c76}
+  .dot{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--pri);border:3px solid #fff;box-shadow:0 0 0 2px var(--pri);transform:translate(-50%,-50%)}
+  .ev{position:absolute;background:#fff;border:2px solid #d9c6b0;border-radius:12px;padding:5px 7px;box-shadow:0 3px 0 rgba(120,90,60,.15);display:flex;gap:6px;align-items:center;cursor:pointer;transition:border-color .15s}
+  .ev:hover,.ev.on{border-color:var(--pri)}
+  .ev .em{font-size:24px;line-height:1}
+  .ev b{display:block;font-size:14px;line-height:1.15;word-break:keep-all;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ev i{display:block;font-style:normal;font-size:12px;color:var(--pri);font-weight:700;white-space:nowrap}
+  .ev .tx{min-width:0}
+  #vp.slim .ev b{font-size:12.5px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  #vp.slim .ev .em{font-size:20px}
+  #vp.slim .ev{gap:4px;padding:4px 5px}
+  .ev.mini{justify-content:center;padding:0;border-radius:50%}
+  .ev.mini .em{font-size:20px}
+  .ev.flash{animation:fl 1s 2}
+  @keyframes fl{50%{transform:scale(1.12);border-color:var(--g)}}
+  .detail{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:#fff;border:2px solid var(--pri);border-radius:16px;padding:12px 16px;display:none;gap:12px;align-items:center;box-shadow:0 8px 30px rgba(0,0,0,.15);width:min(560px,92%);z-index:5;cursor:default}
+  .detail.on{display:flex}
+  .detail .big{font-size:44px}
+  .detail h3{margin:0;font-size:19px}
+  .detail p{margin:3px 0 0;color:var(--sub);font-size:15px}
+  .detail .yr{color:var(--pri);font-weight:800;font-size:14px}
+  .detail .acts{margin-left:auto;display:flex;flex-direction:column;gap:5px}
+  .detail .acts .btn{padding:6px 10px;font-size:13px}
+
+  /* 입력 */
+  .add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:2px solid var(--line);border-radius:16px;padding:10px 12px}
+  .add b{font-size:15px}
+  .add label{font-size:14px;display:flex;gap:4px;align-items:center;color:var(--sub);font-weight:700}
+  #fYear{width:92px}#fEmoji{width:52px;text-align:center}#fName{width:170px}#fDesc{flex:1;min-width:160px}
+
+  /* 게임 */
+  #game{display:none;flex:1;flex-direction:column;gap:12px;background:#fff;border:2px solid var(--line);border-radius:18px;padding:14px;min-height:420px}
+  body.playing #game{display:flex}
+  body.playing #vp,body.playing .toolbar,body.playing .add{display:none}
+  .ghead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .ghead h2{margin:0;font-size:21px}
+  .ghead .msg{font-weight:800;font-size:17px;color:var(--b)}
+  .ghead .sp{flex:1}
+  .slots{position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:10px;padding:26px 6px 8px}
+  .slots:before{content:"";position:absolute;left:0;right:14px;top:12px;height:5px;background:#4a3d33;border-radius:3px}
+  .slots:after{content:"";position:absolute;right:0;top:5px;border:10px solid transparent;border-left:16px solid #4a3d33;border-right:0}
+  .olbl{display:flex;justify-content:space-between;font-size:13px;font-weight:800;color:var(--sub);padding:0 6px}
+  .slot{min-height:118px;border:3px dashed #d9c6b0;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;background:#fffaf2;cursor:pointer;padding:4px}
+  .slot .no{position:absolute;top:-24px;left:50%;transform:translateX(-50%);width:26px;height:26px;border-radius:50%;background:#4a3d33;color:#fff;font-weight:800;display:grid;place-items:center;font-size:14px}
+  .slot.over{border-color:var(--b);background:#eef3ff}
+  .slot.ok{border:3px solid var(--g);background:#e9f8f0}
+  .slot.bad{border:3px solid var(--r);background:#fdeeee}
+  .slot .res{font-size:13px;font-weight:800;margin-top:3px}
+  .slot.ok .res{color:var(--g)}.slot.bad .res{color:var(--r)}
+  .tray{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;min-height:120px;padding:12px;border-radius:14px;background:#f6efe4}
+  .gc{width:150px;min-height:100px;background:#fff;border:2.5px solid #d9c6b0;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px;cursor:grab;box-shadow:0 3px 0 rgba(120,90,60,.18);word-break:keep-all}
+  .slot .gc{width:100%;box-shadow:none;border-color:transparent;background:transparent;min-height:0}
+  .gc .em{font-size:34px}
+  .gc b{font-size:15px;line-height:1.2}
+  .gc.sel{border-color:var(--b);box-shadow:0 0 0 3px #bcd0ff}
+  .ttl{font-size:13px;color:var(--sub);text-align:center;font-weight:700}
+
+  .conf{position:fixed;top:-40px;font-size:28px;pointer-events:none;animation:fall linear forwards;z-index:50}
+  @keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+
+  footer{text-align:right;padding:4px 20px 10px;font-size:13px}
+  footer a{color:var(--sub);text-decoration:none}
+  footer a:hover{color:var(--pri)}
+  #printList{display:none}
+
+  @media (max-width:760px){
+    header{padding:8px 12px}
+    header h1{font-size:19px}
+    .hbtns{margin-left:0;width:100%}
+    .hbtns .btn{flex:1;font-size:14px;padding:8px 6px}
+    main{padding:10px 10px 6px}
+    .hint{display:none}
+    #vp{min-height:430px}
+    .ev .em{font-size:19px}
+    .ev b{font-size:12px}
+    .ev i{font-size:11px}
+    #fName,#fDesc{width:100%;flex:auto}
+    .slots{grid-template-columns:repeat(3,1fr);row-gap:34px}
+    .slots:before,.slots:after{display:none}
+    .gc{width:calc(50% - 6px)}
+    .detail .big{font-size:34px}
+  }
+  @media print{
+    @page{size:A4 landscape;margin:10mm}
+    body{background:#fff;display:block}
+    header .hbtns,.toolbar,.add,footer,#game,.detail{display:none!important}
+    header{border:0}
+    main{padding:0}
+    #vp{border:1px solid #999;height:430px;flex:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .era,.dot,.chip{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #printList{display:block;margin-top:10px}
+    #printList table{width:100%;border-collapse:collapse;font-size:12px}
+    #printList td,#printList th{border:1px solid #bbb;padding:4px 6px;text-align:left}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="시간줄 연표">
+<meta property="og:description" content="사건을 실제 시간 간격대로 놓는 역사 연표와 순서 맞히기 게임">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/41-timeline.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/timeline/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">📜</div>
+  <div><h1>시간줄 연표</h1><small>사건을 넣으면 실제 시간 간격대로 놓이는 역사 연표 · 사회·역사 수업</small></div>
+  <div class="hbtns">
+    <button class="btn pri" id="bGame">🧩 순서 맞히기 게임</button>
+    <button class="btn" id="bPrint">🖨️ 인쇄</button>
+    <button class="btn ghost" id="bReset">↺ 한국사 샘플</button>
+  </div>
+</header>
+<main>
+  <div class="toolbar">
+    <div class="zoom">
+      <button class="btn" id="zIn" title="확대">＋</button>
+      <button class="btn" id="zOut" title="축소">－</button>
+      <button class="btn ghost" id="zFit" style="font-size:14px">전체 보기</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <span class="hint">드래그로 이동 · 휠/두 손가락으로 확대 · 사건 카드를 누르면 설명</span>
+  </div>
+  <div id="vp">
+    <div id="layer"></div>
+    <div class="detail" id="detail"></div>
+  </div>
+  <section id="game"></section>
+  <form class="add" id="addForm" autocomplete="off">
+    <b>➕ 사건 넣기</b>
+    <label><input type="checkbox" id="fBC"> 기원전</label>
+    <input id="fYear" type="number" min="1" max="2100" placeholder="연도" required>
+    <input id="fEmoji" maxlength="4" value="⭐" aria-label="이모지">
+    <input id="fName" maxlength="20" placeholder="사건 이름" required>
+    <input id="fDesc" maxlength="60" placeholder="한 줄 설명 (선택)">
+    <button class="btn pri" type="submit">연표에 놓기</button>
+  </form>
+  <div id="printList"></div>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<script>
+const CUR = 2026;
+const SAMPLE = [
+  {y:-2333,n:'고조선 건국',d:'단군왕검이 세웠다고 『삼국유사』에 전하는 우리 역사 최초의 나라',e:'🏔️'},
+  {y:-37,n:'고구려 건국',d:'주몽이 졸본에서 고구려를 세움',e:'🏹'},
+  {y:676,n:'신라의 삼국 통일',d:'당나라 군대를 몰아내고 삼국 통일을 이룸',e:'🤝'},
+  {y:698,n:'발해 건국',d:'대조영이 고구려 유민과 말갈인을 모아 세움',e:'🐎'},
+  {y:918,n:'고려 건국',d:'왕건이 고려를 세움 (936년 후삼국 통일)',e:'👑'},
+  {y:1377,n:'직지 인쇄',d:'청주 흥덕사에서 찍음. 현재 남아 있는 가장 오래된 금속 활자본',e:'📖'},
+  {y:1392,n:'조선 건국',d:'이성계가 조선을 세움',e:'🏯'},
+  {y:1446,n:'훈민정음 반포',d:'세종이 1443년에 만든 우리 글자를 백성에게 널리 알림',e:'✍️'},
+  {y:1592,n:'임진왜란',d:'일본의 침략. 이순신과 의병이 나라를 지킴',e:'🚢'},
+  {y:1919,n:'3·1 운동',d:'온 겨레가 태극기를 들고 독립 만세를 외침',e:'📣'},
+  {y:1945,n:'광복',d:'8월 15일, 일제의 지배에서 벗어나 나라를 되찾음',e:'🎉'},
+  {y:1988,n:'서울 올림픽',d:'제24회 하계 올림픽을 서울에서 개최',e:'🏅'}
+];
+const ERAS = [
+  {n:'고조선',a:-2333,b:-108,c:'#f3dcb4'},
+  {n:'여러 나라·삼국 시대',a:-108,b:676,c:'#d9ebc6'},
+  {n:'남북국 시대',a:676,b:918,c:'#c9e3ee'},
+  {n:'고려',a:918,b:1392,c:'#e3d4f0'},
+  {n:'조선',a:1392,b:1897,c:'#f6d3cf'},
+  {n:'대한제국',a:1897,b:1910,c:'#f1e3a8'},
+  {n:'일제 강점기',a:1910,b:1945,c:'#d6d6d6'},
+  {n:'현대',a:1945,b:CUR,c:'#cfe6d8'}
+];
+const KEY='edu-expo-timeline-v1';
+const $=s=>document.querySelector(s);
+let events;
+try{events=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!Array.isArray(events)||!events.length) events=SAMPLE.map((o,i)=>({...o,id:i+1}));
+let nextId=Math.max(...events.map(e=>e.id||0),0)+1;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(events))}catch(e){}};
+const yl=y=>y<0?`기원전 ${-y}년`:`${y}년`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const vp=$('#vp'), layer=$('#layer'), detail=$('#detail');
+let scale=1, offset=0, fitScale=1, selId=null, W=0, H=0;
+const X=y=>y*scale+offset;
+const yearAt=x=>(x-offset)/scale;
+
+function fitRange(a,b,pad){
+  W=vp.clientWidth; pad=pad??(W<600?56:80);
+  if(b-a<10){a-=5;b+=5}
+  scale=(W-2*pad)/(b-a); offset=pad-a*scale;
+}
+function fitAll(){
+  const ys=events.map(e=>e.y); const a=Math.min(...ys,ERAS[0].a), b=Math.max(...ys,1945);
+  fitRange(a,b); fitScale=scale; render();
+}
+function zoomAt(px,f){
+  const y=yearAt(px);
+  scale=Math.min(80,Math.max(fitScale*0.5,scale*f));
+  offset=px-y*scale; render();
+}
+
+function render(){
+  W=vp.clientWidth; H=vp.clientHeight;
+  const mob=W<600, cw=mob?112:146, ch=mob?44:50, gap=6;
+  const axisY=Math.round(H*0.5)+8;
+  let h='';
+  // 시대 띠
+  for(const e of ERAS){
+    const x1=X(e.a), x2=X(e.b);
+    if(x2<0||x1>W) continue;
+    h+=`<div class="era" style="left:${x1}px;width:${x2-x1}px;background:${e.c}"></div>`;
+    const vl=Math.max(x1,0), vr=Math.min(x2,W);
+    if(vr-vl>e.n.length*14+18) h+=`<div class="eralbl" style="left:${vl+(vr-vl)/2}px;transform:translateX(-50%)">${e.n}</div>`;
+  }
+  // 축과 눈금
+  h+=`<div class="axis" style="top:${axisY-2}px"></div>`;
+  const steps=[1,2,5,10,20,25,50,100,200,250,500,1000,2000];
+  let st=steps.find(s=>s*scale>=(mob?88:96))||1000;
+  const y0=Math.ceil(yearAt(0)/st)*st, y1=yearAt(W);
+  for(let t=y0;t<=y1;t+=st){
+    const x=X(t);
+    h+=`<div class="tick" style="left:${x-1}px;top:${axisY-6}px"></div><div class="tlbl" style="left:${x}px;top:${axisY+8}px">${t<0?'기원전 '+(-t):t===0?'기원후 1':t}</div>`;
+  }
+  // 사건 배치 (겹치지 않게 위아래 층으로)
+  const list=[...events].sort((a,b)=>a.y-b.y);
+  function place(cw,ch,mini){
+    const nA=Math.max(1,Math.floor((axisY-40-14)/(ch+gap))), nB=Math.max(1,Math.floor((H-axisY-30-8)/(ch+gap)));
+    const lanes=[]; for(let i=0;i<Math.max(nA,nB);i++){ if(i<nA)lanes.push({up:1,i,r:-1e9}); if(i<nB)lanes.push({up:0,i,r:-1e9}); }
+    let stems='', cards='', over=0;
+    for(const ev of list){
+      const x=X(ev.y); if(x<-cw||x>W+cw) continue;
+      const L=x-cw/2;
+      let ln=lanes.find(l=>l.r+gap<=L);
+      if(!ln){over++; ln=lanes.reduce((m,l)=>l.r<m.r?l:m,lanes[0]);}
+      ln.r=L+cw;
+      const top=ln.up? axisY-16-(ln.i+1)*ch-ln.i*gap : axisY+30+ln.i*(ch+gap);
+      const sTop=ln.up? top+ch : axisY, sH=ln.up? axisY-(top+ch) : top-axisY;
+      stems+=`<div class="stem" style="left:${x-1}px;top:${sTop}px;height:${sH}px"></div>`;
+      cards+=`<div class="ev${mini?' mini':''}${ev.id===selId?' on':''}" data-id="${ev.id}" title="${yl(ev.y)} ${esc(ev.n)}" style="left:${L}px;top:${top}px;width:${cw}px;height:${ch}px"><span class="em">${esc(ev.e)}</span>${mini?'':`<span class="tx"><b>${esc(ev.n)}</b><i>${yl(ev.y)}</i></span>`}</div>`;
+    }
+    return {html:stems+cards,over};
+  }
+  let pl=place(cw,ch,false);
+  let slim=false;
+  for(const k of [.86,.74]){ if(pl.over){ pl=place(Math.round(cw*k),ch,false); slim=true; } }
+  vp.classList.toggle('slim',slim);
+  if(pl.over) pl=place(mob?38:44,mob?38:44,true);
+  h+=pl.html;
+  for(const ev of list){const x=X(ev.y); if(x>-10&&x<W+10) h+=`<div class="dot" style="left:${x}px;top:${axisY}px"></div>`}
+  layer.innerHTML=h;
+}
+
+function showDetail(id){
+  const ev=events.find(e=>e.id===id); if(!ev){detail.classList.remove('on');selId=null;render();return}
+  selId=id;
+  detail.innerHTML=`<span class="big">${esc(ev.e)}</span><div><span class="yr">${yl(ev.y)}</span><h3>${esc(ev.n)}</h3><p>${esc(ev.d||'')}</p></div><div class="acts"><button class="btn" data-a="zoom">🔍 가까이</button><button class="btn ghost" data-a="del">🗑️ 빼기</button><button class="btn ghost" data-a="close">닫기</button></div>`;
+  detail.classList.add('on'); render();
+}
+detail.addEventListener('pointerdown',e=>e.stopPropagation());
+detail.addEventListener('click',e=>{
+  const a=e.target.dataset.a; if(!a) return;
+  const ev=events.find(x=>x.id===selId);
+  if(a==='close'){detail.classList.remove('on');selId=null;render()}
+  if(a==='del'&&ev){events=events.filter(x=>x!==ev);save();detail.classList.remove('on');selId=null;render()}
+  if(a==='zoom'&&ev){fitRange(ev.y-60,ev.y+60);render()}
+});
+
+// 드래그·핀치·휠
+const ptr=new Map(); let moved=0, downEl=null, pinch=null;
+vp.addEventListener('pointerdown',e=>{
+  ptr.set(e.pointerId,{x:e.clientX,y:e.clientY}); vp.setPointerCapture(e.pointerId);
+  moved=0; downEl=e.target.closest('.ev'); vp.classList.add('drag');
+  if(ptr.size===2){const [a,b]=[...ptr.values()]; pinch={d:Math.hypot(a.x-b.x,a.y-b.y),s:scale}}
+});
+vp.addEventListener('pointermove',e=>{
+  const p=ptr.get(e.pointerId); if(!p) return;
+  const dx=e.clientX-p.x; p.x=e.clientX; p.y=e.clientY;
+  if(ptr.size===2&&pinch){
+    const [a,b]=[...ptr.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y);
+    const r=vp.getBoundingClientRect(); const mx=(a.x+b.x)/2-r.left;
+    const y=yearAt(mx); scale=Math.min(80,Math.max(fitScale*.5,pinch.s*d/pinch.d)); offset=mx-y*scale; moved=99; render(); return;
+  }
+  moved+=Math.abs(dx); offset+=dx; if(moved>3) render();
+});
+const up=e=>{
+  if(!ptr.has(e.pointerId)) return;
+  ptr.delete(e.pointerId); if(ptr.size<2) pinch=null;
+  if(!ptr.size){vp.classList.remove('drag'); if(moved<6&&e.type==='pointerup'){ if(downEl) showDetail(+downEl.dataset.id); else if(selId){detail.classList.remove('on');selId=null;render()} }}
+};
+vp.addEventListener('pointerup',up); vp.addEventListener('pointercancel',up);
+vp.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=vp.getBoundingClientRect();
+  if(Math.abs(e.deltaX)>Math.abs(e.deltaY)){offset-=e.deltaX;render();return}
+  zoomAt(e.clientX-r.left,e.deltaY<0?1.2:1/1.2);
+},{passive:false});
+$('#zIn').onclick=()=>zoomAt(vp.clientWidth/2,1.5);
+$('#zOut').onclick=()=>zoomAt(vp.clientWidth/2,1/1.5);
+$('#zFit').onclick=fitAll;
+$('#chips').innerHTML=ERAS.map((e,i)=>`<button class="chip" data-i="${i}" style="background:${e.c}">${e.n}</button>`).join('');
+$('#chips').onclick=e=>{const i=e.target.dataset.i; if(i==null) return; const er=ERAS[i]; const span=er.b-er.a; fitRange(er.a-span*.08,er.b+span*.08); render()};
+window.addEventListener('resize',()=>{ if(!vp.clientWidth) return; const c=yearAt(W/2), s=scale; W=vp.clientWidth; offset=W/2-c*s; render(); });
+
+// 사건 넣기
+$('#addForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  let y=parseInt($('#fYear').value,10); if(!y||y<1) return;
+  if($('#fBC').checked) y=-y;
+  const ev={id:nextId++,y,n:$('#fName').value.trim(),d:$('#fDesc').value.trim(),e:$('#fEmoji').value.trim()||'⭐'};
+  if(!ev.n) return;
+  events.push(ev); save();
+  fitRange(y-150,y+150); render();
+  const el=layer.querySelector(`.ev[data-id="${ev.id}"]`); if(el) el.classList.add('flash');
+  e.target.reset(); $('#fEmoji').value='⭐';
+});
+$('#bReset').onclick=()=>{ if(!confirm('한국사 샘플 12개로 되돌릴까요? (직접 넣은 사건은 지워져요)')) return; events=SAMPLE.map((o,i)=>({...o,id:i+1})); nextId=13; save(); detail.classList.remove('on'); selId=null; fitAll(); };
+
+// 인쇄
+function buildPrint(){
+  $('#printList').innerHTML='<table><tr><th>연도</th><th>사건</th><th>설명</th></tr>'+[...events].sort((a,b)=>a.y-b.y).map(e=>`<tr><td>${yl(e.y)}</td><td>${esc(e.e)} ${esc(e.n)}</td><td>${esc(e.d||'')}</td></tr>`).join('')+'</table>';
+}
+let saved=null;
+window.addEventListener('beforeprint',()=>{ buildPrint(); saved={s:scale,o:offset}; vp.style.width='1040px'; vp.style.height='430px'; fitAll(); });
+window.addEventListener('afterprint',()=>{ vp.style.width=''; vp.style.height=''; fitAll(); });
+$('#bPrint').onclick=()=>{ if(document.body.classList.contains('playing')) endGame(); window.print(); };
+
+// 순서 맞히기 게임
+const G={cards:[],slots:[],sel:null,checked:false};
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function startGame(){
+  const seen=new Set(); const pool=shuffle([...events]).filter(e=>!seen.has(e.y)&&seen.add(e.y));
+  if(pool.length<3){alert('서로 다른 연도의 사건이 3개 이상 있어야 게임을 할 수 있어요.');return}
+  const n=Math.min(6,pool.length);
+  G.cards=shuffle(pool.slice(0,n)); G.slots=Array(n).fill(null); G.sel=null; G.checked=false;
+  document.body.classList.add('playing'); $('#bGame').textContent='📜 연표로 돌아가기';
+  renderGame();
+}
+function endGame(){document.body.classList.remove('playing'); $('#bGame').textContent='🧩 순서 맞히기 게임'; requestAnimationFrame(fitAll)}
+$('#bGame').onclick=()=>document.body.classList.contains('playing')?endGame():startGame();
+const cardHtml=c=>`<div class="gc${G.sel===c.id?' sel':''}" draggable="${!G.checked}" data-c="${c.id}"><span class="em">${esc(c.e)}</span><b>${esc(c.n)}</b></div>`;
+function renderGame(msg){
+  const n=G.slots.length, sorted=[...G.cards].sort((a,b)=>a.y-b.y);
+  const placed=new Set(G.slots.filter(Boolean));
+  const tray=G.cards.filter(c=>!placed.has(c.id));
+  let okCnt=0;
+  const slots=G.slots.map((id,i)=>{
+    const c=G.cards.find(x=>x.id===id); let cls='', res='';
+    if(G.checked&&c){const ok=c.y===sorted[i].y; if(ok)okCnt++; cls=ok?' ok':' bad'; res=`<div class="res">${ok?'⭕ ':'❌ '}${yl(c.y)}</div>`}
+    return `<div class="slot${cls}" data-s="${i}"><span class="no">${i+1}</span>${c?cardHtml(c):'<span class="ttl">여기에 놓기</span>'}${res}</div>`;
+  }).join('');
+  if(G.checked&&!msg) msg=okCnt===n?`🎉 ${n}개 모두 정답! 역사 박사예요!`:`${n}개 중 ${okCnt}개 정답! 틀린 카드를 옮겨 다시 해 보세요.`;
+  $('#game').innerHTML=`<div class="ghead"><h2>🧩 순서 맞히기</h2><span class="msg">${msg||'카드를 눌러 고른 뒤 번호 칸을 누르세요 (끌어다 놓아도 돼요)'}</span><span class="sp"></span>
+    <button class="btn g" id="gCheck">✅ 정답 확인</button><button class="btn" id="gAns">💡 정답 보기</button><button class="btn ghost" id="gNew">🔀 새로 섞기</button></div>
+    <div class="olbl"><span>⬅ 가장 옛날</span><span>가장 최근 ➡</span></div>
+    <div class="slots" style="--n:${n}">${slots}</div>
+    <div class="ttl">🃏 남은 카드 ${tray.length}장</div>
+    <div class="tray" data-tray="1">${tray.map(cardHtml).join('')||'<span class="ttl">모든 카드를 놓았어요! 정답 확인을 눌러 보세요.</span>'}</div>`;
+  if(G.checked&&okCnt===n) confetti();
+}
+function place(cid,si){
+  if(G.checked){G.checked=false}
+  const from=G.slots.indexOf(cid);
+  if(si==null){ if(from>=0) G.slots[from]=null; }
+  else{ const prev=G.slots[si]; if(from>=0) G.slots[from]=prev; G.slots[si]=cid; }
+  G.sel=null; renderGame();
+}
+$('#game').addEventListener('click',e=>{
+  const t=e.target;
+  if(t.id==='gNew') return startGame();
+  if(t.id==='gCheck'){ if(G.slots.some(s=>s==null)) return renderGame('⚠️ 모든 칸에 카드를 놓아 주세요!'); G.checked=true; return renderGame(); }
+  if(t.id==='gAns'){ G.slots=[...G.cards].sort((a,b)=>a.y-b.y).map(c=>c.id); G.checked=true; return renderGame('💡 정답 순서예요. 연도를 확인해 보세요.'); }
+  const card=t.closest('.gc'), slot=t.closest('.slot');
+  if(card&&!slot){ const id=+card.dataset.c; G.sel=G.sel===id?null:id; return renderGame(); }
+  if(slot){
+    const si=+slot.dataset.s;
+    if(G.sel!=null) return place(G.sel,si);
+    if(G.slots[si]!=null) return place(G.slots[si],null);
+  }
+});
+$('#game').addEventListener('dragstart',e=>{const c=e.target.closest('.gc'); if(c) e.dataTransfer.setData('text/plain',c.dataset.c)});
+$('#game').addEventListener('dragover',e=>{const s=e.target.closest('.slot,.tray'); if(s){e.preventDefault(); s.classList.add('over')}});
+$('#game').addEventListener('dragleave',e=>{const s=e.target.closest('.slot,.tray'); if(s) s.classList.remove('over')});
+$('#game').addEventListener('drop',e=>{
+  e.preventDefault(); const id=+e.dataTransfer.getData('text/plain'); if(!id) return;
+  const s=e.target.closest('.slot'); if(s) place(id,+s.dataset.s); else if(e.target.closest('.tray')) place(id,null);
+});
+function confetti(){
+  const em=['🎉','⭐','🎊','✨','📜'];
+  for(let i=0;i<40;i++){const d=document.createElement('div');d.className='conf';d.textContent=em[i%em.length];d.style.left=Math.random()*100+'vw';d.style.animationDuration=(1.6+Math.random()*1.6)+'s';d.style.animationDelay=Math.random()*.5+'s';document.body.appendChild(d);setTimeout(()=>d.remove(),4000)}
+}
+
+fitAll();
+</script>
+</body>
+</html>

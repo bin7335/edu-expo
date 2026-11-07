@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>표 모으미 - 반별 명단 합치기·나누기·중복 찾기</title>
+<meta name="description" content="엑셀에서 복사한 반별 명단 여러 개를 붙여 넣어 열 제목을 맞춰 하나로 합치고, 기준 열로 나누고, 중복 행과 빈칸을 찾아 주는 표 정리 도구. 엑셀에서 한글이 깨지지 않는 CSV로 저장. 내 PC에서만 처리됩니다.">
+<style>
+  :root{
+    --bg:#edf4f1; --panel:#fff; --ink:#1d2b27; --sub:#5f716b; --line:#d6e2dd;
+    --brand:#1d6b57; --brand2:#2a8f73; --soft:#e3f2ec; --acc:#f2b53a; --warn:#c8492f; --dup:#fde7c8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:linear-gradient(110deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.85}
+  .grow{flex:1}
+  .safe{display:inline-flex;align-items:center;gap:6px;background:#fff7e0;color:#6b4a00;border:1px solid #f1d38b;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 13px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.acc{background:var(--acc);color:#3d2a00;border-color:transparent}
+  .btn.small{font-size:12.5px;padding:6px 10px}
+  .btn.ghost{background:#ffffff22;color:#fff;border-color:#ffffff66}
+  main{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:14px;padding:12px 20px 48px;max-width:1440px;margin:0 auto}
+  .side{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .side-h{display:flex;align-items:center;gap:8px}
+  .side-h h2{margin:0;font-size:15px}
+  .src{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;border-left:5px solid var(--c,#2a8f73)}
+  .src-h{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+  .src-h input{font:inherit;font-weight:800;font-size:14px;border:1px solid transparent;border-radius:6px;padding:2px 6px;width:110px;background:var(--soft)}
+  .src-h input:focus{border-color:var(--brand2);outline:none}
+  .src-h .meta{font-size:12px;color:var(--sub);flex:1}
+  .src-h .x{border:0;background:none;font-size:16px;cursor:pointer;color:#9aa;padding:2px 4px}
+  .src textarea{width:100%;height:86px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:12.5px;line-height:1.45;resize:vertical;white-space:pre;tab-size:10;background:#fbfdfc}
+  .adders{display:flex;gap:8px;flex-wrap:wrap}
+  .hint{font-size:12px;color:var(--sub);line-height:1.5}
+  .stage{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;min-width:0;overflow:hidden;align-self:start}
+  .tabs{display:flex;gap:4px;padding:8px 10px 0;background:#f5f9f7;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{font:inherit;font-size:14.5px;font-weight:700;border:1px solid transparent;border-bottom:0;border-radius:10px 10px 0 0;background:none;padding:9px 14px;cursor:pointer;color:var(--sub);white-space:nowrap}
+  .tab.on{background:#fff;border-color:var(--line);color:var(--brand);margin-bottom:-1px}
+  .tab .b{display:inline-block;min-width:20px;font-size:11.5px;border-radius:999px;padding:1px 6px;margin-left:4px;background:#e5ebe8;color:var(--sub)}
+  .tab .b.hot{background:var(--acc);color:#3d2a00}
+  .opts{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
+  .opts select{font:inherit;font-size:13.5px;padding:5px 8px;border:1px solid var(--line);border-radius:8px}
+  .opts label{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+  .opts input[type=checkbox]{accent-color:var(--brand);margin:0}
+  .stat{font-size:13px;color:var(--sub)}
+  .stat b{color:var(--brand);font-size:15px}
+  .notes{font-size:12.5px;color:#6b4a00;background:#fff8e6;border-bottom:1px solid #f4e2b5;padding:6px 12px}
+  .notes:empty{display:none}
+  .groups{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .groups[hidden],[hidden]{display:none!important}
+  .gchip{font:inherit;font-size:13px;font-weight:700;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;cursor:pointer}
+  .gchip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .tablewrap{overflow:auto;max-height:440px}
+  table.t{border-collapse:collapse;font-size:13px;white-space:nowrap;min-width:100%}
+  table.t th,table.t td{border:1px solid var(--line);padding:5px 9px;text-align:left}
+  table.t th{background:#f0f6f3;position:sticky;top:0;z-index:1;font-weight:800}
+  table.t td.rn,table.t th.rn{color:#9aa9a3;font-size:11.5px;text-align:right;width:1%}
+  td.srccell span{display:inline-block;font-size:11.5px;font-weight:800;border-radius:6px;padding:1px 7px;background:var(--c);color:#fff}
+  td.blank{background:#fde9e5}
+  td.blank::after{content:"빈칸";color:var(--warn);font-size:11px;font-weight:700}
+  tr.dup td{background:var(--dup)}
+  tr.dup.alt td{background:#e9e3fb}
+  td.key{font-weight:800}
+  .empty{padding:40px 20px;text-align:center;color:var(--sub);font-size:14px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);background:#fafcfb}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#1d2b27;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:20}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.9);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:10}
+  @media (max-width:860px){
+    header{padding:10px 12px;gap:8px}
+    header p{display:none}
+    header h1{font-size:19px}
+    .safe{font-size:12px;padding:4px 9px}
+    main{grid-template-columns:minmax(0,1fr);padding:10px 10px 56px}
+    .stage{order:-1}
+    .tab{padding:8px 10px;font-size:13.5px}
+    .tablewrap{max-height:360px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="표 모으미">
+<meta property="og:description" content="엑셀에서 복사한 반별 명단을 합치고 나누고, 중복·빈칸까지 찾기">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/29-table-merge.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/table-merge/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🧺</div>
+  <div>
+    <h1>표 모으미</h1>
+    <p>반별 명단을 모으고, 나누고, 겹치거나 빠진 칸을 찾기</p>
+  </div>
+  <span class="safe">🔒 내 PC에서만 처리 · 외부 전송 없음</span>
+  <div class="grow"></div>
+  <button class="btn small ghost" id="sampleBtn" type="button">↺ 샘플 다시 채우기</button>
+</header>
+
+<main>
+  <section class="side">
+    <div class="side-h"><h2>모을 표</h2><span class="hint" id="srcCount"></span></div>
+    <div id="srcList" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="adders">
+      <button class="btn small" id="addBtn" type="button">＋ 표 추가</button>
+      <button class="btn small" id="fileBtn" type="button">📂 CSV·TSV 파일 열기</button>
+      <input type="file" id="fileIn" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" multiple hidden>
+    </div>
+    <div class="hint">엑셀에서 머리글 포함해 범위를 복사(Ctrl+C)한 뒤 칸에 붙여 넣으세요. 열 순서가 달라도, ‘성명/이름’처럼 이름이 조금 달라도 맞춰 줍니다.</div>
+  </section>
+
+  <section class="stage">
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-v="merge" type="button">🧺 합치기</button>
+      <button class="tab" data-v="split" type="button">✂️ 나누기</button>
+      <button class="tab" data-v="dup" type="button">👯 중복 찾기<span class="b" id="bDup">0</span></button>
+      <button class="tab" data-v="blank" type="button">⬜ 빈칸 찾기<span class="b" id="bBlank">0</span></button>
+    </div>
+    <div class="opts" id="opts"></div>
+    <div class="notes" id="notes"></div>
+    <div class="groups" id="groups" hidden></div>
+    <div class="tablewrap" id="tableWrap"></div>
+    <div class="actions">
+      <button class="btn primary" id="csvBtn" type="button">⬇ CSV 내려받기</button>
+      <button class="btn acc" id="copyBtn" type="button">📋 복사 (엑셀에 붙이기)</button>
+      <button class="btn" id="allBtn" type="button" hidden>⬇ 그룹별 모두 받기</button>
+      <span class="hint" id="actHint">CSV는 엑셀에서 열어도 한글이 깨지지 않게 저장돼요.</span>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+  var COLORS=['#2a8f73','#3a6fc4','#c4643a','#8a4fc4','#b8901c','#c43a74','#3a9bc4','#6b8a2a'];
+
+  // ---------- 샘플 (가상의 학생·연락처) ----------
+  function tsv(rows){return rows.map(function(r){return r.join('\t');}).join('\n');}
+  var SAMPLE=[
+    {name:'3학년 1반',text:tsv([
+      ['번호','이름','성별','보호자 연락처','방과후 신청'],
+      ['1','김하늘','여','010-0000-0101','로봇과학'],
+      ['2','이서준','남','010-0000-0102','축구'],
+      ['3','박지호','남','010-0000-0103','축구'],
+      ['4','최민준','남','010-0000-0104',''],
+      ['5','정예린','여','010-0000-0105','바이올린'],
+      ['6','윤하은','여','010-0000-0106','로봇과학']])},
+    {name:'3학년 2반',text:tsv([
+      ['번호','성명','방과후 신청','성별','보호자 연락처'],
+      ['1','강시우','축구','남','010-0000-0201'],
+      ['2','한도윤','로봇과학','남','010-0000-0202'],
+      ['3','서지안','바이올린','여','010-0000-0203'],
+      ['4','오다온','축구','','010-0000-0204'],
+      ['5','임채원','로봇과학','여','010-0000-0205']])},
+    {name:'3학년 3반',text:tsv([
+      ['번호','이름','성별','보호자 연락처','방과후 신청','비고'],
+      ['1','문하린','여','010-0000-0301','바이올린',''],
+      ['2','송유찬','남','010-0000-0302','축구','늦봄 전입'],
+      ['3','윤하은','여','010-0000-0106','로봇과학','1반 명단과 확인'],
+      ['4','배수아','여','','바이올린',''],
+      ['5','조은호','남','010-0000-0305','로봇과학','']])}
+  ];
+
+  var sources=[];
+  var view='merge', splitCol=null, splitVal=null, dupKeys=null, skipBlank=null;
+  var lastTable={head:[],rows:[]}, lastName='합친명단';
+
+  // ---------- 파싱 ----------
+  function parseText(text){
+    text=text.replace(/^﻿/,'').replace(/\r\n?/g,'\n');
+    var first=text.split('\n')[0]||'';
+    var delim=first.indexOf('\t')>=0?'\t':(first.indexOf(',')>=0?',':'\t');
+    var rows=[],row=[],cell='',q=false;
+    for(var i=0;i<text.length;i++){
+      var ch=text[i];
+      if(q){
+        if(ch==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; }
+        else cell+=ch;
+      } else if(ch==='"' && cell===''){ q=true; }
+      else if(ch===delim){ row.push(cell); cell=''; }
+      else if(ch==='\n'){ row.push(cell); rows.push(row); row=[]; cell=''; }
+      else cell+=ch;
+    }
+    if(cell!==''||row.length){row.push(cell);rows.push(row);}
+    rows=rows.filter(function(r){return r.some(function(c){return c.trim()!=='';});});
+    return rows.map(function(r){return r.map(function(c){return c.trim();});});
+  }
+
+  var ALIAS={'성명':'이름','학생명':'이름','학생이름':'이름','성함':'이름',
+    '출석번호':'번호','번':'번호','연번':'번호',
+    '보호자전화':'보호자연락처','학부모연락처':'보호자연락처','보호자휴대폰':'보호자연락처','보호자번호':'보호자연락처',
+    '전화번호':'연락처','휴대폰':'연락처','핸드폰':'연락처','휴대전화':'연락처',
+    '방과후':'방과후신청','방과후강좌':'방과후신청','신청강좌':'방과후신청'};
+  function keyOf(h){var k=h.replace(/\s+/g,''); return ALIAS[k]||k;}
+
+  function merge(){
+    var cols=[],colKey={},notes=[],rows=[];
+    sources.forEach(function(s,si){
+      var g=parseText(s.text); s.rowCount=Math.max(0,g.length-1); s.colCount=g[0]?g[0].length:0;
+      if(!g.length) return;
+      var idx=g[0].map(function(h,i){
+        var k=keyOf(h||('열'+(i+1)));
+        if(!(k in colKey)){colKey[k]=cols.length;cols.push(h||('열'+(i+1)));}
+        else if(cols[colKey[k]].replace(/\s+/g,'')!==h.replace(/\s+/g,'')) notes.push('‘'+s.name+'’의 ‘'+h+'’ → ‘'+cols[colKey[k]]+'’ 열로 맞춤');
+        return colKey[k];
+      });
+      for(var r=1;r<g.length;r++){
+        var obj={src:si,cells:[]};
+        idx.forEach(function(ci,j){obj.cells[ci]=g[r][j]||'';});
+        rows.push(obj);
+      }
+    });
+    rows.forEach(function(o){for(var i=0;i<cols.length;i++) if(o.cells[i]===undefined) o.cells[i]='';});
+    // 중간에 새 열이 생긴 표는 "없는 열" 안내
+    sources.forEach(function(s,si){
+      var g=parseText(s.text); if(!g.length) return;
+      var have={}; g[0].forEach(function(h){have[keyOf(h)]=1;});
+      var miss=cols.filter(function(c){return !have[keyOf(c)];});
+      if(miss.length) notes.push('‘'+s.name+'’에는 ‘'+miss.join(', ')+'’ 열이 없어 빈칸으로 둠');
+    });
+    return {cols:cols,rows:rows,notes:notes};
+  }
+
+  // ---------- 화면 ----------
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  function renderSources(){
+    $('srcList').innerHTML=sources.map(function(s,i){
+      return '<div class="src" style="--c:'+COLORS[i%COLORS.length]+'"><div class="src-h">'+
+        '<input value="'+esc(s.name)+'" data-i="'+i+'" data-f="name" aria-label="출처 이름">'+
+        '<span class="meta" id="meta'+i+'"></span>'+
+        '<button class="x" data-del="'+i+'" type="button" title="이 표 빼기" aria-label="이 표 빼기">✕</button></div>'+
+        '<textarea data-i="'+i+'" data-f="text" spellcheck="false" placeholder="엑셀에서 복사한 표를 붙여 넣으세요" aria-label="'+esc(s.name)+' 표 내용">'+esc(s.text)+'</textarea></div>';
+    }).join('');
+  }
+
+  function tableHtml(head,rows,opt){
+    opt=opt||{};
+    if(!rows.length) return '<div class="empty">'+(opt.empty||'표를 붙여 넣으면 여기에 나타나요.')+'</div>';
+    var h='<table class="t"><thead><tr><th class="rn">#</th>'+head.map(function(c,i){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>';
+    rows.forEach(function(r,ri){
+      h+='<tr class="'+(r.cls||'')+'"><td class="rn">'+(ri+1)+'</td>'+r.cells.map(function(c,ci){
+        if(ci===0 && opt.srcCol) return '<td class="srccell" style="--c:'+COLORS[r.src%COLORS.length]+'"><span>'+esc(c)+'</span></td>';
+        var cls=[]; if(opt.blank && c==='' && (!opt.chk||opt.chk[ci-1])) cls.push('blank'); if(opt.keys && opt.keys[ci]) cls.push('key');
+        return '<td class="'+cls.join(' ')+'">'+esc(c)+'</td>';
+      }).join('')+'</tr>';
+    });
+    return h+'</tbody></table>';
+  }
+
+  function render(){
+    var M=merge();
+    sources.forEach(function(s,i){var m=$('meta'+i); if(m) m.textContent=s.rowCount+'행 · '+s.colCount+'열';});
+    $('srcCount').textContent=sources.length+'개';
+    var head=['출처'].concat(M.cols);
+    var all=M.rows.map(function(o){return {src:o.src,cells:[sources[o.src].name].concat(o.cells)};});
+
+    // 중복
+    if(!dupKeys){ dupKeys={}; M.cols.forEach(function(c){var k=keyOf(c); if(k==='이름'||k==='보호자연락처'||k==='연락처') dupKeys[k]=true;}); }
+    var keyIdx=[]; M.cols.forEach(function(c,i){if(dupKeys[keyOf(c)]) keyIdx.push(i);});
+    var groups={},dupRows=[],dupCount=0;
+    if(keyIdx.length){
+      M.rows.forEach(function(o,ri){
+        var key=keyIdx.map(function(i){return o.cells[i].replace(/\s+/g,'');}).join('|');
+        if(key.replace(/\|/g,'')==='') return;
+        (groups[key]=groups[key]||[]).push(ri);
+      });
+    }
+    var gi=0;
+    Object.keys(groups).forEach(function(k){
+      if(groups[k].length<2) return;
+      dupCount+=groups[k].length-1;
+      groups[k].forEach(function(ri){var r=all[ri];dupRows.push({src:r.src,cells:r.cells,cls:'dup'+(gi%2?' alt':'')});});
+      gi++;
+    });
+    // 빈칸
+    if(!skipBlank){ skipBlank={}; M.cols.forEach(function(c){if(/비고|메모|특이/.test(c)) skipBlank[keyOf(c)]=true;}); }
+    var chk=M.cols.map(function(c){return !skipBlank[keyOf(c)];});
+    var blankRows=all.filter(function(r){return r.cells.slice(1).some(function(c,i){return chk[i]&&c==='';});});
+    var blankPerCol=M.cols.map(function(c,i){return chk[i]?M.rows.filter(function(o){return o.cells[i]==='';}).length:0;});
+    var blankTotal=blankPerCol.reduce(function(a,b){return a+b;},0);
+    $('bDup').textContent=dupCount; $('bDup').className='b'+(dupCount?' hot':'');
+    $('bBlank').textContent=blankTotal; $('bBlank').className='b'+(blankTotal?' hot':'');
+
+    var opts='',notes='',out='',groupsHtml='',tbl={head:head,rows:all};
+    $('allBtn').hidden=true;
+    if(view==='merge'){
+      opts='<span class="stat">표 <b>'+sources.length+'</b>개 → <b>'+all.length+'</b>행 × <b>'+head.length+'</b>열로 합침</span>'+
+        '<label><input type="checkbox" id="optSrc"'+(window.__noSrc?'':' checked')+'> 출처 열 넣기</label>';
+      notes=M.notes.join(' · ');
+      if(window.__noSrc){tbl={head:M.cols,rows:M.rows.map(function(o){return {src:o.src,cells:o.cells};})};}
+      out=tableHtml(tbl.head,tbl.rows,{srcCol:!window.__noSrc});
+      lastName='합친명단';
+    } else if(view==='split'){
+      var cand=head;
+      if(splitCol===null || cand.indexOf(splitCol)<0){ splitCol=cand.indexOf('방과후 신청')>=0?'방과후 신청':cand[0]; }
+      var ci=head.indexOf(splitCol);
+      var byVal={},order=[];
+      all.forEach(function(r){var v=r.cells[ci]||'(빈칸)'; if(!byVal[v]){byVal[v]=[];order.push(v);} byVal[v].push(r);});
+      if(splitVal===null||!byVal[splitVal]) splitVal=order[0]||null;
+      opts='<label>기준 열 <select id="splitSel">'+cand.map(function(c){return '<option'+(c===splitCol?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></label>'+
+        '<span class="stat">→ <b>'+order.length+'</b>개 묶음</span>';
+      groupsHtml=order.map(function(v){return '<button type="button" class="gchip'+(v===splitVal?' on':'')+'" data-g="'+esc(v)+'">'+esc(v)+' ('+byVal[v].length+')</button>';}).join('');
+      tbl={head:head,rows:splitVal?byVal[splitVal]:[]};
+      out=tableHtml(head,tbl.rows,{srcCol:true});
+      lastName=splitCol+'_'+(splitVal||'');
+      $('allBtn').hidden=order.length<2;
+      window.__split={head:head,byVal:byVal,order:order,col:splitCol};
+    } else if(view==='dup'){
+      opts='<span>같은 사람으로 볼 기준:</span>'+M.cols.map(function(c){var k=keyOf(c);return '<label><input type="checkbox" data-key="'+esc(k)+'"'+(dupKeys[k]?' checked':'')+'> '+esc(c)+'</label>';}).join('');
+      notes=dupCount? '기준이 같은 행 '+(dupCount+gi)+'개(중복 '+dupCount+'건)를 찾았어요. 같은 색끼리 같은 사람이에요.' : '';
+      var kmap={}; keyIdx.forEach(function(i){kmap[i+1]=true;});
+      out=tableHtml(head,dupRows,{srcCol:true,keys:kmap,empty:keyIdx.length?'🎉 중복된 행이 없어요.':'기준 열을 하나 이상 골라 주세요.'});
+      tbl={head:head,rows:dupRows};
+      lastName='중복행';
+      if(dupCount) opts+='<button class="btn small" id="dedupBtn" type="button">중복 빼고 합친 표 받기</button>';
+      window.__dedup=function(){
+        var seen={},keep=[];
+        all.forEach(function(r,ri){
+          var key=keyIdx.map(function(i){return M.rows[ri].cells[i].replace(/\s+/g,'');}).join('|');
+          if(key.replace(/\|/g,'')!=='' && seen[key]) return; seen[key]=1; keep.push(r);
+        });
+        return {head:head,rows:keep};
+      };
+    } else {
+      opts='<span class="stat">빈칸 <b>'+blankTotal+'</b>개 · 빈칸 있는 행 <b>'+blankRows.length+'</b>개</span>'+
+        '<span>검사할 열:</span>'+M.cols.map(function(c,i){var k=keyOf(c);return '<label><input type="checkbox" data-bk="'+esc(k)+'"'+(chk[i]?' checked':'')+'> '+esc(c)+(blankPerCol[i]?' <b style="color:var(--warn)">'+blankPerCol[i]+'</b>':'')+'</label>';}).join('');
+      out=tableHtml(head,blankRows,{srcCol:true,blank:true,chk:chk,empty:'🎉 빈칸이 하나도 없어요.'});
+      tbl={head:head,rows:blankRows};
+      lastName='빈칸있는행';
+    }
+    $('opts').innerHTML=opts; $('notes').textContent=notes;
+    $('groups').hidden=!groupsHtml; $('groups').innerHTML=groupsHtml;
+    $('tableWrap').innerHTML=out;
+    lastTable=tbl;
+  }
+
+  // ---------- 내보내기 ----------
+  // 엑셀 수식 주입 막기: =, +, -, @, 탭, CR 로 시작하는 값은 앞에 ' 를 붙여 글자로 저장
+  function csvCell(c){c=String(c);if(/^[=+\-@\t\r]/.test(c))c="'"+c;return /[",\n\r]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}
+  function toCsv(t){return '﻿'+[t.head].concat(t.rows.map(function(r){return r.cells;})).map(function(r){return r.map(csvCell).join(',');}).join('\r\n')+'\r\n';}
+  function toTsv(t){return [t.head].concat(t.rows.map(function(r){return r.cells;})).map(function(r){return r.map(function(c){return String(c).replace(/[\t\n]/g,' ');}).join('\t');}).join('\n');}
+  function safeName(s){return s.replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'');}
+  function download(name,text){
+    var blob=new Blob([text],{type:'text/csv;charset=utf-8'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=safeName(name)+'.csv';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},3000);
+  }
+  function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1900);}
+  function copyText(s){
+    if(navigator.clipboard&&window.isSecureContext) return navigator.clipboard.writeText(s);
+    return new Promise(function(ok,no){var ta=document.createElement('textarea');ta.value=s;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')?ok():no();}catch(e){no(e);}ta.remove();});
+  }
+  $('csvBtn').addEventListener('click',function(){
+    if(!lastTable.rows.length){toast('내려받을 행이 없어요');return;}
+    download(lastName,toCsv(lastTable)); toast('‘'+safeName(lastName)+'.csv’ 저장 ('+lastTable.rows.length+'행)');
+  });
+  $('copyBtn').addEventListener('click',function(){
+    if(!lastTable.rows.length){toast('복사할 행이 없어요');return;}
+    copyText(toTsv(lastTable)).then(function(){toast('복사 완료! 엑셀 A1 칸에 붙여 넣으세요');},function(){toast('복사에 실패했어요');});
+  });
+  $('allBtn').addEventListener('click',function(){
+    var S=window.__split; if(!S) return;
+    S.order.forEach(function(v,i){setTimeout(function(){download(S.col+'_'+v,toCsv({head:S.head,rows:S.byVal[v]}));},i*350);});
+    toast(S.order.length+'개 파일을 차례로 내려받아요');
+  });
+
+  // ---------- 이벤트 ----------
+  var timer;
+  $('srcList').addEventListener('input',function(e){
+    var i=e.target.getAttribute('data-i'),f=e.target.getAttribute('data-f'); if(i===null) return;
+    sources[i][f]=e.target.value; clearTimeout(timer); timer=setTimeout(render,120);
+  });
+  $('srcList').addEventListener('click',function(e){
+    var d=e.target.getAttribute('data-del'); if(d===null) return;
+    sources.splice(+d,1); renderSources(); render();
+  });
+  $('addBtn').addEventListener('click',function(){
+    sources.push({name:'표 '+(sources.length+1),text:''}); renderSources(); render();
+    var tas=$('srcList').querySelectorAll('textarea'); tas[tas.length-1].focus();
+  });
+  $('fileBtn').addEventListener('click',function(){$('fileIn').click();});
+  $('fileIn').addEventListener('change',function(e){
+    var files=[].slice.call(e.target.files);
+    Promise.all(files.map(function(f){return f.arrayBuffer().then(function(buf){
+      var txt; try{txt=new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(err){txt=new TextDecoder('euc-kr').decode(buf);}
+      return {name:f.name.replace(/\.(csv|tsv|txt)$/i,''),text:txt};
+    });})).then(function(list){
+      list.forEach(function(s){sources.push(s);}); renderSources(); render(); toast(list.length+'개 파일을 불러왔어요');
+    });
+    e.target.value='';
+  });
+  document.querySelector('.tabs').addEventListener('click',function(e){
+    var b=e.target.closest('.tab'); if(!b) return;
+    view=b.getAttribute('data-v');
+    [].forEach.call(document.querySelectorAll('.tab'),function(t){t.classList.toggle('on',t===b);});
+    render();
+  });
+  $('opts').addEventListener('change',function(e){
+    if(e.target.id==='optSrc'){window.__noSrc=!e.target.checked;render();}
+    else if(e.target.id==='splitSel'){splitCol=e.target.value;splitVal=null;render();}
+    else if(e.target.getAttribute('data-bk')){skipBlank[e.target.getAttribute('data-bk')]=!e.target.checked;render();}
+    else if(e.target.getAttribute('data-key')){dupKeys[e.target.getAttribute('data-key')]=e.target.checked;render();}
+  });
+  $('opts').addEventListener('click',function(e){
+    if(e.target.id==='dedupBtn'){var t=window.__dedup();download('중복제거_합친명단',toCsv(t));toast('중복을 뺀 '+t.rows.length+'행을 저장했어요');}
+  });
+  $('groups').addEventListener('click',function(e){var g=e.target.closest('.gchip'); if(!g) return; splitVal=g.getAttribute('data-g'); render();});
+  $('sampleBtn').addEventListener('click',function(){
+    sources=SAMPLE.map(function(s){return {name:s.name,text:s.text};}); dupKeys=null; skipBlank=null; splitCol=null; splitVal=null; renderSources(); render();
+  });
+
+  window.__tm={parse:parseText,merge:merge,toCsv:toCsv,get table(){return lastTable;},setView:function(v){view=v;render();},setSplit:function(c,v){splitCol=c;splitVal=v;render();}};
+  sources=SAMPLE.map(function(s){return {name:s.name,text:s.text};});
+  renderSources(); render();
+})();
+</script>
+</body>
+</html>

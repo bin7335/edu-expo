@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>딸깍 QR - 지금 보는 페이지를 QR로 띄우는 크롬 확장 체험</title>
+<meta name="description" content="툴바 아이콘을 한 번 누르면 지금 보는 페이지 주소가 큰 QR로 뜨는 교사용 크롬 확장. 교실 TV 전체 화면, PNG 저장, 추적 꼬리표 지우기까지 설치 없이 바로 체험해 보세요.">
+<style>
+  :root{--bg:#eef0fb;--ink:#1f2937;--muted:#6b7280;--line:#e5e7eb;--brand:#4f46e5;--brand2:#7c3aed}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:14px;padding:10px 24px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff}
+  .logo{width:42px;height:42px;border-radius:11px;background:#fff;flex:none;position:relative}
+  .logo::before{content:"";position:absolute;inset:9px;background:
+    linear-gradient(var(--brand),var(--brand)) 0 0/10px 10px no-repeat,linear-gradient(var(--brand),var(--brand)) 100% 0/10px 10px no-repeat,
+    linear-gradient(var(--brand),var(--brand)) 0 100%/10px 10px no-repeat,linear-gradient(#facc15,#facc15) 100% 100%/7px 7px no-repeat}
+  h1{margin:0;font-size:24px;letter-spacing:-.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;gap:4px;background:#1e1b4b;color:#c7d2fe;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px}
+  header p{margin:2px 0 0;font-size:14px;opacity:.92}
+  .dl{margin-left:auto;flex:none;background:#fff;color:var(--brand);font-weight:800;font-size:15px;text-decoration:none;padding:10px 16px;border-radius:12px;box-shadow:0 2px 0 #0002}
+  .dl:hover{filter:brightness(.96)}
+
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;padding:12px 24px;max-width:1400px;margin:0 auto}
+  .how{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;margin-bottom:8px}
+  .how b{background:#e0e7ff;color:#3730a3;border-radius:999px;padding:2px 9px;font-size:13px}
+  .how .go{background:#4f46e5;color:#fff}
+  .side .how{margin:0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px 12px;font-size:13px}
+  kbd{font:inherit;font-size:12px;border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#fff}
+
+  /* 가짜 브라우저 */
+  .browser{background:#fff;border:1px solid #d1d5db;border-radius:12px;box-shadow:0 6px 20px #4f46e514;position:relative}
+  .tabs{display:flex;gap:4px;background:#e5e7eb;padding:6px 8px 0;border-radius:12px 12px 0 0;overflow-x:auto}
+  .tab{font:inherit;font-size:12px;border:0;background:#d1d5db;color:#374151;border-radius:8px 8px 0 0;padding:6px 12px;cursor:pointer;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none}
+  .tab.on{background:#fff;font-weight:700}
+  .addr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line)}
+  .addr span{flex:1;min-width:0;background:#f3f4f6;border-radius:999px;padding:5px 12px;font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .addr i{font-style:normal;font-size:15px;opacity:.7}
+  .tool{width:32px;height:32px;border-radius:8px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;position:relative;flex:none}
+  .tool:hover,.tool.on{background:#e0e7ff}
+  .tool .ico{width:20px;height:20px;border-radius:5px;background:var(--brand);position:relative}
+  .tool .ico::before{content:"";position:absolute;inset:4px;background:
+    linear-gradient(#fff,#fff) 0 0/5px 5px no-repeat,linear-gradient(#fff,#fff) 100% 0/5px 5px no-repeat,
+    linear-gradient(#fff,#fff) 0 100%/5px 5px no-repeat,linear-gradient(#facc15,#facc15) 100% 100%/4px 4px no-repeat}
+  .tool.pulse::after{content:"";position:absolute;inset:-3px;border-radius:10px;border:2px solid #818cf8;animation:pulse 1.6s ease-out infinite}
+  @keyframes pulse{0%{opacity:1;transform:scale(.9)}100%{opacity:0;transform:scale(1.35)}}
+  .hint{position:absolute;right:52px;top:72px;background:#1e1b4b;color:#fff;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;pointer-events:none;z-index:3}
+  .hint[hidden]{display:none}
+  .page{padding:18px 26px;height:560px;overflow:auto;line-height:1.75;font-size:15px;border-radius:0 0 12px 12px}
+  .page .site{font-size:12px;color:#6d28d9;font-weight:800;letter-spacing:.3px}
+  .page h2{margin:2px 0 6px;font-size:22px}
+  .page p{margin:0 0 10px;max-width:520px}
+  .page .box{max-width:520px;background:#f5f3ff;border-radius:12px;padding:10px 14px;margin:8px 0}
+  .page.special{background:#f8fafc;color:#334155}
+  .page.special h2{font-size:20px}
+  .page .set{max-width:520px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .page .set div{padding:10px 14px}
+  .page .set div+div{border-top:1px solid var(--line)}
+
+  .popwrap{position:absolute;right:8px;top:74px;width:336px;z-index:4;background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:10px 14px;box-shadow:0 14px 34px #1e1b4b33}
+  .popwrap[hidden]{display:none}
+  .popwrap .pq-canvas{max-width:172px}
+  .popwrap .pq-box{min-height:120px;padding:4px}
+  .popwrap .pq-head{margin-bottom:8px}
+  .popwrap .pq-meta{margin:3px 0 6px}
+  .popwrap .pq-check{margin-top:7px;padding:5px 9px}
+  .popwrap .pq-edit{margin-top:7px}
+  .popwrap .pq-msg{min-height:0;margin-top:4px}
+
+  .side{display:grid;gap:12px;align-content:start}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.55}
+  .card h3{margin:0 0 6px;font-size:14px}
+  .card ol{margin:0;padding-left:20px}
+  .card code{background:#eef2ff;color:#4338ca;border-radius:5px;padding:0 4px}
+  .card .safe{margin:8px 0 0;color:#3730a3;background:#eef2ff;border-radius:8px;padding:6px 8px}
+  footer{text-align:right;padding:0 24px 18px;font-size:13px}
+  footer a{color:var(--muted);text-decoration:none}
+  footer a:hover{color:var(--brand)}
+
+  .bigwrap{position:fixed;inset:0;z-index:50;background:#fff}
+  .bigwrap[hidden]{display:none}
+  .bigwrap .newtab{position:absolute;top:12px;left:14px;z-index:2;font-size:12px;font-weight:700;color:#6b7280;background:#f3f4f6;border-radius:999px;padding:3px 10px}
+  #big{position:absolute;inset:0}
+
+  @media (max-width:900px){
+    header{flex-wrap:wrap;padding:12px 14px}
+    h1{font-size:21px}
+    .dl{margin-left:0}
+    .wrap{grid-template-columns:minmax(0,1fr);padding:12px}
+    .page{height:auto;max-height:360px;padding:12px 14px}
+    .popwrap{position:static;width:auto;margin:8px;box-shadow:0 6px 18px #1e1b4b22}
+    .hint{display:none}
+    .bigwrap .newtab{top:auto;bottom:10px}
+  }
+/*@@CSS@@*/
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true"></div>
+  <div>
+    <h1>딸깍 QR <span class="badge">🧩 크롬 확장</span></h1>
+    <p>아이콘 한 번 딸깍 → 지금 보는 페이지가 큰 QR로. 학생은 폰 카메라로 찍기만!</p>
+  </div>
+  <a class="dl" href="../extensions/page-qr.zip" download>⬇ zip 내려받기</a>
+</header>
+
+<div class="wrap">
+  <main>
+    <div class="browser" id="browser">
+      <div class="tabs" id="tabs" role="tablist" aria-label="가짜 브라우저 탭"></div>
+      <div class="addr">
+        <i aria-hidden="true">←</i><i aria-hidden="true">⟳</i>
+        <span id="addr"></span>
+        <i aria-hidden="true">☆</i>
+        <button type="button" class="tool on" id="tool" title="딸깍 QR (Alt+Q)" aria-label="딸깍 QR 팝업 열기" aria-expanded="true"><span class="ico"></span></button>
+        <i aria-hidden="true">⋮</i>
+      </div>
+      <div class="hint" id="hint" hidden>👆 이 아이콘을 눌러 보세요</div>
+      <div class="popwrap" id="popwrap"><div id="popup"></div></div>
+      <article class="page" id="page"></article>
+    </div>
+  </main>
+
+  <aside class="side">
+    <div class="how">
+      <b>체험</b> <span>① 툴바 QR 아이콘 또는 <kbd>Alt</kbd>+<kbd>Q</kbd></span> <span>② 탭 바꿔 보기 ③ <b class="go">🖥️ 크게 보기</b></span>
+    </div>
+    <div class="card">
+      <h3>💡 교실에서 이렇게</h3>
+      <ol>
+        <li>보여 줄 사이트를 열고 아이콘 <b>딸깍</b> (또는 <kbd>Alt</kbd>+<kbd>Q</kbd>)</li>
+        <li><b>🖥️ 크게 보기</b> → 교실 TV·전자칠판에 화면 가득 QR</li>
+        <li>학생은 폰 카메라로 찍으면 바로 접속</li>
+      </ol>
+      <p class="safe">✂️ 주소 끝에 붙은 <code>utm_</code>·<code>fbclid</code> 같은 추적 꼬리표는 자동으로 지워 QR을 덜 촘촘하게 만들어요.</p>
+    </div>
+    <div class="card">
+      <h3>⚙️ 내 크롬에 설치 (3단계)</h3>
+      <ol>
+        <li>위 <b>zip 내려받기</b> → 압축 풀기</li>
+        <li>주소창에 <code>chrome://extensions</code> → 오른쪽 위 <b>개발자 모드</b> 켜기</li>
+        <li><b>압축해제된 확장 프로그램 로드</b> → 푼 폴더 고르기</li>
+      </ol>
+      <p class="safe">🔐 권한은 <code>activeTab</code> 하나 — 아이콘을 누른 그 탭의 주소만 읽고, 아무 데도 보내지 않아요.</p>
+    </div>
+  </aside>
+</div>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<div class="bigwrap" id="bigwrap" hidden>
+  <span class="newtab">확장의 「크게 보기」 새 탭 · Esc로 닫기</span>
+  <div id="big"></div>
+</div>
+
+<script>
+/*@@CORE@@*/
+</script>
+<script>
+/*@@UI@@*/
+</script>
+<script>
+// ---------------- 체험 페이지 전용: 가짜 브라우저 탭 ----------------
+(() => {
+  const $ = id => document.getElementById(id);
+  // 체험용 가상의 페이지 (실제 사이트 아님). body는 이 파일에 고정된 문구만 사용
+  const PAGES = [
+    { title: '4학년 2반 학급 누리집 - 햇살초등학교',
+      url: 'https://example.org/class/4-2/notice?utm_source=newsletter&utm_medium=email&utm_campaign=nov&fbclid=IwAR0dEmO123',
+      body: `<div class="site">햇살초등학교 · 4학년 2반</div><h2>📢 이번 주 알림장</h2>
+        <div class="box">✏️ 금요일까지 <b>과학 관찰 일지</b> 사진을 올려 주세요.<br>🎒 목요일 현장체험학습: 편한 운동화, 물병 챙기기</div>
+        <p>이 주소에는 가정통신문 메일에서 따라온 <b>추적 꼬리표</b>(utm_…, fbclid)가 붙어 있어요. 팝업의 "추적 꼬리표 지우기"를 껐다 켜 보면 QR 칸 수가 달라져요.</p>` },
+    { title: '물의 순환 실험 영상 - 햇살 과학관',
+      url: 'https://example.org/science/water-cycle-video',
+      body: `<div class="site">햇살 과학관 · 영상 자료</div><h2>🎬 지퍼백으로 만드는 작은 물의 순환</h2>
+        <div class="box">▶ 4분 12초 · 준비물: 지퍼백, 물, 파란 물감, 테이프</div>
+        <p>창문에 붙인 지퍼백 속 물이 햇빛을 받아 증발하고, 다시 물방울로 맺혀 떨어지는 모습을 관찰해요.</p>
+        <p>짧은 주소라 QR 칸이 적어서 교실 뒤쪽에서도 잘 찍혀요.</p>` },
+    { title: '현장체험학습 의견 설문',
+      url: 'https://example.org/forms/fieldtrip-2026',
+      body: `<div class="site">햇살초 온라인 설문</div><h2>🚌 현장체험학습 어디로 가고 싶나요?</h2>
+        <div class="box">① 과학관 ② 역사박물관 ③ 수목원 ④ 기타</div>
+        <p>설문 링크를 칠판에 적어 주면 오타가 나기 쉬워요. 「크게 보기」로 띄우면 모두가 1분 안에 접속!</p>` },
+    { title: '설정', url: 'chrome://settings/',
+      body: `<h2>⚙️ 설정</h2><div class="set"><div>나와 Google</div><div>자동 완성 및 비밀번호</div><div>개인 정보 보호 및 보안</div><div>모양</div></div>
+        <p style="margin-top:12px">크롬 설정 같은 특수 페이지는 다른 기기에서 열 수 없어서, 팝업이 안내 문구를 보여 줘요.</p>`, special: true },
+  ];
+  let cur = 0;
+
+  function renderPage(){
+    const tabs = $('tabs');
+    tabs.textContent = '';
+    PAGES.forEach((p, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tab' + (i === cur ? ' on' : ''); b.dataset.i = i;
+      b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === cur);
+      b.textContent = p.title;   // 제목은 textContent로
+      tabs.appendChild(b);
+    });
+    $('addr').textContent = PAGES[cur].url;
+    $('page').innerHTML = PAGES[cur].body;   // 이 파일에 고정된 체험용 문구
+    $('page').classList.toggle('special', !!PAGES[cur].special);
+  }
+  $('tabs').addEventListener('click', e => {
+    const b = e.target.closest('.tab'); if (!b) return;
+    cur = +b.dataset.i; renderPage(); ui.refresh();
+  });
+
+  async function copyText(text){
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (_) {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (_) {}
+      ta.remove(); return ok;
+    }
+  }
+
+  // 크게 보기: 확장에서는 새 탭(big.html?u=…)으로 열리고, 체험에서는 같은 화면 코드를 덮개로 띄움
+  let big = null;
+  function openBig(url, title){
+    const data = PageQR.readBigQuery(PageQR.bigQuery(url, title));   // 확장 big.js와 같은 검사(http/https만)
+    $('bigwrap').hidden = false;
+    if (big) big.destroy();
+    big = PageQRBig.mount($('big'), data, { close: closeBig });
+    big.layout();
+  }
+  function closeBig(){ $('bigwrap').hidden = true; if (big){ big.destroy(); big = null; } $('tool').focus(); }
+
+  const ui = PageQRPopup.mount($('popup'), {
+    getTab: async () => ({ title: PAGES[cur].title, url: PAGES[cur].url }),
+    openBig, copyText,
+  });
+
+  // 툴바 아이콘 = 팝업 열고 닫기
+  function setOpen(open){
+    $('popwrap').hidden = !open;
+    $('tool').classList.toggle('on', open);
+    $('tool').classList.toggle('pulse', !open);
+    $('tool').setAttribute('aria-expanded', open);
+    $('hint').hidden = open;
+    if (open) ui.refresh();
+  }
+  $('tool').addEventListener('click', () => setOpen($('popwrap').hidden));
+  $('page').addEventListener('click', () => { if (!$('popwrap').hidden && innerWidth > 900) setOpen(false); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !$('bigwrap').hidden){ closeBig(); return; }
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.code === 'KeyQ' || e.key === 'q' || e.key === 'Q')){ e.preventDefault(); setOpen($('popwrap').hidden); }
+  });
+
+  renderPage();
+  ui.ready.then(() => {});
+  window.__demo = { ui, pages: PAGES, setOpen, openBig, closeBig, select(i){ cur = i; renderPage(); return ui.refresh(); } };
+})();
+</script>
+</body>
+</html>

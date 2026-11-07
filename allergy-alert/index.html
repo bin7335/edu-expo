@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>냠냠가드 - 급식 알레르기 알리미 (콘셉트)</title>
 <meta name="description" content="학교 급식 공개 식단의 알레르기 번호(1-19)를 우리 아이 정보와 맞춰 위험 메뉴를 미리 알려주는 서비스 콘셉트 페이지">
@@ -37,6 +38,20 @@
   .chips input{display:none}
   .chips label:has(input:checked){background:var(--r);border-color:var(--r);color:#fff;font-weight:700}
   .week{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .wk{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--mut)}
+  .wk button{border:1.5px solid var(--line);background:#fff;border-radius:8px;width:26px;height:24px;cursor:pointer;font-size:11px;color:inherit}
+  .wk button:disabled{opacity:.35;cursor:default}
+  .days{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px}
+  .days button{font:inherit;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:5px 2px;cursor:pointer;line-height:1.2;font-size:13px;font-weight:700;color:inherit}
+  .days button small{display:block;font-size:10.5px;font-weight:600;color:var(--mut)}
+  .days button.warn small{color:#c62026}
+  .days button.on{border-color:#14301f;background:#14301f;color:#fff}
+  .days button.on small{color:#ffcf3f}
+  .days button.off{opacity:.4;cursor:default}
+  .menu{display:grid;grid-template-columns:1fr 1fr;gap:5px;background:#f6f8f4;border-radius:12px;padding:8px;min-height:120px;align-content:start}
+  .menu .dish{margin:0}
+  .menu .meta{grid-column:1/-1;font-size:11.5px;color:var(--mut);padding:0 2px}
+  .src{font-size:10.5px;color:var(--mut);margin:6px 0 0;line-height:1.3}
   .day{background:var(--g2);border-radius:12px;padding:8px 7px}
   .day h4{font-size:12px;color:var(--g);margin-bottom:5px}
   .dish{word-break:break-all;font-size:12.5px;background:#fff;border-radius:7px;padding:5px 6px;margin-bottom:4px;border:1.5px solid transparent;transition:.2s}
@@ -79,6 +94,7 @@
     .wrap{padding:0 16px}
     .hero h1{font-size:34px}
     .week{grid-template-columns:1fr}
+    .menu{grid-template-columns:1fr}
     .day{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
     .day h4{width:100%;margin:0}
     .dish{margin:0}
@@ -89,6 +105,14 @@
     .stats{gap:14px}
   }
 </style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="냠냠가드">
+<meta property="og:description" content="급식 식단의 알레르기 번호를 우리 아이 정보와 맞춰 주의 메뉴만 콕 집어 알림">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/16-allergy-alert.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/allergy-alert/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
 </head>
 <body>
 <div class="wrap">
@@ -111,11 +135,13 @@
     </div>
 
     <div class="mock" id="demo" aria-label="알레르기 알리미 미리보기">
-      <div class="mock-h"><b>① 아이 알레르기 선택</b><small>햇살초등학교 · 이번 주 식단(예시)</small></div>
+      <div class="mock-h"><b>① 아이 알레르기 선택</b><small>경북 안계초등학교 · 실제 급식 식단</small></div>
       <div class="chips" id="chips"></div>
-      <div class="mock-h"><b>② 이번 주 급식</b><small>⚠ 빨간 메뉴 = 주의</small></div>
-      <div class="week" id="week"></div>
+      <div class="mock-h"><b>② 급식 확인</b><span class="wk"><button type="button" id="wPrev" aria-label="이전 주">◀</button><span id="wLbl"></span><button type="button" id="wNext" aria-label="다음 주">▶</button></span></div>
+      <div class="days" id="days" role="tablist"></div>
+      <div class="menu" id="menu"></div>
       <div class="summary" id="summary"></div>
+      <p class="src">자료: 나이스 교육정보 개방 포털(2026-11-07 기준), 경북 안계초등학교 중식 식단(2026.10.26-11.27, 24일)</p>
     </div>
   </header>
 </div>
@@ -168,7 +194,7 @@
       <div><h3>알레르기 체크</h3><p>19개 항목 중 해당하는 것을 고르면 끝. 정보는 기기 안에만 보관하는 방식을 구상합니다.</p></div>
       <div><h3>알림 받기</h3><p>공개된 식단이 갱신될 때마다 주의 메뉴를 자동으로 골라 알려줍니다.</p></div>
     </div>
-    <p class="note">※ 구상: 교육 행정 정보 시스템(NEIS)의 공개 급식 식단 정보(알레르기 번호 포함)를 활용하는 아이디어입니다. 이 페이지는 실제 데이터와 연동되지 않으며, 식단은 모두 가상의 예시입니다. 알레르기 판단은 반드시 학교·의료진 안내를 따르세요.</p>
+    <p class="note">※ 구상: 교육 행정 정보 시스템(NEIS)의 공개 급식 식단 정보(알레르기 번호 포함)를 활용하는 아이디어입니다. 위 미리보기 식단은 경북 안계초등학교의 2026년 10-11월 실제 공개 식단(나이스 교육정보 개방 포털, 2026-11-07 기준)을 페이지 안에 담아 둔 것으로, 실시간 연동은 아닙니다. 알레르기 판단은 반드시 학교·의료진 안내를 따르세요.</p>
   </div>
 </section>
 
@@ -181,28 +207,43 @@
 
 <script>
 const ALG=["난류","우유","메밀","땅콩","대두","밀","고등어","게","새우","돼지고기","복숭아","토마토","아황산류","호두","닭고기","쇠고기","오징어","조개류","잣"];
-const MENU=[
-  ["월",[["현미밥",[]],["쇠고기미역국",[5,6,16]],["돈육김치볶음",[5,6,9,10,13]],["계란말이",[1,5]]]],
-  ["화",[["카레라이스",[2,5,6,10,12]],["유부된장국",[5,6]],["새우튀김",[1,5,6,9]],["요구르트",[2]]]],
-  ["수",[["잡곡밥",[]],["닭곰탕",[15]],["오징어볶음",[5,6,17]],["흰우유",[2]]]],
-  ["목",[["짜장밥",[5,6,10,13]],["달걀국",[1,5]],["땅콩멸치볶음",[4,5,6]],["복숭아",[11]]]],
-  ["금",[["토마토스파게티",[5,6,10,12,16]],["양송이수프",[2,5,6]],["마늘빵",[1,2,6]],["오이피클",[13]]]]
-];
-const chips=document.getElementById('chips'),week=document.getElementById('week'),sum=document.getElementById('summary');
-const saved=JSON.parse(localStorage.getItem('nyamguard')||'[2,9]');
+// 경북 안계초 실제 중식 식단 [월-일, kcal, 급식인원, [[메뉴, [알레르기 번호]]]]
+// 자료: 나이스 교육정보 개방 포털 mealServiceDietInfo (2026-11-07 기준, 2026-10-26 - 11-27, 24일). 메뉴명 끝 학교 내부 숫자는 정리
+const MEALS=[["10-26",590.1,171,[["기장밥",[]],["황태연포탕",[5,6]],["쌈배추무생채",[5,6,13]],["콩단백숯불직화구이잡채",[1,5,6,13]],["더덕튀김",[5,13]],["연근칩",[1,2,5,6,13]],["우유",[2]],["사과",[]]]],["10-28",719.9,151,[["쇠고기주먹밥",[1,2,5,6,9,13,16,18]],["미니우동",[1,2,5,6,7,9,13,18]],["배추김치(자율)",[9]],["우유",[2]],["상하이버터떡",[6]],["하우스귤",[]],["닭꼬치구이",[5,6,12,13,15]]]],["10-29",702,151,[["찰보리밥",[]],["짬뽕국",[5,6,8,9,10,13,16,17,18]],["깻잎찜",[5,6,13]],["콩나물무침",[5,6,13]],["함박스테이크(약식)",[1,2,5,6,10,12,15,16]],["배추김치(자율)",[9]],["스테이크소스",[1,2,5,6,12,13,16]],["우유",[2]],["단감",[]]]],["10-30",680.9,171,[["소보로비빔밥",[1,5,6,9,13,16]],["홍합미역국",[5,6,18]],["고추찜무침(자율)",[5,6,13]],["회오리감자",[1,2,5,6,13]],["배추김치(자율)",[9]],["우유",[2]],["샤인머스켓",[]]]],["11-02",714.3,171,[["발아현미밥",[]],["어묵무국",[1,5,6]],["부추양파초절이",[5,6,13]],["슈바인 족발",[10]],["배추김치(자율)",[9]],["배추김치담기",[9]],["우유",[2]],["캐플주스",[13]],["초코크림찹쌀떡",[1,2,5,6]],["상추,깻잎쌈",[]],["쌈장(자율)",[5,6,13]]]],["11-03",577.6,171,[["차조밥",[]],["육개장(초)",[5,6,13,16]],["달걀찜",[1,9]],["단배추무침(자)",[]],["하얀콩나물무침",[5]],["양념치킨(초)",[5,6,12,13,15]],["우유",[2]],["귤로향",[]]]],["11-04",668.3,171,[["보리밥",[]],["콩가루배추국",[5,6]],["비빔막국수",[3,5,6,13]],["배추김치",[9]],["우유",[2]],["친환경사과",[]],["돼지고기수육",[5,6,10,13]]]],["11-05",688.9,171,[["강황밥",[]],["순대국",[2,5,6,9,10,13,16]],["등갈비김치찜",[10,13]],["부추무침",[13]],["배추전",[1,5,6]],["우유",[2]],["엔요요구르트",[2]],["오이당근스틱/쌈장(자율)",[4,5,6,13]]]],["11-06",719.3,171,[["기장밥",[]],["크림스파게티",[1,2,5,6,10,13]],["들깨미역국",[5,6,16]],["메추리알새송이장조림",[1,5,6,13]],["아삭이고추/쌈장(자율)",[5,6,13]],["단배추열무겉절이",[13]],["우유",[2]],["회오리감자/시즈닝",[5,6]]]],["11-09",602.3,171,[["잡곡밥",[5]],["맑은콩나물무국",[5]],["도토리묵무침",[]],["치커리무생채(초)",[13]],["안동찜닭",[5,6,12,13,15,18]],["우유",[2]],["송편",[]]]],["11-10",609.7,171,[["발아현미밥",[]],["근대된장국",[5,6]],["참나물된장무침(초)",[5,6]],["건파래자반",[5,13]],["캠핑구이(소시지)",[2,5,6,10,15,16]],["우유",[2]],["배(신고)",[]],["상추쌈/깻잎쌈(자율)",[]]]],["11-11",780.2,171,[["김밥볶음밥",[1,2,5,6,10,13,15,16,18]],["유부장국",[5,6]],["가래떡떡볶이",[1,2,5,6,10,12,13,15,16,18]],["레몬크림새우/양상추샐러드",[1,2,5,6,9,13]],["우유",[2]],["사과주스",[13]]]],["11-12",693.4,171,[["기장밥",[]],["홍합미역국",[5,6,18]],["쌈배추무생채",[5,6,13]],["열탄오리불고기",[5,6,13]],["감자비트전",[5,6]],["배추김치(자율)",[9]],["우유",[2]],["샤인머스켓",[]]]],["11-13",713.5,171,[["소보로비빔밥",[1,5,6,9,13,16]],["크로플/생크림",[1,2,5,6,13]],["팽이버섯미소장국",[5,6]],["충무식오징어무침",[5,6,13,17]],["배추김치(자율)",[9]],["우유",[2]],["자두주스",[]]]],["11-16",725,171,[["흑미밥",[]],["닭봉데리야끼조림",[5,6,13,15,18]],["꽈리고추찜(양념-자율)",[5,6]],["단배추오이겉절이(초)",[13]],["달걀누들떡볶이",[1,2,5,6,12,13,16,18]],["우유",[2]],["꽃게탕",[5,6,8]],["골드키위",[]]]],["11-17",811.2,171,[["기장밥",[]],["쇠고기무맑은국",[5,6,16]],["미트볼케첩조림",[1,2,5,6,10,12,13,15,16,18]],["깻잎김치",[13]],["숙주미나리무침",[]],["치즈스틱",[1,2,5,6]],["우유",[2]],["감귤쥬스",[13]]]],["11-18",714.1,171,[["쌀밥",[]],["난",[]],["사과샐러드&애플망고드레싱",[1,2,5,6,12]],["인도식버터커리(마크니)",[2,5,6,10,12,13,16,18]],["탄두리닭다리구이",[2,5,6,12,13,15,16]],["우유",[2]],["요거트라씨",[2,5,6]]]],["11-19",729.9,171,[["클로렐라밥",[]],["건새우시금치된장국(초)",[5,6,9]],["하트뮤즐리멸치볶음",[5,6,13]],["오향장육/무쌈",[5,6,10,13]],["비빔만두",[1,5,6,10,13,16,18]],["우유",[2]],["쌈장(자율)",[5,6,13]],["오렌지",[]],["양배추숙쌈(자율)",[]]]],["11-20",730.5,171,[["차조밥",[]],["감자어묵국",[1,5,6]],["열무배추겉절이",[5,6,13]],["콩나물잡채",[5,6,10,13,16]],["배추김치(자율)",[9]],["우유",[2]],["국산바나나",[]],["바베큐폭립",[10]]]],["11-23",786.1,171,[["기장밥",[]],["연근조림(자율)",[5,6,13]],["미나리숙주나물",[]],["돈육버섯불고기(간장)",[5,6,10,13]],["만두강정",[1,5,6,10,12,13,16,18]],["배추김치(자율)",[9]],["우유",[2]],["귤",[]],["부대찌개/라면사리",[1,2,5,6,10,12,13,15,16]]]],["11-24",663.8,171,[["잡곡밥",[5]],["황기닭곰탕",[15]],["도라지오이무침",[5,6,13]],["빨간콩나물무침",[5]],["오징어떡볶음",[5,6,17]],["연근칩꿔바로우",[1,5,6,10,13]],["우유",[2]],["멜론",[]]]],["11-25",742.1,171,[["영양잡곡밥",[5]],["가자미미역국",[5,6]],["LA돈육갈비조림",[2,5,6,10,13,18]],["시금치깨소스무침",[1,5,6,13]],["오징어김치전",[1,5,6]],["초코바스크치즈케이크",[1,2,5,6,13]],["우유",[2]]]],["11-26",635.8,171,[["강황밥",[]],["쇠고기무맑은국국",[5,16]],["깻잎찜",[5,6,13]],["파래멸치볶음",[5,6,13]],["마라떡볶이",[1,2,5,6,10,13,15,16]],["배추김치(자율)",[9]],["우유",[2]],["배(신고)",[]]]],["11-27",461.1,171,[["불고기주먹밥",[1,2,5,6,10]],["던킨먼치킨도넛",[1,2,5,6]],["배추김치(자율)",[9]],["우유",[2]],["딸기",[]],["빅딸바라떼",[2]]]]];
+const YEAR=2026, WDK=['일','월','화','수','목','금','토'];
+const keyOf=md=>{const [m,d]=md.split('-').map(Number);return new Date(YEAR,m-1,d)};
+// 주(월요일) 단위로 묶기
+const WEEKS=[];MEALS.forEach(m=>{const dt=keyOf(m[0]),mon=new Date(dt);mon.setDate(dt.getDate()-((dt.getDay()+6)%7));const k=mon.getTime();let w=WEEKS.find(x=>x.k===k);if(!w){w={k,mon,meals:{}};WEEKS.push(w)}w.meals[(dt.getDay()+6)%7]=m});
+const chips=document.getElementById('chips'),daysEl=document.getElementById('days'),menuEl=document.getElementById('menu'),sum=document.getElementById('summary');
+let saved=[1,9,15];try{const v=JSON.parse(localStorage.getItem('nyamguard'));if(Array.isArray(v))saved=v}catch(e){}
 ALG.forEach((n,i)=>{const l=document.createElement('label');l.innerHTML=`<input type="checkbox" value="${i+1}" ${saved.includes(i+1)?'checked':''}>${i+1}.${n}`;chips.appendChild(l)});
+// 첫 화면: 알레르기 표시가 많은 11월 3일(화)
+let wi=WEEKS.findIndex(w=>w.meals[1]&&w.meals[1][0]==='11-03'),di=1;if(wi<0){wi=0;di=0}
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function render(){
   const sel=[...chips.querySelectorAll('input:checked')].map(x=>+x.value);
-  localStorage.setItem('nyamguard',JSON.stringify(sel));
-  let bad=0;week.innerHTML='';
-  MENU.forEach(([d,dishes])=>{
-    const el=document.createElement('div');el.className='day';
-    el.innerHTML=`<h4>${d}요일</h4>`+dishes.map(([n,a])=>{
-      const hit=a.filter(x=>sel.includes(x));if(hit.length)bad++;
-      return `<div class="dish ${hit.length?'bad':''}" title="${hit.map(x=>ALG[x-1]).join(', ')}">${n}<sup>${a.length?a.join('.'):'-'}${hit.length?' · '+hit.map(x=>ALG[x-1]).join(','):''}</sup></div>`}).join('');
-    week.appendChild(el)});
-  sum.innerHTML=sel.length?`🔔 이번 주 주의 메뉴 <b>${bad}개</b> · 선택: ${sel.map(x=>ALG[x-1]).join(', ')}`:'알레르기 항목을 눌러 선택해 보세요.';
+  try{localStorage.setItem('nyamguard',JSON.stringify(sel))}catch(e){}
+  const w=WEEKS[wi];if(!w.meals[di])di=+Object.keys(w.meals)[0];
+  const end=new Date(w.mon);end.setDate(w.mon.getDate()+4);
+  document.getElementById('wLbl').textContent=`${w.mon.getMonth()+1}/${w.mon.getDate()}-${end.getMonth()+1}/${end.getDate()} 주`;
+  document.getElementById('wPrev').disabled=wi===0;document.getElementById('wNext').disabled=wi===WEEKS.length-1;
+  let weekBad=0,html='';
+  for(let i=0;i<5;i++){
+    const dt=new Date(w.mon);dt.setDate(w.mon.getDate()+i);const m=w.meals[i];
+    const n=m?m[3].filter(([,a])=>a.some(x=>sel.includes(x))).length:0;weekBad+=n;
+    html+=`<button type="button" role="tab" data-i="${i}" class="${i===di?'on':''}${m?'':' off'}${n?' warn':''}" ${m?'':'disabled'}>${dt.getMonth()+1}/${dt.getDate()} ${WDK[dt.getDay()]}<small>${m?(n?'⚠ 주의 '+n:'✓ 안심'):'급식 없음'}</small></button>`;
+  }
+  daysEl.innerHTML=html;
+  const m=w.meals[di];let bad=[];
+  menuEl.innerHTML=m[3].map(([n,a])=>{const hit=a.filter(x=>sel.includes(x));if(hit.length)bad.push(n);
+    return `<div class="dish ${hit.length?'bad':''}" title="${esc(hit.map(x=>ALG[x-1]).join(', '))}">${esc(n)}<sup>${a.length?a.join('.'):'-'}${hit.length?' · '+hit.map(x=>ALG[x-1]).join(','):''}</sup></div>`}).join('')
+    +`<div class="meta">${m[1]} kcal · 급식 인원 ${m[2]}명</div>`;
+  const dt=keyOf(m[0]);
+  sum.innerHTML=sel.length?`🔔 ${dt.getMonth()+1}월 ${dt.getDate()}일(${WDK[dt.getDay()]}) 주의 메뉴 <b>${bad.length}개</b>${bad.length?' ('+esc(bad.slice(0,3).join(', '))+(bad.length>3?' 외':'')+')':''} · 이번 주 ${weekBad}개`:'알레르기 항목을 눌러 선택해 보세요.';
 }
+daysEl.addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(!b||b.disabled)return;di=+b.dataset.i;render()});
+document.getElementById('wPrev').onclick=()=>{if(wi>0){wi--;render()}};
+document.getElementById('wNext').onclick=()=>{if(wi<WEEKS.length-1){wi++;render()}};
 chips.addEventListener('change',render);render();
 </script>
 </body>

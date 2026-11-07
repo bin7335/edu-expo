@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>별총총 칭찬판 - 학급 칭찬 포인트</title>
 <meta name="description" content="학생 카드를 톡 누르면 칭찬 별이 쌓이는 학급 칭찬 포인트판. 협력·배려·도전 항목, 모둠 합계, 학급 목표 달성 시 축하 효과.">
@@ -89,6 +90,14 @@
     .team .tp{font-size:18px}
   }
 </style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="별총총 칭찬판">
+<meta property="og:description" content="학생 카드를 톡 누르면 별이 쌓이고, 학급 목표를 채우면 색종이가 터지는 칭찬판">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/12-praise-board.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/praise-board/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
 </head>
 <body>
 <header>
@@ -184,7 +193,7 @@
     var t=team(i),bd=CATS.filter(function(c){return s.p[c.k]>0}).map(function(c){return c.e+s.p[c.k]}).join(' ');
     return '<div class="card" style="--c:'+t.c+'" data-i="'+i+'" role="button" tabindex="0" aria-label="'+esc(s.name)+' 칭찬 더하기">'+
       '<span class="tm">'+t.n+'</span><button type="button" class="minus" aria-label="'+esc(s.name)+' 1점 빼기">−</button>'+
-      '<div class="av">'+s.av+'</div><div class="nm">'+esc(s.name)+'</div><div class="pt">'+tot(s)+'<small> 점</small></div><div class="bd">'+(bd||'&nbsp;')+'</div></div>';
+      '<div class="av">'+esc(s.av)+'</div><div class="nm">'+esc(s.name)+'</div><div class="pt">'+tot(s)+'<small> 점</small></div><div class="bd">'+(bd||'&nbsp;')+'</div></div>';
   }
   function renderGrid(){$('grid').innerHTML=S.students.map(cardHTML).join('')}
   function renderCard(i){var c=$('grid').children[i];if(!c)return;var tmp=document.createElement('div');tmp.innerHTML=cardHTML(S.students[i],i);$('grid').replaceChild(tmp.firstChild,c);return $('grid').children[i]}

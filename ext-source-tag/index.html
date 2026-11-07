@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>출처 꼬리표 - 복사하면 출처가 따라오는 크롬 확장 체험</title>
 <meta name="description" content="웹페이지 글을 복사하면 「글 제목」, 사이트 이름, 주소, 확인한 날짜가 출처 한 줄로 저절로 붙는 디지털 시민성 크롬 확장. 설치 없이 이 페이지에서 바로 체험해 보세요.">
@@ -112,8 +113,18 @@
 .st-x:hover{color:#b91c1c}
 .st-empty{color:var(--st-muted)}
 .st-msg{min-height:20px;margin-top:8px;font-size:13px;font-weight:600;color:var(--st-brand)}
+.st-opt{display:flex;align-items:center;gap:6px;margin:-2px 0 10px;font-size:12px;color:var(--st-muted);cursor:pointer}
+.st-opt input{accent-color:var(--st-brand);margin:0}
 /* ==css:end== */
 </style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="출처 꼬리표">
+<meta property="og:description" content="웹 글을 복사하면 제목·사이트·주소·확인 날짜가 출처 한 줄로 저절로 따라붙는 확장">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/25-source-tag.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/ext-source-tag/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
 </head>
 <body>
 <header>
@@ -196,8 +207,17 @@ const SourceTag = (() => {
     return title;
   }
 
-  // 지금 보고 있는 문서에서 제목·사이트 이름·주소 읽기
-  function readMeta(doc, loc){
+  // 주소 정리: 크롬 '텍스트 조각' 꼬리는 늘 떼고, 기본으로 ?쿼리·#해시도 뗌(검색어·로그인 토큰 등이 출처에 남지 않게)
+  // fullUrl 이 true 면 ?쿼리·#해시를 그대로 둠 (게시판 글 번호처럼 주소에 꼭 필요한 경우)
+  function cleanUrl(href, fullUrl){
+    let url = String(href == null ? '' : href).replace(/:~:.*$/, '').replace(/#$/, '');
+    if (fullUrl) return url;
+    try { const u = new URL(url); u.search = ''; u.hash = ''; return u.href; }
+    catch (_) { return url.replace(/[?#].*$/, ''); }
+  }
+
+  // 지금 보고 있는 문서에서 제목·사이트 이름·주소 읽기 (opt.fullUrl: 주소 전체 넣기)
+  function readMeta(doc, loc, opt){
     const meta = sel => { const el = doc.querySelector(sel); return el ? clean(el.getAttribute('content')) : ''; };
     const host = (loc && loc.hostname || '').replace(/^www\./, '');
     const site = meta('meta[property="og:site_name"]') || meta('meta[name="application-name"]') || host || '이름 없는 사이트';
@@ -208,8 +228,7 @@ const SourceTag = (() => {
     if (/^https?:/i.test(author)) author = '';
     const pub = meta('meta[property="article:published_time"]') || meta('meta[name="date"]') || meta('meta[itemprop="datePublished"]');
     const ym = pub.match(/(19|20)\d{2}/);
-    let url = loc ? String(loc.href) : '';
-    url = url.replace(/#:~:.*$/, '');               // 크롬 '텍스트 조각' 꼬리 제거
+    const url = loc ? cleanUrl(loc.href, opt && opt.fullUrl) : '';
     return { title, site, url, author, year: ym ? ym[0] : '' };
   }
 
@@ -287,7 +306,7 @@ const SourceTag = (() => {
     } catch (_) { /* 알림이 안 떠도 복사는 정상 */ }
   }
 
-  return { FORMATS, MAX_HISTORY, ymd, koDate, stripSite, readMeta, buildCitation, composeText, composeHtml,
+  return { FORMATS, MAX_HISTORY, cleanUrl, ymd, koDate, stripSite, readMeta, buildCitation, composeText, composeHtml,
     selectionHtml, isEditableTarget, handleCopy, makeEntry, addHistory, historyText, toast, esc };
 })();
 // ==core:end==
@@ -298,7 +317,7 @@ const SourceTag = (() => {
 const SourceTagPopup = (() => {
   function mount(root, adapter){
     const T = SourceTag;
-    let st = { enabled: true, format: 'easy', history: [] };
+    let st = { enabled: true, format: 'easy', fullUrl: false, history: [] };
     let pageMeta = null, clearArmed = 0;
     root.classList.add('st');
     root.innerHTML = `
@@ -307,6 +326,7 @@ const SourceTagPopup = (() => {
       <div class="st-row"><span class="st-lab">형식</span><div class="st-seg" data-r="seg">
         ${Object.entries(T.FORMATS).map(([k, f]) => `<button type="button" data-f="${k}">${f.label}</button>`).join('')}
       </div></div>
+      <label class="st-opt"><input type="checkbox" data-r="fullUrl"> 주소의 ?·# 뒷부분까지 넣기 <small>(기본: 떼고 넣어요)</small></label>
       <div class="st-card">
         <div class="st-card-h">📄 지금 이 페이지</div>
         <p class="st-cite" data-r="pageCite">읽는 중…</p>
@@ -327,6 +347,7 @@ const SourceTagPopup = (() => {
 
     function render(){
       $('enabled').checked = !!st.enabled;
+      $('fullUrl').checked = !!st.fullUrl;
       $('onoff').textContent = st.enabled ? '켜짐' : '꺼짐';
       root.classList.toggle('st-off', !st.enabled);
       [...$('seg').children].forEach(b => b.classList.toggle('on', b.dataset.f === st.format));
@@ -341,6 +362,7 @@ const SourceTagPopup = (() => {
     async function save(patch){ Object.assign(st, patch); render(); await adapter.set(patch); }
 
     $('enabled').addEventListener('change', e => save({ enabled: e.target.checked }));
+    $('fullUrl').addEventListener('change', async e => { await save({ fullUrl: e.target.checked }); try { pageMeta = await adapter.getPageMeta(); } catch (_) { pageMeta = null; } render(); });
     $('seg').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (b) save({ format: b.dataset.f }); });
     $('copyPage').addEventListener('click', async () => {
       if (!pageMeta) return;
@@ -399,10 +421,10 @@ const SourceTagPopup = (() => {
   ];
   let cur = 0;
   const docs = PAGES.map(p => new DOMParser().parseFromString(`<html><head>${p.head}</head><body></body></html>`, 'text/html'));
-  const metaOf = i => T.readMeta(docs[i], new URL(PAGES[i].url));   // ← 확장과 같은 함수로 출처 정보 읽기
+  const metaOf = i => T.readMeta(docs[i], new URL(PAGES[i].url), { fullUrl: state.fullUrl });   // ← 확장과 같은 함수로 출처 정보 읽기
 
   const SAMPLE = {
-    enabled: true, format: 'easy',
+    enabled: true, format: 'easy', fullUrl: false,
     history: [
       { title: '꿀벌', site: '어린이 열린 백과', url: 'https://example.org/kids-wiki/honeybee', author: '', year: '', checked: '2026-11-05' },
       { title: '우리 동네 하천 지도', site: '햇살시 열린 지도', url: 'https://example.org/map/stream', author: '', year: '', checked: '2026-11-03' },
@@ -451,7 +473,7 @@ const SourceTagPopup = (() => {
   }
 
   const ui = SourceTagPopup.mount($('popup'), {
-    getState: async () => ({ enabled: state.enabled, format: state.format, history: state.history.slice() }),
+    getState: async () => ({ enabled: state.enabled, format: state.format, fullUrl: !!state.fullUrl, history: state.history.slice() }),
     set: async patch => { Object.assign(state, patch); persist(); if (isExample && 'format' in patch) exampleClip(); },
     getPageMeta: async () => metaOf(cur),
     copyText,

@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>딸깍 QR - 지금 보는 페이지를 QR로 띄우는 크롬 확장 체험</title>
+<meta name="description" content="툴바 아이콘을 한 번 누르면 지금 보는 페이지 주소가 큰 QR로 뜨는 교사용 크롬 확장. 교실 TV 전체 화면, PNG 저장, 추적 꼬리표 지우기까지 설치 없이 바로 체험해 보세요.">
+<style>
+  :root{--bg:#eef0fb;--ink:#1f2937;--muted:#6b7280;--line:#e5e7eb;--brand:#4f46e5;--brand2:#7c3aed}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:14px;padding:10px 24px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff}
+  .logo{width:42px;height:42px;border-radius:11px;background:#fff;flex:none;position:relative}
+  .logo::before{content:"";position:absolute;inset:9px;background:
+    linear-gradient(var(--brand),var(--brand)) 0 0/10px 10px no-repeat,linear-gradient(var(--brand),var(--brand)) 100% 0/10px 10px no-repeat,
+    linear-gradient(var(--brand),var(--brand)) 0 100%/10px 10px no-repeat,linear-gradient(#facc15,#facc15) 100% 100%/7px 7px no-repeat}
+  h1{margin:0;font-size:24px;letter-spacing:-.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;gap:4px;background:#1e1b4b;color:#c7d2fe;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px}
+  header p{margin:2px 0 0;font-size:14px;opacity:.92}
+  .dl{margin-left:auto;flex:none;background:#fff;color:var(--brand);font-weight:800;font-size:15px;text-decoration:none;padding:10px 16px;border-radius:12px;box-shadow:0 2px 0 #0002}
+  .dl:hover{filter:brightness(.96)}
+
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;padding:12px 24px;max-width:1400px;margin:0 auto}
+  .how{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;margin-bottom:8px}
+  .how b{background:#e0e7ff;color:#3730a3;border-radius:999px;padding:2px 9px;font-size:13px}
+  .how .go{background:#4f46e5;color:#fff}
+  .side .how{margin:0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px 12px;font-size:13px}
+  kbd{font:inherit;font-size:12px;border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#fff}
+
+  /* 가짜 브라우저 */
+  .browser{background:#fff;border:1px solid #d1d5db;border-radius:12px;box-shadow:0 6px 20px #4f46e514;position:relative}
+  .tabs{display:flex;gap:4px;background:#e5e7eb;padding:6px 8px 0;border-radius:12px 12px 0 0;overflow-x:auto}
+  .tab{font:inherit;font-size:12px;border:0;background:#d1d5db;color:#374151;border-radius:8px 8px 0 0;padding:6px 12px;cursor:pointer;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none}
+  .tab.on{background:#fff;font-weight:700}
+  .addr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line)}
+  .addr span{flex:1;min-width:0;background:#f3f4f6;border-radius:999px;padding:5px 12px;font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .addr i{font-style:normal;font-size:15px;opacity:.7}
+  .tool{width:32px;height:32px;border-radius:8px;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;position:relative;flex:none}
+  .tool:hover,.tool.on{background:#e0e7ff}
+  .tool .ico{width:20px;height:20px;border-radius:5px;background:var(--brand);position:relative}
+  .tool .ico::before{content:"";position:absolute;inset:4px;background:
+    linear-gradient(#fff,#fff) 0 0/5px 5px no-repeat,linear-gradient(#fff,#fff) 100% 0/5px 5px no-repeat,
+    linear-gradient(#fff,#fff) 0 100%/5px 5px no-repeat,linear-gradient(#facc15,#facc15) 100% 100%/4px 4px no-repeat}
+  .tool.pulse::after{content:"";position:absolute;inset:-3px;border-radius:10px;border:2px solid #818cf8;animation:pulse 1.6s ease-out infinite}
+  @keyframes pulse{0%{opacity:1;transform:scale(.9)}100%{opacity:0;transform:scale(1.35)}}
+  .hint{position:absolute;right:52px;top:72px;background:#1e1b4b;color:#fff;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;pointer-events:none;z-index:3}
+  .hint[hidden]{display:none}
+  .page{padding:18px 26px;height:560px;overflow:auto;line-height:1.75;font-size:15px;border-radius:0 0 12px 12px}
+  .page .site{font-size:12px;color:#6d28d9;font-weight:800;letter-spacing:.3px}
+  .page h2{margin:2px 0 6px;font-size:22px}
+  .page p{margin:0 0 10px;max-width:520px}
+  .page .box{max-width:520px;background:#f5f3ff;border-radius:12px;padding:10px 14px;margin:8px 0}
+  .page.special{background:#f8fafc;color:#334155}
+  .page.special h2{font-size:20px}
+  .page .set{max-width:520px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .page .set div{padding:10px 14px}
+  .page .set div+div{border-top:1px solid var(--line)}
+
+  .popwrap{position:absolute;right:8px;top:74px;width:336px;z-index:4;background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:10px 14px;box-shadow:0 14px 34px #1e1b4b33}
+  .popwrap[hidden]{display:none}
+  .popwrap .pq-canvas{max-width:172px}
+  .popwrap .pq-box{min-height:120px;padding:4px}
+  .popwrap .pq-head{margin-bottom:8px}
+  .popwrap .pq-meta{margin:3px 0 6px}
+  .popwrap .pq-check{margin-top:7px;padding:5px 9px}
+  .popwrap .pq-edit{margin-top:7px}
+  .popwrap .pq-msg{min-height:0;margin-top:4px}
+
+  .side{display:grid;gap:12px;align-content:start}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.55}
+  .card h3{margin:0 0 6px;font-size:14px}
+  .card ol{margin:0;padding-left:20px}
+  .card code{background:#eef2ff;color:#4338ca;border-radius:5px;padding:0 4px}
+  .card .safe{margin:8px 0 0;color:#3730a3;background:#eef2ff;border-radius:8px;padding:6px 8px}
+  footer{text-align:right;padding:0 24px 18px;font-size:13px}
+  footer a{color:var(--muted);text-decoration:none}
+  footer a:hover{color:var(--brand)}
+
+  .bigwrap{position:fixed;inset:0;z-index:50;background:#fff}
+  .bigwrap[hidden]{display:none}
+  .bigwrap .newtab{position:absolute;top:12px;left:14px;z-index:2;font-size:12px;font-weight:700;color:#6b7280;background:#f3f4f6;border-radius:999px;padding:3px 10px}
+  #big{position:absolute;inset:0}
+
+  @media (max-width:900px){
+    header{flex-wrap:wrap;padding:12px 14px}
+    h1{font-size:21px}
+    .dl{margin-left:0}
+    .wrap{grid-template-columns:minmax(0,1fr);padding:12px}
+    .page{height:auto;max-height:360px;padding:12px 14px}
+    .popwrap{position:static;width:auto;margin:8px;box-shadow:0 6px 18px #1e1b4b22}
+    .hint{display:none}
+    .bigwrap .newtab{top:auto;bottom:10px}
+  }
+/* ==css:start== 딸깍 QR 화면 모양 (확장과 체험 페이지 공통) */
+.pq{--pq-ink:#1f2937;--pq-muted:#6b7280;--pq-line:#e5e7eb;--pq-brand:#4f46e5;--pq-soft:#eef2ff;
+  font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--pq-ink);font-size:14px;line-height:1.45}
+.pq *{box-sizing:border-box}
+.pq-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.pq-logo{width:34px;height:34px;border-radius:9px;flex:none;background:var(--pq-brand);position:relative}
+.pq-logo::before{content:"";position:absolute;inset:7px;background:
+  linear-gradient(#fff,#fff) 0 0/8px 8px no-repeat,linear-gradient(#fff,#fff) 100% 0/8px 8px no-repeat,
+  linear-gradient(#fff,#fff) 0 100%/8px 8px no-repeat,linear-gradient(#fff,#fff) 100% 100%/4px 4px no-repeat}
+.pq-head b{font-size:17px;display:block}
+.pq-head small{color:var(--pq-muted);font-size:12px}
+.pq-page{background:var(--pq-soft);border-radius:10px;padding:7px 10px;margin-bottom:8px;min-width:0}
+.pq-title{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pq-url{font-size:12px;color:#4338ca;word-break:break-all;max-height:3.1em;overflow:hidden}
+.pq-url:empty{display:none}
+.pq-box{display:grid;place-items:center;background:#fff;border:1px solid var(--pq-line);border-radius:12px;padding:6px;min-height:150px}
+.pq-canvas{display:block;width:100%;max-width:280px;height:auto;aspect-ratio:1;image-rendering:pixelated}
+.pq-canvas[hidden],.pq-empty[hidden]{display:none}
+.pq-empty{padding:18px 14px;text-align:center;color:#92400e;background:#fffbeb;border-radius:10px;font-size:13px;line-height:1.55}
+.pq-meta{min-height:18px;margin:5px 0 8px;font-size:12px;color:var(--pq-muted);text-align:center}
+.pq-meta.pq-warn{color:#b45309;font-weight:700}
+.pq-secret{margin:0 0 8px;padding:7px 9px;border-radius:8px;background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c;font-size:12px;font-weight:700;line-height:1.4}
+.pq-secret[hidden]{display:none}
+.pq-btn{font:inherit;font-weight:700;font-size:14px;border-radius:10px;border:1px solid var(--pq-line);background:#fff;color:var(--pq-ink);padding:8px 12px;cursor:pointer}
+.pq-btn:hover{filter:brightness(.96)}
+.pq-btn:disabled{opacity:.45;cursor:default;filter:none}
+.pq-btn:focus-visible{outline:2px solid #a5b4fc;outline-offset:2px}
+.pq-primary{width:100%;background:var(--pq-brand);color:#fff;border:0;font-size:15px;padding:10px 12px}
+.pq-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.pq-sm{font-size:13px;padding:6px 10px;border-radius:8px}
+.pq-check{display:flex;gap:7px;align-items:flex-start;margin-top:9px;padding:7px 9px;border:1px dashed #c7d2fe;border-radius:10px;font-size:13px;cursor:pointer}
+.pq-check[hidden]{display:none}
+.pq-check input{margin:2px 0 0;accent-color:var(--pq-brand)}
+.pq-check small{color:var(--pq-muted);word-break:break-all}
+.pq-edit{margin-top:9px}
+.pq-edit label{font-weight:700;font-size:13px}
+.pq-edit label small{font-weight:500;color:var(--pq-muted)}
+.pq-edit-row{display:flex;gap:6px;margin-top:4px}
+.pq-edit input{flex:1;min-width:0;font:inherit;font-size:13px;border:1px solid #d1d5db;border-radius:9px;padding:7px 9px}
+.pq-edit input:focus{outline:2px solid #a5b4fc;border-color:#818cf8}
+.pq-edit .pq-btn[hidden]{display:none}
+.pq-msg{min-height:20px;margin-top:6px;font-size:13px;font-weight:600;color:var(--pq-brand)}
+
+/* 전체 화면 (교실 TV) */
+.pq-big{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#fff;color:#111;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow:hidden;position:relative;text-align:center}
+.pq-big *{box-sizing:border-box}
+.pq-big-bar{position:absolute;top:10px;right:12px;display:flex;gap:6px}
+.pq-big-bar .pq-btn{font-family:inherit;font-weight:700;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:pointer}
+.pq-big-bar .pq-btn[hidden]{display:none}
+.pq-big-title{margin:0;padding:0 150px 0 20px;max-width:100%;font-size:clamp(22px,4.2vh,46px);line-height:1.2;font-weight:900;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pq-big-canvas{display:block;image-rendering:pixelated}
+.pq-big-canvas[hidden]{display:none}
+.pq-big-url{font-size:clamp(16px,3.2vh,34px);font-weight:700;color:#3730a3;word-break:break-all;padding:0 20px}
+.pq-big-tip{font-size:clamp(13px,2vh,20px);color:#6b7280}
+@media (max-width:600px){.pq-big-title{padding:36px 14px 0}}
+/* ==css:end== */
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="딸깍 QR">
+<meta property="og:description" content="아이콘 한 번에 지금 보는 페이지가 큰 QR로, 교실 TV 전체 화면까지">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/51-page-qr.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/ext-page-qr/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true"></div>
+  <div>
+    <h1>딸깍 QR <span class="badge">🧩 크롬 확장</span></h1>
+    <p>아이콘 한 번 딸깍 → 지금 보는 페이지가 큰 QR로. 학생은 폰 카메라로 찍기만!</p>
+  </div>
+  <a class="dl" href="../extensions/page-qr.zip" download>⬇ zip 내려받기</a>
+</header>
+
+<div class="wrap">
+  <main>
+    <div class="browser" id="browser">
+      <div class="tabs" id="tabs" role="tablist" aria-label="가짜 브라우저 탭"></div>
+      <div class="addr">
+        <i aria-hidden="true">←</i><i aria-hidden="true">⟳</i>
+        <span id="addr"></span>
+        <i aria-hidden="true">☆</i>
+        <button type="button" class="tool on" id="tool" title="딸깍 QR (Alt+Q)" aria-label="딸깍 QR 팝업 열기" aria-expanded="true"><span class="ico"></span></button>
+        <i aria-hidden="true">⋮</i>
+      </div>
+      <div class="hint" id="hint" hidden>👆 이 아이콘을 눌러 보세요</div>
+      <div class="popwrap" id="popwrap"><div id="popup"></div></div>
+      <article class="page" id="page"></article>
+    </div>
+  </main>
+
+  <aside class="side">
+    <div class="how">
+      <b>체험</b> <span>① 툴바 QR 아이콘 또는 <kbd>Alt</kbd>+<kbd>Q</kbd></span> <span>② 탭 바꿔 보기 ③ <b class="go">🖥️ 크게 보기</b></span>
+    </div>
+    <div class="card">
+      <h3>💡 교실에서 이렇게</h3>
+      <ol>
+        <li>보여 줄 사이트를 열고 아이콘 <b>딸깍</b> (또는 <kbd>Alt</kbd>+<kbd>Q</kbd>)</li>
+        <li><b>🖥️ 크게 보기</b> → 교실 TV·전자칠판에 화면 가득 QR</li>
+        <li>학생은 폰 카메라로 찍으면 바로 접속</li>
+      </ol>
+      <p class="safe">✂️ 주소 끝에 붙은 <code>utm_</code>·<code>fbclid</code> 같은 추적 꼬리표는 자동으로 지워 QR을 덜 촘촘하게 만들어요.</p>
+    </div>
+    <div class="card">
+      <h3>⚙️ 내 크롬에 설치 (3단계)</h3>
+      <ol>
+        <li>위 <b>zip 내려받기</b> → 압축 풀기</li>
+        <li>주소창에 <code>chrome://extensions</code> → 오른쪽 위 <b>개발자 모드</b> 켜기</li>
+        <li><b>압축해제된 확장 프로그램 로드</b> → 푼 폴더 고르기</li>
+      </ol>
+      <p class="safe">🔐 권한은 <code>activeTab</code> 하나 — 아이콘을 누른 그 탭의 주소만 읽고, 아무 데도 보내지 않아요.</p>
+    </div>
+  </aside>
+</div>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<div class="bigwrap" id="bigwrap" hidden>
+  <span class="newtab">확장의 「크게 보기」 새 탭 · Esc로 닫기</span>
+  <div id="big"></div>
+</div>
+
+<script>
+// ==core:start== 딸깍 QR 핵심 로직 (확장 qr-core.js 와 체험 페이지가 같은 코드)
+// QR 인코더는 같은 저장소 qr-maker/index.html 의 인코더를 그대로 옮겨 왔습니다(아래 라이선스 주석 유지).
+/*
+ * 작은 QR 코드 인코더 (바이트 모드, 오류 정정 M, 버전 1-40)
+ * 이 앱을 위해 새로 작성. 알고리즘 구조는 ISO/IEC 18004 표준 및
+ * Project Nayuki "QR Code generator library"(MIT License, Copyright (c) Project Nayuki)의
+ * 공개된 설계를 참고했습니다.
+ */
+const QR = (() => {
+  // [버전] 블록당 ECC 코드워드 수 / 블록 수 (오류 정정 레벨 M)
+  const ECC_PER_BLOCK = [-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28];
+  const NUM_BLOCKS    = [-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49];
+  const FORMAT_M = 0; // 레벨 M의 형식 비트 값
+
+  function rawModules(v){
+    let r = (16*v + 128)*v + 64;
+    if (v >= 2){ const n = Math.floor(v/7) + 2; r -= (25*n - 10)*n - 55; if (v >= 7) r -= 36; }
+    return r;
+  }
+  const dataCodewords = v => Math.floor(rawModules(v)/8) - ECC_PER_BLOCK[v]*NUM_BLOCKS[v];
+
+  function gfMul(x, y){ let z = 0; for (let i = 7; i >= 0; i--){ z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z & 0xFF; }
+  function rsDivisor(deg){
+    const r = new Array(deg).fill(0); r[deg-1] = 1; let root = 1;
+    for (let i = 0; i < deg; i++){
+      for (let j = 0; j < r.length; j++){ r[j] = gfMul(r[j], root); if (j+1 < r.length) r[j] ^= r[j+1]; }
+      root = gfMul(root, 2);
+    }
+    return r;
+  }
+  function rsRemainder(data, div){
+    const r = div.map(() => 0);
+    for (const b of data){ const f = b ^ r.shift(); r.push(0); div.forEach((c, i) => r[i] ^= gfMul(c, f)); }
+    return r;
+  }
+
+  function encode(text){
+    const bytes = Array.from(new TextEncoder().encode(text));
+    const nonAscii = bytes.some(b => b > 127);
+    // 버전 결정
+    let ver = 0, bitsNeeded = 0;
+    for (let v = 1; v <= 40; v++){
+      const cc = v < 10 ? 8 : 16;
+      bitsNeeded = (nonAscii ? 12 : 0) + 4 + cc + bytes.length*8;
+      if (bitsNeeded <= dataCodewords(v)*8){ ver = v; break; }
+    }
+    if (!ver) throw new Error('너무 길어요');
+    // 비트열
+    const bb = [];
+    const put = (val, len) => { for (let i = len-1; i >= 0; i--) bb.push((val >>> i) & 1); };
+    if (nonAscii){ put(0b0111, 4); put(26, 8); }   // ECI 26 = UTF-8
+    put(0b0100, 4); put(bytes.length, ver < 10 ? 8 : 16);
+    bytes.forEach(b => put(b, 8));
+    const cap = dataCodewords(ver)*8;
+    put(0, Math.min(4, cap - bb.length));
+    put(0, (8 - bb.length % 8) % 8);
+    for (let p = 0xEC; bb.length < cap; p ^= 0xEC ^ 0x11) put(p, 8);
+    const data = [];
+    for (let i = 0; i < bb.length; i += 8){ let x = 0; for (let j = 0; j < 8; j++) x = (x << 1) | bb[i+j]; data.push(x); }
+
+    // ECC + 인터리브
+    const nb = NUM_BLOCKS[ver], el = ECC_PER_BLOCK[ver], raw = Math.floor(rawModules(ver)/8);
+    const nShort = nb - raw % nb, shortLen = Math.floor(raw / nb);
+    const div = rsDivisor(el), blocks = [];
+    for (let i = 0, k = 0; i < nb; i++){
+      const d = data.slice(k, k + shortLen - el + (i < nShort ? 0 : 1)); k += d.length;
+      const e = rsRemainder(d, div);
+      if (i < nShort) d.push(0);
+      blocks.push(d.concat(e));
+    }
+    const cw = [];
+    for (let i = 0; i < blocks[0].length; i++)
+      for (let j = 0; j < nb; j++)
+        if (i !== shortLen - el || j >= nShort) cw.push(blocks[j][i]);
+
+    // 행렬
+    const size = ver*4 + 17;
+    const mod = Array.from({length:size}, () => new Array(size).fill(false));
+    const fn  = Array.from({length:size}, () => new Array(size).fill(false));
+    const set = (x, y, d) => { mod[y][x] = d; fn[y][x] = true; };
+
+    for (let i = 0; i < size; i++){ set(6, i, i%2 === 0); set(i, 6, i%2 === 0); }
+    const finder = (cx, cy) => {
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++){
+        const x = cx+dx, y = cy+dy, d = Math.max(Math.abs(dx), Math.abs(dy));
+        if (x >= 0 && x < size && y >= 0 && y < size) set(x, y, d !== 2 && d !== 4);
+      }
+    };
+    finder(3,3); finder(size-4,3); finder(3,size-4);
+    // 정렬 패턴
+    let al = [];
+    if (ver > 1){
+      const n = Math.floor(ver/7) + 2;
+      const step = ver === 32 ? 26 : Math.ceil((ver*4 + 4) / (n*2 - 2)) * 2;
+      al = [6];
+      for (let p = size - 7; al.length < n; p -= step) al.splice(1, 0, p);
+    }
+    al.forEach((ax, i) => al.forEach((ay, j) => {
+      if ((i === 0 && j === 0) || (i === 0 && j === al.length-1) || (i === al.length-1 && j === 0)) return;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++)
+        set(ax+dx, ay+dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+    }));
+    const drawFormat = mask => {
+      const d = (FORMAT_M << 3) | mask; let r = d;
+      for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+      const bits = ((d << 10) | r) ^ 0x5412;
+      const g = i => ((bits >>> i) & 1) !== 0;
+      for (let i = 0; i <= 5; i++) set(8, i, g(i));
+      set(8, 7, g(6)); set(8, 8, g(7)); set(7, 8, g(8));
+      for (let i = 9; i < 15; i++) set(14 - i, 8, g(i));
+      for (let i = 0; i < 8; i++) set(size - 1 - i, 8, g(i));
+      for (let i = 8; i < 15; i++) set(8, size - 15 + i, g(i));
+      set(8, size - 8, true);
+    };
+    drawFormat(0);
+    if (ver >= 7){
+      let r = ver;
+      for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1F25);
+      const bits = (ver << 12) | r;
+      for (let i = 0; i < 18; i++){
+        const b = ((bits >>> i) & 1) !== 0, a = size - 11 + i % 3, c = Math.floor(i / 3);
+        set(a, c, b); set(c, a, b);
+      }
+    }
+    // 데이터 배치 (지그재그)
+    let bi = 0;
+    for (let right = size - 1; right >= 1; right -= 2){
+      if (right === 6) right = 5;
+      for (let vert = 0; vert < size; vert++){
+        for (let j = 0; j < 2; j++){
+          const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - vert : vert;
+          if (!fn[y][x] && bi < cw.length*8){ mod[y][x] = ((cw[bi >>> 3] >>> (7 - (bi & 7))) & 1) !== 0; bi++; }
+        }
+      }
+    }
+    // 마스크 선택
+    const maskFn = [
+      (x,y) => (x+y)%2 === 0, (x,y) => y%2 === 0, (x,y) => x%3 === 0, (x,y) => (x+y)%3 === 0,
+      (x,y) => (Math.floor(x/3)+Math.floor(y/2))%2 === 0, (x,y) => x*y%2 + x*y%3 === 0,
+      (x,y) => (x*y%2 + x*y%3)%2 === 0, (x,y) => ((x+y)%2 + x*y%3)%2 === 0,
+    ];
+    const applyMask = m => { for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!fn[y][x] && maskFn[m](x,y)) mod[y][x] = !mod[y][x]; };
+    const penalty = () => {
+      let p = 0, dark = 0;
+      const lineScore = get => {
+        for (let a = 0; a < size; a++){
+          let run = 1, s = '';
+          for (let b = 0; b < size; b++){
+            const v = get(a, b); s += v ? '1' : '0';
+            if (b > 0){ if (v === get(a, b-1)){ run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; }
+          }
+          const t = '0000' + s + '0000';
+          for (let i = t.indexOf('1011101'); i !== -1; i = t.indexOf('1011101', i + 1))
+            if (t.substr(i-4, 4) === '0000' || t.substr(i+7, 4) === '0000') p += 40;
+        }
+      };
+      lineScore((a,b) => mod[a][b]); lineScore((a,b) => mod[b][a]);
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
+        if (mod[y][x]) dark++;
+        if (x < size-1 && y < size-1){ const c = mod[y][x]; if (c === mod[y][x+1] && c === mod[y+1][x] && c === mod[y+1][x+1]) p += 3; }
+      }
+      const total = size*size;
+      p += Math.max(0, Math.ceil(Math.abs(dark*20 - total*10) / total) - 1) * 10;
+      return p;
+    };
+    let best = 0, bestP = Infinity;
+    for (let m = 0; m < 8; m++){
+      applyMask(m); drawFormat(m);
+      const pv = penalty();
+      if (pv < bestP){ bestP = pv; best = m; }
+      applyMask(m);
+    }
+    applyMask(best); drawFormat(best);
+    return { size, ver, mask: best, modules: mod };
+  }
+
+  function toSvg(text, quiet = 4){
+    const q = encode(text), n = q.size + quiet*2;
+    let d = '';
+    for (let y = 0; y < q.size; y++) for (let x = 0; x < q.size; x++)
+      if (q.modules[y][x]) d += `M${x+quiet} ${y+quiet}h1v1h-1z`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" role="img"><rect width="${n}" height="${n}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+  }
+  return { encode, toSvg };
+})();
+
+// ---------------- 딸깍 QR 핵심 로직 (주소 정리 · QR 그리기) ----------------
+// 이 코드는 어떤 데이터도 외부로 보내지 않습니다. 네트워크 요청이 전혀 없습니다.
+const PageQR = (() => {
+  // 광고·유입 추적용 파라미터 (페이지 내용과 상관없어 지워도 같은 페이지가 열림)
+  const TRACK_EXACT = new Set(['fbclid', 'gclid', 'dclid', 'gclsrc', 'gbraid', 'wbraid', 'msclkid', 'yclid', 'twclid',
+    'ttclid', 'li_fat_id', 'mc_cid', 'mc_eid', 'igshid', 'igsh', '_ga', '_gl', '_hsenc', '_hsmi', 'mkt_tok', 'vero_id',
+    'srsltid', 'ref_src', 'ref_url']);
+  const TRACK_PREFIX = ['utm_', 'oly_', 'pk_'];
+  const YOUTUBE = /(^|\.)(youtube\.com|youtu\.be)$/i;
+  const LONG = 300;   // 이보다 길면 QR이 촘촘해져 멀리서 잘 안 찍힘
+
+  function isTracking(key, host){
+    const k = key.toLowerCase();
+    if (TRACK_EXACT.has(k) || TRACK_PREFIX.some(p => k.startsWith(p))) return true;
+    if (k === 'si' && YOUTUBE.test(host)) return true;   // 유튜브 공유 링크의 si=…
+    if (k === 'feature' && YOUTUBE.test(host)) return true;
+    return false;
+  }
+
+  // http/https 주소만 허용. 앞뒤 공백 제거, 주소창처럼 "example.org/a"는 https:// 를 붙여 줌
+  function parseWeb(text){
+    let s = String(text == null ? '' : text).trim();
+    if (!s) return null;
+    const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(s) || /^(javascript|data|mailto|tel|about|blob|chrome|edge|view-source):/i.test(s);
+    if (!hasScheme && /^([^\s/:]+\.[^\s/:]+|localhost)(:\d+)?(\/|$|\?|#)/i.test(s)) s = 'https://' + s;
+    let u;
+    try { u = new URL(s); } catch (_) { return null; }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (!u.hostname) return null;
+    return u;
+  }
+  const isWeb = text => !!parseWeb(text);
+
+  // 탭 주소가 QR로 만들 수 있는 주소인지: 아니면 이유 문구
+  function why(url){
+    const s = String(url || '');
+    if (!s) return '이 탭의 주소를 읽을 수 없어요.';
+    if (/^(chrome|edge|about|chrome-extension|devtools|view-source|chrome-search):/i.test(s))
+      return '크롬 설정·새 탭 같은 특수 페이지는 다른 기기에서 열 수 없어요. 아래 칸에 주소를 직접 넣어 보세요.';
+    if (/^file:/i.test(s)) return '내 컴퓨터 파일(file://)은 학생 폰에서 열리지 않아요. 웹에 올린 주소를 넣어 보세요.';
+    if (/^(data|blob|javascript):/i.test(s)) return '이 페이지는 QR로 만들 수 없는 주소예요.';
+    return isWeb(s) ? '' : 'http/https 웹 주소만 QR로 만들어요.';
+  }
+
+  // 추적 파라미터 제거 → { url, removed:[키…] }
+  function clean(url){
+    const u = parseWeb(url);
+    if (!u) return { url: String(url || '').trim(), removed: [] };
+    const removed = [];
+    for (const key of [...u.searchParams.keys()]){
+      if (isTracking(key, u.hostname) && !removed.includes(key)){ removed.push(key); u.searchParams.delete(key); }
+    }
+    // 빈 물음표("…/page?#a")가 남지 않게 다시 조립
+    const out = removed.length ? u.origin + u.pathname + u.search + u.hash : u.href;
+    return { url: out, removed };
+  }
+
+  // 로그인 정보로 보이는 쿼리 이름 (token, key, sid, session, auth, code, password …) → 키 목록
+  // "keyword"처럼 단어 일부만 같은 이름은 빼고, _ - . 로 나뉜 조각이나 흔한 이름 전체가 같을 때만
+  const SECRET_PART = new Set(['token', 'key', 'apikey', 'sid', 'session', 'sessionid', 'sessid', 'phpsessid', 'jsessionid',
+    'auth', 'code', 'password', 'passwd', 'pwd', 'pw', 'secret', 'ticket', 'otp', 'signature', 'sig', 'credential', 'credentials', 'jwt']);
+  function secrets(url){
+    const u = parseWeb(url);
+    if (!u) return [];
+    const params = [...u.searchParams.keys()];
+    if (u.hash.length > 1) params.push(...new URLSearchParams(u.hash.slice(1)).keys());   // #access_token=… 도 확인
+    const out = [];
+    for (const key of params){
+      const k = key.toLowerCase();
+      const hit = SECRET_PART.has(k) || k.split(/[_\-.]/).some(p => SECRET_PART.has(p)) || /(token|password|passwd|secret|session)$/.test(k);
+      if (hit && !out.includes(key)) out.push(key);
+    }
+    return out;
+  }
+
+  // 화면 표시용: %EA%B2%80 같은 한글 인코딩을 읽을 수 있게 풀기 (QR 안에는 원래 주소 그대로)
+  function pretty(url){
+    const s = String(url || '');
+    try { return decodeURI(s); } catch (_) { return s; }
+  }
+
+  // 화면에 보여 줄 짧은 주소: https:// 와 www. 를 떼고 길면 가운데를 …로
+  function shortUrl(url, max = 48){
+    let s = pretty(url).replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+    if (s.endsWith('/') && s.indexOf('/') === s.length - 1) s = s.slice(0, -1);
+    if (s.length <= max) return s;
+    const head = Math.ceil((max - 1) * 0.6), tail = max - 1 - head;
+    return s.slice(0, head) + '…' + s.slice(s.length - tail);
+  }
+
+  // QR 정보 (버전, 한 변 칸 수)
+  function info(text){
+    const q = QR.encode(text);
+    return { ver: q.ver, size: q.size, len: String(text).length, long: String(text).length > LONG };
+  }
+
+  // 캔버스에 QR 그리기 (흰 여백 quiet칸 포함). px = 캔버스 한 변 목표 픽셀
+  function draw(canvas, text, px = 600, quiet = 4){
+    const q = QR.encode(text);
+    const n = q.size + quiet * 2;
+    const cell = Math.max(1, Math.floor(px / n));
+    canvas.width = canvas.height = cell * n;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height);
+    g.fillStyle = '#000';
+    for (let y = 0; y < q.size; y++) for (let x = 0; x < q.size; x++)
+      if (q.modules[y][x]) g.fillRect((x + quiet) * cell, (y + quiet) * cell, cell, cell);
+    return q;
+  }
+
+  // 저장용 PNG: QR + 아래에 제목·짧은 주소 (인쇄해서 붙이기 좋게)
+  function pngDataUrl(doc, text, title){
+    const qrc = doc.createElement('canvas');
+    draw(qrc, text, 720);
+    const W = qrc.width, pad = 28, lineH = 40;
+    const c = doc.createElement('canvas');
+    c.width = W; c.height = W + pad + lineH * 2;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(qrc, 0, 0);
+    g.fillStyle = '#111'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const font = (w, s) => `${w} ${s}px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
+    const fit = (s, size, weight) => {
+      g.font = font(weight, size);
+      let t = s;
+      while (t.length > 1 && g.measureText(t).width > W - 40) t = t.slice(0, -2) + '…';
+      return t;
+    };
+    const t = String(title || '').trim();
+    if (t){ g.fillText(fit(t, 30, 800), W / 2, W - 6 + lineH / 2); }
+    g.fillStyle = '#444';
+    g.fillText(fit(shortUrl(text, 60), 24, 500), W / 2, W - 6 + lineH * (t ? 1.5 : 0.5) + 6);
+    return c.toDataURL('image/png');
+  }
+
+  // 저장 파일 이름: 제목에서 파일명에 못 쓰는 글자 빼기
+  function fileName(title, url){
+    let base = String(title || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (!base){ const u = parseWeb(url); base = u ? u.hostname.replace(/^www\./, '') : 'page'; }
+    return `QR-${base}.png`;
+  }
+
+  // 크게 보기 페이지 주소 만들기 / 읽기 (u 는 http/https만 통과)
+  function bigQuery(url, title){
+    return '?u=' + encodeURIComponent(url) + (title ? '&t=' + encodeURIComponent(String(title).slice(0, 200)) : '');
+  }
+  function readBigQuery(search){
+    const p = new URLSearchParams(search || '');
+    const u = parseWeb(p.get('u') || '');
+    const raw = p.get('u') || '';
+    // 사용자가 붙여 준 https:// 자동 보정 없이, 원래 값이 http(s)로 시작할 때만 허용
+    if (!u || !/^https?:\/\//i.test(raw.trim())) return null;
+    return { url: u.href, title: (p.get('t') || '').slice(0, 200) };
+  }
+
+  return { LONG, parseWeb, isWeb, why, clean, secrets, pretty, shortUrl, info, draw, pngDataUrl, fileName, bigQuery, readBigQuery };
+})();
+// ==core:end==
+</script>
+<script>
+// ==ui:start== 딸깍 QR 화면 (확장 팝업·크게 보기 페이지와 체험 페이지가 같은 코드, 탭 읽기·열기만 adapter로 바꿔 끼움)
+// 페이지 제목·주소는 모두 textContent로만 넣습니다 (innerHTML에 넣지 않음).
+const PageQRPopup = (() => {
+  const TEMPLATE = `
+    <div class="pq-head"><span class="pq-logo" aria-hidden="true"></span><div><b>딸깍 QR</b><small>지금 보는 페이지를 학생 폰으로</small></div></div>
+    <div class="pq-page">
+      <div class="pq-title" data-r="title"></div>
+      <div class="pq-url" data-r="url"></div>
+    </div>
+    <div class="pq-box" data-r="box">
+      <canvas class="pq-canvas" data-r="canvas" role="img" aria-label="이 페이지 주소 QR 코드"></canvas>
+      <div class="pq-empty" data-r="empty" hidden></div>
+    </div>
+    <div class="pq-meta" data-r="meta"></div>
+    <div class="pq-secret" data-r="secret" role="alert" hidden></div>
+    <button type="button" class="pq-btn pq-primary" data-r="big">🖥️ 전체 화면으로 크게 보기</button>
+    <div class="pq-row">
+      <button type="button" class="pq-btn" data-r="png">⬇ PNG 저장</button>
+      <button type="button" class="pq-btn" data-r="copy">📋 주소 복사</button>
+    </div>
+    <label class="pq-check" data-r="stripRow" hidden><input type="checkbox" data-r="strip" checked>
+      <span>추적 꼬리표 지우기 <small data-r="stripKeys"></small></span></label>
+    <div class="pq-edit">
+      <label for="pq-input">주소 고치기 <small>(고치면 QR이 바로 바뀌어요)</small></label>
+      <div class="pq-edit-row">
+        <input id="pq-input" type="url" data-r="input" spellcheck="false" autocomplete="off" placeholder="https://… 주소를 넣어 보세요">
+        <button type="button" class="pq-btn pq-sm" data-r="reset" title="이 탭 주소로 되돌리기" hidden>↺</button>
+      </div>
+    </div>
+    <div class="pq-msg" data-r="msg" aria-live="polite"></div>`;
+
+  function mount(root, adapter){
+    const P = PageQR, doc = root.ownerDocument;
+    root.classList.add('pq');
+    root.innerHTML = TEMPLATE;   // 고정 틀만 넣고, 바뀌는 값은 아래에서 textContent로
+    const $ = k => root.querySelector(`[data-r="${k}"]`);
+    let tab = null, notice = '', current = null, msgT;
+    const say = m => { $('msg').textContent = m; clearTimeout(msgT); msgT = setTimeout(() => { $('msg').textContent = ''; }, 2400); };
+
+    // 지금 QR로 만들 주소 계산 (입력칸 값 → http/https 확인 → 추적 꼬리표 지우기)
+    function compute(){
+      const raw = $('input').value;
+      const u = P.parseWeb(raw);
+      if (!u) return null;
+      const c = P.clean(u.href);
+      const strip = $('strip').checked;
+      const url = strip && c.removed.length ? c.url : u.href;
+      const same = tab && P.parseWeb(tab.url) && P.parseWeb(tab.url).hostname === u.hostname;
+      return { url, removed: c.removed, same: !!same, title: same ? (tab.title || '') : '' };
+    }
+
+    function render(){
+      current = compute();
+      const edited = !!tab && P.isWeb(tab.url) && $('input').value.trim() !== tab.url;
+      $('reset').hidden = !edited;
+      $('stripRow').hidden = !(current && current.removed.length);
+      if (current && current.removed.length){
+        const r = current.removed;
+        $('stripKeys').textContent = `(${r[0]}${r.length > 1 ? ` 외 ${r.length - 1}개` : ''})`;
+        $('stripRow').title = '지우는 꼬리표: ' + r.join(', ');
+      }
+
+      if (!current){
+        $('secret').hidden = true;
+        const empty = $('empty');
+        empty.hidden = false; $('canvas').hidden = true;
+        empty.textContent = $('input').value.trim()
+          ? '웹 주소(http:// 또는 https://)를 넣으면 QR이 생겨요.'
+          : (notice || '아래 칸에 주소를 넣으면 QR이 생겨요.');
+        $('title').textContent = tab && tab.title ? tab.title : '이 페이지';
+        $('url').textContent = tab && tab.url && !$('input').value.trim() ? tab.url : '';
+        $('meta').textContent = '';
+        ['big', 'png', 'copy'].forEach(k => { $(k).disabled = true; });
+        root.classList.add('pq-off');
+        return;
+      }
+      root.classList.remove('pq-off');
+      ['big', 'png', 'copy'].forEach(k => { $(k).disabled = false; });
+      $('title').textContent = current.title || (current.same ? '제목 없는 페이지' : '직접 넣은 주소');
+      $('url').textContent = P.pretty(current.url);
+      const sec = P.secrets(current.url);
+      $('secret').hidden = !sec.length;
+      $('secret').textContent = sec.length ? `⚠️ 주소에 로그인 정보가 있을 수 있어요 (${sec.slice(0, 3).join(', ')}${sec.length > 3 ? ' …' : ''}). 학생과 나누기 전에 확인하세요.` : '';
+      $('empty').hidden = true; $('canvas').hidden = false;
+      try {
+        const q = P.draw($('canvas'), current.url, 520);
+        const long = current.url.length > P.LONG;
+        $('meta').textContent = `${current.url.length}자 · ${q.size}×${q.size}칸` +
+          (long ? ' · 주소가 길어 촘촘해요. 꼬리표를 지우거나 짧은 주소를 써 보세요.' : (q.size <= 33 ? ' · 멀리서도 잘 찍혀요' : ''));
+        $('meta').classList.toggle('pq-warn', long);
+      } catch (_) {
+        $('canvas').hidden = true; $('empty').hidden = false;
+        $('empty').textContent = '주소가 너무 길어 QR로 만들 수 없어요.';
+        ['big', 'png', 'copy'].forEach(k => { $(k).disabled = true; });
+      }
+    }
+
+    $('input').addEventListener('input', render);
+    $('strip').addEventListener('change', render);
+    $('reset').addEventListener('click', () => { $('input').value = tab ? tab.url : ''; render(); $('input').focus(); });
+    $('big').addEventListener('click', () => { if (current) adapter.openBig(current.url, current.title); });
+    $('copy').addEventListener('click', async () => {
+      if (!current) return;
+      const ok = await adapter.copyText(current.url);
+      say(ok ? '✅ 주소를 복사했어요' : '복사에 실패했어요. 다시 눌러 주세요.');
+    });
+    $('png').addEventListener('click', () => {
+      if (!current) return;
+      const data = P.pngDataUrl(doc, current.url, current.title);
+      (adapter.savePng || savePng)(data, P.fileName(current.title, current.url));
+      say('✅ QR 그림(PNG)을 저장했어요');
+    });
+    function savePng(data, name){
+      const a = doc.createElement('a'); a.href = data; a.download = name;
+      doc.body.appendChild(a); a.click(); a.remove();
+    }
+
+    async function refresh(){
+      try { tab = await adapter.getTab(); } catch (_) { tab = null; }
+      notice = tab ? P.why(tab.url) : '이 탭의 주소를 읽을 수 없어요.';
+      $('input').value = tab && !notice ? tab.url : '';
+      $('strip').checked = true;
+      render();
+    }
+    const ready = refresh();
+    return { refresh, ready, current: () => current };
+  }
+  return { mount };
+})();
+
+// 전체 화면 QR (교실 TV용): 제목 + 화면 가득 QR + 짧은 주소
+const PageQRBig = (() => {
+  function mount(root, data, adapter = {}){
+    const P = PageQR, doc = root.ownerDocument, win = doc.defaultView;
+    root.classList.add('pq-big');
+    root.innerHTML = `
+      <div class="pq-big-bar">
+        <button type="button" class="pq-btn pq-sm" data-r="png">⬇ PNG 저장</button>
+        <button type="button" class="pq-btn pq-sm" data-r="close" hidden>✕ 닫기</button>
+      </div>
+      <h1 class="pq-big-title" data-r="title"></h1>
+      <canvas class="pq-big-canvas" data-r="canvas" role="img" aria-label="QR 코드"></canvas>
+      <div class="pq-big-url" data-r="url"></div>
+      <div class="pq-big-tip">📱 휴대폰 카메라를 QR에 비추면 이 페이지가 열려요</div>`;
+    const $ = k => root.querySelector(`[data-r="${k}"]`);
+    if (!data){
+      $('title').textContent = '보여 줄 주소가 없어요';
+      $('url').textContent = 'http:// 또는 https:// 로 시작하는 웹 주소만 크게 보여 줄 수 있어요.';
+      $('canvas').hidden = true; $('png').hidden = true;
+      return { layout(){}, destroy(){} };
+    }
+    $('title').textContent = data.title || P.shortUrl(data.url, 40);
+    $('url').textContent = P.shortUrl(data.url, 60);
+    if (adapter.close){ $('close').hidden = false; $('close').addEventListener('click', adapter.close); }
+    $('png').addEventListener('click', () => {
+      const a = doc.createElement('a');
+      a.href = P.pngDataUrl(doc, data.url, data.title); a.download = P.fileName(data.title, data.url);
+      doc.body.appendChild(a); a.click(); a.remove();
+    });
+    function layout(){
+      const W = root.clientWidth, H = root.clientHeight;
+      const used = $('title').offsetHeight + $('url').offsetHeight + root.querySelector('.pq-big-tip').offsetHeight + 56;
+      const side = Math.max(140, Math.floor(Math.min(W * 0.92, H - used)));
+      const dpr = win.devicePixelRatio || 1;
+      P.draw($('canvas'), data.url, side * dpr, 3);
+      $('canvas').style.width = $('canvas').style.height = side + 'px';
+    }
+    layout();
+    win.addEventListener('resize', layout);
+    return { layout, destroy(){ win.removeEventListener('resize', layout); } };
+  }
+  return { mount };
+})();
+// ==ui:end==
+</script>
+<script>
+// ---------------- 체험 페이지 전용: 가짜 브라우저 탭 ----------------
+(() => {
+  const $ = id => document.getElementById(id);
+  // 체험용 가상의 페이지 (실제 사이트 아님). body는 이 파일에 고정된 문구만 사용
+  const PAGES = [
+    { title: '4학년 2반 학급 누리집 - 햇살초등학교',
+      url: 'https://example.org/class/4-2/notice?utm_source=newsletter&utm_medium=email&utm_campaign=nov&fbclid=IwAR0dEmO123',
+      body: `<div class="site">햇살초등학교 · 4학년 2반</div><h2>📢 이번 주 알림장</h2>
+        <div class="box">✏️ 금요일까지 <b>과학 관찰 일지</b> 사진을 올려 주세요.<br>🎒 목요일 현장체험학습: 편한 운동화, 물병 챙기기</div>
+        <p>이 주소에는 가정통신문 메일에서 따라온 <b>추적 꼬리표</b>(utm_…, fbclid)가 붙어 있어요. 팝업의 "추적 꼬리표 지우기"를 껐다 켜 보면 QR 칸 수가 달라져요.</p>` },
+    { title: '물의 순환 실험 영상 - 햇살 과학관',
+      url: 'https://example.org/science/water-cycle-video',
+      body: `<div class="site">햇살 과학관 · 영상 자료</div><h2>🎬 지퍼백으로 만드는 작은 물의 순환</h2>
+        <div class="box">▶ 4분 12초 · 준비물: 지퍼백, 물, 파란 물감, 테이프</div>
+        <p>창문에 붙인 지퍼백 속 물이 햇빛을 받아 증발하고, 다시 물방울로 맺혀 떨어지는 모습을 관찰해요.</p>
+        <p>짧은 주소라 QR 칸이 적어서 교실 뒤쪽에서도 잘 찍혀요.</p>` },
+    { title: '현장체험학습 의견 설문',
+      url: 'https://example.org/forms/fieldtrip-2026',
+      body: `<div class="site">햇살초 온라인 설문</div><h2>🚌 현장체험학습 어디로 가고 싶나요?</h2>
+        <div class="box">① 과학관 ② 역사박물관 ③ 수목원 ④ 기타</div>
+        <p>설문 링크를 칠판에 적어 주면 오타가 나기 쉬워요. 「크게 보기」로 띄우면 모두가 1분 안에 접속!</p>` },
+    { title: '설정', url: 'chrome://settings/',
+      body: `<h2>⚙️ 설정</h2><div class="set"><div>나와 Google</div><div>자동 완성 및 비밀번호</div><div>개인 정보 보호 및 보안</div><div>모양</div></div>
+        <p style="margin-top:12px">크롬 설정 같은 특수 페이지는 다른 기기에서 열 수 없어서, 팝업이 안내 문구를 보여 줘요.</p>`, special: true },
+  ];
+  let cur = 0;
+
+  function renderPage(){
+    const tabs = $('tabs');
+    tabs.textContent = '';
+    PAGES.forEach((p, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tab' + (i === cur ? ' on' : ''); b.dataset.i = i;
+      b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === cur);
+      b.textContent = p.title;   // 제목은 textContent로
+      tabs.appendChild(b);
+    });
+    $('addr').textContent = PAGES[cur].url;
+    $('page').innerHTML = PAGES[cur].body;   // 이 파일에 고정된 체험용 문구
+    $('page').classList.toggle('special', !!PAGES[cur].special);
+  }
+  $('tabs').addEventListener('click', e => {
+    const b = e.target.closest('.tab'); if (!b) return;
+    cur = +b.dataset.i; renderPage(); ui.refresh();
+  });
+
+  async function copyText(text){
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (_) {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (_) {}
+      ta.remove(); return ok;
+    }
+  }
+
+  // 크게 보기: 확장에서는 새 탭(big.html?u=…)으로 열리고, 체험에서는 같은 화면 코드를 덮개로 띄움
+  let big = null;
+  function openBig(url, title){
+    const data = PageQR.readBigQuery(PageQR.bigQuery(url, title));   // 확장 big.js와 같은 검사(http/https만)
+    $('bigwrap').hidden = false;
+    if (big) big.destroy();
+    big = PageQRBig.mount($('big'), data, { close: closeBig });
+    big.layout();
+  }
+  function closeBig(){ $('bigwrap').hidden = true; if (big){ big.destroy(); big = null; } $('tool').focus(); }
+
+  const ui = PageQRPopup.mount($('popup'), {
+    getTab: async () => ({ title: PAGES[cur].title, url: PAGES[cur].url }),
+    openBig, copyText,
+  });
+
+  // 툴바 아이콘 = 팝업 열고 닫기
+  function setOpen(open){
+    $('popwrap').hidden = !open;
+    $('tool').classList.toggle('on', open);
+    $('tool').classList.toggle('pulse', !open);
+    $('tool').setAttribute('aria-expanded', open);
+    $('hint').hidden = open;
+    if (open) ui.refresh();
+  }
+  $('tool').addEventListener('click', () => setOpen($('popwrap').hidden));
+  $('page').addEventListener('click', () => { if (!$('popwrap').hidden && innerWidth > 900) setOpen(false); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !$('bigwrap').hidden){ closeBig(); return; }
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.code === 'KeyQ' || e.key === 'q' || e.key === 'Q')){ e.preventDefault(); setOpen($('popwrap').hidden); }
+  });
+
+  renderPage();
+  ui.ready.then(() => {});
+  window.__demo = { ui, pages: PAGES, setOpen, openBig, closeBig, select(i){ cur = i; renderPage(); return ui.refresh(); } };
+})();
+</script>
+</body>
+</html>

@@ -35,8 +35,17 @@ const SourceTag = (() => {
     return title;
   }
 
-  // 지금 보고 있는 문서에서 제목·사이트 이름·주소 읽기
-  function readMeta(doc, loc){
+  // 주소 정리: 크롬 '텍스트 조각' 꼬리는 늘 떼고, 기본으로 ?쿼리·#해시도 뗌(검색어·로그인 토큰 등이 출처에 남지 않게)
+  // fullUrl 이 true 면 ?쿼리·#해시를 그대로 둠 (게시판 글 번호처럼 주소에 꼭 필요한 경우)
+  function cleanUrl(href, fullUrl){
+    let url = String(href == null ? '' : href).replace(/:~:.*$/, '').replace(/#$/, '');
+    if (fullUrl) return url;
+    try { const u = new URL(url); u.search = ''; u.hash = ''; return u.href; }
+    catch (_) { return url.replace(/[?#].*$/, ''); }
+  }
+
+  // 지금 보고 있는 문서에서 제목·사이트 이름·주소 읽기 (opt.fullUrl: 주소 전체 넣기)
+  function readMeta(doc, loc, opt){
     const meta = sel => { const el = doc.querySelector(sel); return el ? clean(el.getAttribute('content')) : ''; };
     const host = (loc && loc.hostname || '').replace(/^www\./, '');
     const site = meta('meta[property="og:site_name"]') || meta('meta[name="application-name"]') || host || '이름 없는 사이트';
@@ -47,8 +56,7 @@ const SourceTag = (() => {
     if (/^https?:/i.test(author)) author = '';
     const pub = meta('meta[property="article:published_time"]') || meta('meta[name="date"]') || meta('meta[itemprop="datePublished"]');
     const ym = pub.match(/(19|20)\d{2}/);
-    let url = loc ? String(loc.href) : '';
-    url = url.replace(/#:~:.*$/, '');               // 크롬 '텍스트 조각' 꼬리 제거
+    const url = loc ? cleanUrl(loc.href, opt && opt.fullUrl) : '';
     return { title, site, url, author, year: ym ? ym[0] : '' };
   }
 
@@ -126,7 +134,7 @@ const SourceTag = (() => {
     } catch (_) { /* 알림이 안 떠도 복사는 정상 */ }
   }
 
-  return { FORMATS, MAX_HISTORY, ymd, koDate, stripSite, readMeta, buildCitation, composeText, composeHtml,
+  return { FORMATS, MAX_HISTORY, cleanUrl, ymd, koDate, stripSite, readMeta, buildCitation, composeText, composeHtml,
     selectionHtml, isEditableTarget, handleCopy, makeEntry, addHistory, historyText, toast, esc };
 })();
 // ==core:end==

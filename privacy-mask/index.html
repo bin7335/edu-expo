@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>가림막 - 명단 개인정보 가리기</title>
+<meta name="description" content="명단이나 안내문을 붙여 넣으면 이름·전화번호·주민번호·이메일·주소 상세·계좌번호를 규칙별로 골라 즉시 가려 주는 개인정보 마스킹 도구. 엑셀 표는 열 단위로 가리기 지원. 내 PC에서만 처리됩니다.">
+<style>
+  :root{
+    --bg:#eef1f6; --panel:#fff; --ink:#1f2633; --sub:#667085; --line:#dce1ea;
+    --brand:#27355c; --brand2:#3d5292; --hi:#ffd84d; --hi-soft:#fff3c2; --ok:#1f8a5b; --warn:#c2412d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:linear-gradient(110deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.85}
+  .grow{flex:1}
+  .safe{display:inline-flex;align-items:center;gap:6px;background:#e7f7ee;color:#11603d;border:1px solid #a6dcbf;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 13px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.hi{background:var(--hi);color:#3b2f00;border-color:transparent}
+  .btn.small{font-size:12.5px;padding:6px 10px}
+  main{max-width:1400px;margin:0 auto;padding:12px 20px 48px;min-width:0;display:flex;flex-direction:column;gap:12px}
+  .rules{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .rules .ttl{font-weight:800;font-size:14px;margin-right:4px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:6px 11px;font-size:13.5px;font-weight:600;cursor:pointer;user-select:none;background:#fafbfd}
+  .chip input{accent-color:var(--brand);width:16px;height:16px;margin:0}
+  .chip.on{border-color:var(--brand2);background:#eef2ff}
+  .chip .n{min-width:20px;text-align:center;background:var(--hi);color:#3b2f00;border-radius:999px;font-size:11.5px;padding:1px 6px;font-weight:800}
+  .chip .n.zero{background:#e8eaef;color:#8a92a3}
+  .total{margin-left:auto;font-size:14px;font-weight:700;color:var(--brand)}
+  .total b{font-size:22px;color:var(--warn)}
+  .panes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+  .pane{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+  .pane-h{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .pane-h h2{margin:0;font-size:15px}
+  .pane-h .tag{font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 7px;background:#eef2ff;color:var(--brand2)}
+  .pane-h .tag.tsv{background:#e7f7ee;color:#11603d}
+  textarea#src{flex:1;width:100%;min-height:380px;border:0;padding:12px;font:inherit;font-size:13.5px;line-height:1.6;resize:vertical;tab-size:14;white-space:pre;outline:none;background:#fcfcfe}
+  .out{flex:1;min-height:380px;max-height:520px;overflow:auto;padding:12px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+  .m{background:var(--hi-soft);border-bottom:2px solid var(--hi);border-radius:3px;padding:0 1px;font-weight:700}
+  .m.col{background:#e8ecf7;border-bottom-color:#9aa8d1}
+  table.t{border-collapse:collapse;font-size:13px;white-space:nowrap;min-width:100%}
+  table.t th,table.t td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+  table.t th{background:#f3f5fa;position:sticky;top:-12px;z-index:1}
+  table.t th .hd{font-weight:800;display:block;margin-bottom:3px}
+  .colbtn{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--sub);cursor:pointer;white-space:nowrap}
+  .colbtn input{margin:0;accent-color:var(--warn)}
+  th.masked{background:#fde9e5!important}
+  th.masked .colbtn{color:var(--warn)}
+  .foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 12px;border-top:1px solid var(--line);background:#fafbfd}
+  .note{font-size:12px;color:var(--sub);line-height:1.5}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#1f2633;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:20}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .tips{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .tips div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--sub);line-height:1.5}
+  .tips b{color:var(--ink)}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.9);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:10}
+  @media (max-width:860px){
+    header{padding:10px 12px;gap:8px}
+    header p{display:none}
+    header h1{font-size:19px}
+    .safe{font-size:12px;padding:4px 9px}
+    main{padding:10px 10px 56px}
+    .panes{grid-template-columns:minmax(0,1fr)}
+    textarea#src{min-height:200px;max-height:260px}
+    .out{min-height:200px;max-height:400px}
+    .total{margin-left:0;width:100%}
+    .chip{font-size:12.5px;padding:5px 9px}
+    .tips{grid-template-columns:1fr}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="가림막">
+<meta property="og:description" content="명단 속 이름·전화·주민번호·계좌를 골라 한 번에 가리기, 내 PC에서만 처리">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/27-privacy-mask.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/privacy-mask/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🙈</div>
+  <div>
+    <h1>가림막</h1>
+    <p>명단·안내문 속 개인정보를 규칙대로 한 번에 가리기</p>
+  </div>
+  <span class="safe">🔒 내 PC에서만 처리 · 외부 전송 없음</span>
+  <div class="grow"></div>
+  <button class="btn small" id="sampleTsv" type="button" style="background:#ffffff22;color:#fff;border-color:#ffffff66">📋 샘플: 엑셀 명단</button>
+  <button class="btn small" id="sampleTxt" type="button" style="background:#ffffff22;color:#fff;border-color:#ffffff66">📝 샘플: 안내 문자</button>
+</header>
+
+<main>
+  <section class="rules" aria-label="가릴 항목">
+    <span class="ttl">가릴 항목</span>
+    <div id="chips" style="display:contents"></div>
+    <div class="total">가려진 곳 <b id="total">0</b>개</div>
+  </section>
+
+  <section class="panes">
+    <div class="pane">
+      <div class="pane-h">
+        <h2>① 원문</h2>
+        <span class="tag" id="modeTag">텍스트</span>
+        <div class="grow"></div>
+        <button class="btn small" id="pasteBtn" type="button">📥 붙여넣기</button>
+        <button class="btn small" id="clearBtn" type="button">지우기</button>
+      </div>
+      <textarea id="src" spellcheck="false" aria-label="원문 입력" placeholder="명단, 안내 문자, 엑셀에서 복사한 표를 여기에 붙여 넣으세요."></textarea>
+    </div>
+    <div class="pane">
+      <div class="pane-h">
+        <h2>② 가린 결과</h2>
+        <span class="tag" id="outTag">실시간</span>
+        <div class="grow"></div>
+        <button class="btn small hi" id="copyBtn" type="button">📋 복사</button>
+        <button class="btn small primary" id="saveBtn" type="button">💾 TXT 저장</button>
+      </div>
+      <div class="out" id="out" aria-live="polite"></div>
+      <div class="foot">
+        <span class="note" id="footNote">노란 표시가 가려진 부분이에요. 엑셀 표는 열 제목의 <b>이 열 가리기</b>로 통째로 가릴 수 있어요.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="tips">
+    <div><b>이름은 추정이에요.</b> 성씨+두 글자 이름을 찾아 가립니다. 표의 ‘이름·성명’ 열은 자동으로 이름으로 봐요. 저장 전 한 번 훑어보세요.</div>
+    <div><b>엑셀 → 가림막 → 엑셀.</b> 셀을 복사해 붙이면 표로 인식하고, 결과를 복사하면 다시 엑셀 칸에 그대로 들어가요.</div>
+    <div><b>아무것도 저장하지 않아요.</b> 입력한 내용은 이 탭 안에서만 처리되고 새로고침하면 사라집니다.</div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id);};
+
+  // ---------- 샘플 (모두 가상의 정보) ----------
+  var SAMPLE_TSV=[
+    ['번호','이름','보호자 연락처','이메일','주소','비고'],
+    ['1','김하늘','010-2345-5678','haneul.kim@example.com','햇살시 별빛구 햇빛로 12, 101동 1203호','환불계좌 농협 302-1234-5678-91'],
+    ['2','이서준','010-8765-4321','seojun22@example.com','햇살시 별빛구 무지개길 7-3','주민번호 150101-3123456 확인 필요'],
+    ['3','박지호','010 1111 2222','jiho.park@example.org','햇살시 달빛구 은하수로 45 202호','우유 알레르기'],
+    ['4','최민준','01033334444','minjun@example.net','햇살시 별빛구 햇빛로 88, 305동 704호','국민은행 123456-01-234567'],
+    ['5','정예린','010-5555-6666','yerin.j@example.com','햇살시 달빛구 구름로 3','집 053-123-4567'],
+    ['6','강시우','010-7777-8888','siwoo.k@example.com','햇살시 별빛구 꽃잎길 21 1층','형제 강하윤(2학년)']
+  ].map(function(r){return r.join('\t');}).join('\n');
+
+  var SAMPLE_TXT=
+'[햇살초등학교 3학년 1반 현장체험학습 비상연락 안내]\n\n'+
+'인솔: 담임 윤하은 선생님 (010-2468-1357)\n'+
+'보건 담당: 한도윤 선생님, 학교 053-987-6543\n\n'+
+'1조 김하늘 학생 보호자 연락처 010-2345-5678\n'+
+'2조 이서준 학생은 출발 전 약 복용 (어머니 010-8765-4321)\n'+
+'3조 박지호, 최민준 학생은 버스 앞자리 배정\n\n'+
+'체험비 환불은 신한 110-234-567890 (예금주 정예린 보호자)로 보내 드립니다.\n'+
+'서류 제출: haneul.kim@example.com / 주민번호 150101-3123456 은 반드시 가린 뒤 제출!\n'+
+'집결 장소: 햇살시 별빛구 햇빛로 12, 101동 1203호 앞 놀이터 (오전 8시 30분)\n';
+
+  // ---------- 규칙 ----------
+  var ONE='김이박최정강조윤장임한오서신권황안송류유전홍고문양손배백허남심노하곽성차주우구민진지엄채원천방공현함변염여추도소석선설마길연위표명기반왕금옥육인맹제모탁국은편용예경봉';
+  var TWO='남궁|선우|제갈|황보|독고|사공|서문';
+  var PART='선생님|학생|어머니|아버지|보호자|어린이|에게|께서|이가|이는|이의|이랑|님|씨|군|양|은|는|이|가|을|를|의|와|과|도|만|께';
+  var STOP=('이번 이용 이상 이하 이내 이름 이후 이전 이미 이동 이유 이해 이야 안내 안전 안녕 신청 신발 주소 주의 주간 주말 주민 전화 전체 전달 전에 정보 정리 정도 정해 조사 조별 조회 기간 기타 기본 하루 하교 하고 우리 우유 방과 방법 방문 공지 공문 공개 공부 문의 문자 여름 여러 가정 강당 진행 진단 지원 지급 지금 차량 차시 성적 성별 선생 선택 설문 연락 연수 원격 원서 유의 유치 인원 인적 임시 장소 장학 제출 제외 채점 최종 최대 최소 추가 표시 한글 함께 현장 홍보 황사 고학 오전 오후 오늘 서류 송금 은행 구입 구매 금액 반드시 도착 도시 민원 반드 반갑 노란 배정 배부 출발 예금 경우 봉사 모두 모든 국어 석식 손씻 손수 진로 체험').split(' ');
+
+  var nameRe=new RegExp('((?:'+TWO+')[가-힣]{1,2}|['+ONE+'][가-힣]{2})(?=(?:'+PART+')?(?![가-힣]))','g');
+  var nameCellRe=/^\s*([가-힣]{2,5})\s*$/;
+
+  function stars(n){return new Array(Math.max(1,n)+1).join('*');}
+  function maskName(s){
+    if(s.length<=1) return '*';
+    if(s.length===2) return s[0]+'*';
+    return s[0]+stars(s.length-2)+s[s.length-1];
+  }
+  function maskDigits(s){return s.replace(/\d/g,'*');}
+  function maskAccount(num){
+    var g=num.split('-');
+    if(g.length===1){ var d=g[0]; return d.slice(0,3)+stars(d.length-5)+d.slice(-2); }
+    return g.map(function(x,i){
+      if(i===0) return x;
+      if(i===g.length-1) return x.length<=2? x : stars(x.length-2)+x.slice(-2);
+      return stars(x.length);
+    }).join('-');
+  }
+  function digitCount(s){return (s.match(/\d/g)||[]).length;}
+
+  var RULES=[
+    {id:'rrn',label:'주민번호',icon:'🪪',list:[
+      {nb:/\d/, re:/(\d{6})\s?-\s?([1-8])(\d{6})(?!\d)/g, fn:function(m){return m[1]+'-'+m[2]+'******';}}
+    ]},
+    {id:'phone',label:'전화번호',icon:'📞',list:[
+      {nb:/[\d-]/, re:/(01[016789])([-.\s]?)(\d{3,4})([-.\s]?)(\d{4})(?![\d-])/g, fn:function(m){return m[1]+'-'+stars(m[3].length)+'-'+m[5];}},
+      {nb:/[\d-]/, re:/(0(?:2|[3-6][1-5]|70))([-)\s])(\d{3,4})([-\s])(\d{4})(?![\d-])/g, fn:function(m){return m[1]+m[2]+stars(m[3].length)+m[4]+m[5];}}
+    ]},
+    {id:'email',label:'이메일',icon:'✉️',list:[
+      {re:/([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, fn:function(m){var l=m[1];return l.slice(0,2)+stars(Math.max(l.length-2,3))+'@'+m[2];}}
+    ]},
+    {id:'account',label:'계좌번호',icon:'🏦',list:[
+      {re:/((?:농협|국민|신한|우리|하나|기업|대구|경북|부산|광주|전북|경남|우체국|카카오뱅크|토스뱅크|케이뱅크|새마을금고|신협|수협|SC제일|iM뱅크)(?:은행)?\s*:?\s*)(\d[\d-]{8,20}\d)(?![\d-])/g,
+       fn:function(m){return m[1]+maskAccount(m[2]);}, group:2},
+      {nb:/[\d-]/, re:/(\d{2,6}(?:-\d{2,7}){2,4})(?![\d-])/g, test:function(m){var c=digitCount(m[1]);if(/^0(?:1[016789]|2|[3-6][1-5]|70)-\d{3,4}-\d{4}$/.test(m[1]))return false;return c>=10&&c<=16;}, fn:function(m){return maskAccount(m[1]);}}
+    ]},
+    {id:'addr',label:'주소 상세',icon:'🏠',list:[
+      {re:/([가-힣0-9]+(?:로|길))\s?(\d+(?:-\d+)?)((?:\s*,?\s*(?:[가-힣A-Za-z]+\s)?(?:\d+동\s*)?\d+(?:호|층))?)(?![가-힣\d])/g,
+       fn:function(m){return m[1]+' '+maskDigits(m[2])+maskDigits(m[3]);}, group:2},
+      {nb:/\d/, re:/(\d+동\s?\d+호)/g, fn:function(m){return maskDigits(m[1]);}}
+    ]},
+    {id:'name',label:'이름',icon:'👤',list:[
+      {nb:/[가-힣]/, re:nameRe, test:function(m){return STOP.indexOf(m[1].slice(0,2))<0;}, fn:function(m){return maskName(m[1]);}}
+    ]}
+  ];
+  var enabled={rrn:true,phone:true,email:true,account:true,addr:true,name:true};
+
+  // text → segments
+  function maskText(text, opt){
+    opt=opt||{};
+    var hits=[];
+    function free(a,b){for(var i=0;i<hits.length;i++){if(a<hits[i].b&&b>hits[i].a) return false;}return true;}
+    if(opt.nameCell && enabled.name){
+      var nm=nameCellRe.exec(text);
+      if(nm){var st=text.indexOf(nm[1]);hits.push({a:st,b:st+nm[1].length,rep:maskName(nm[1]),rule:'name'});}
+    }
+    RULES.forEach(function(r){
+      if(!enabled[r.id]) return;
+      r.list.forEach(function(p){
+        p.re.lastIndex=0; var m;
+        while((m=p.re.exec(text))){
+          if(m[0].length===0){p.re.lastIndex++;continue;}
+          // nb = 앞 글자 제외 조건(lookbehind 대체, iOS 16.4 미만 Safari 호환): 걸리면 다음 자리부터 다시 찾기
+          if(p.nb && m.index>0 && p.nb.test(text.charAt(m.index-1))){p.re.lastIndex=m.index+1;continue;}
+          if(p.test && !p.test(m)) continue;
+          var a=m.index,b=m.index+m[0].length,rep=p.fn(m);
+          var pre='';
+          if(p.group){ // 앞쪽 접두어(은행명, 도로명)는 원문 유지, 강조는 뒤쪽만
+            pre=m[1]; rep=rep.slice(pre.length);
+          }
+          if(free(a,b)) hits.push({a:a,b:b,rep:rep,pre:pre,rule:r.id});
+        }
+      });
+    });
+    hits.sort(function(x,y){return x.a-y.a;});
+    var segs=[],pos=0;
+    hits.forEach(function(h){
+      if(h.a>pos) segs.push({t:text.slice(pos,h.a)});
+      if(h.pre) segs.push({t:h.pre});
+      segs.push({t:h.rep,rule:h.rule});
+      pos=h.b;
+    });
+    if(pos<text.length) segs.push({t:text.slice(pos)});
+    return {segs:segs,hits:hits};
+  }
+
+  function isTsv(text){
+    var lines=text.replace(/\r/g,'').split('\n').filter(function(l){return l.trim()!=='';});
+    if(lines.length<2) return false;
+    var withTab=lines.filter(function(l){return l.indexOf('\t')>=0;}).length;
+    return withTab>=Math.ceil(lines.length*0.6);
+  }
+
+  var colMask={}; // 열 index → true
+  var lastPlain='';
+  function esc(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function segsHtml(segs){return segs.map(function(s){return s.rule? '<span class="m'+(s.rule==='col'?' col':'')+'" title="'+ruleLabel(s.rule)+'">'+esc(s.t)+'</span>' : esc(s.t);}).join('');}
+  function segsText(segs){return segs.map(function(s){return s.t;}).join('');}
+  function ruleLabel(id){if(id==='col')return '열 전체 가림';for(var i=0;i<RULES.length;i++)if(RULES[i].id===id)return RULES[i].label;return '';}
+  function maskWhole(cell){
+    var t=cell.trim(); if(!t) return cell;
+    if(/^[가-힣]{2,5}$/.test(t)) return maskName(t);
+    return t.length<=2? stars(t.length) : t[0]+stars(t.length-2)+t[t.length-1];
+  }
+
+  function render(){
+    var text=$('src').value.replace(/\r/g,'');
+    var counts={},total=0;
+    RULES.forEach(function(r){counts[r.id]=0;});
+    function tally(hits){hits.forEach(function(h){counts[h.rule]=(counts[h.rule]||0)+1;total++;});}
+    var out=$('out');
+    if(isTsv(text)){
+      $('modeTag').textContent='엑셀 표 ('+'TSV)'; $('modeTag').className='tag tsv';
+      var rows=text.split('\n'); while(rows.length&&rows[rows.length-1]==='') rows.pop();
+      var grid=rows.map(function(r){return r.split('\t');});
+      var ncol=grid.reduce(function(m,r){return Math.max(m,r.length);},0);
+      var head=grid[0]||[];
+      var nameCols={};
+      head.forEach(function(h,i){if(/이름|성명|학생명|보호자명|아동명|담임/.test(h)) nameCols[i]=true;});
+      var html='<table class="t"><thead><tr>';
+      var outRows=[];
+      var hr=[];
+      for(var c=0;c<ncol;c++){
+        var h=head[c]||'';
+        hr.push(h);
+        html+='<th class="'+(colMask[c]?'masked':'')+'"><span class="hd">'+esc(h||('열 '+(c+1)))+'</span>'+
+          '<label class="colbtn"><input type="checkbox" data-col="'+c+'"'+(colMask[c]?' checked':'')+'> 이 열 가리기</label></th>';
+      }
+      html+='</tr></thead><tbody>';
+      outRows.push(hr.join('\t'));
+      for(var r=1;r<grid.length;r++){
+        html+='<tr>'; var line=[];
+        for(var k=0;k<ncol;k++){
+          var cell=grid[r][k]||'';
+          var segs;
+          if(colMask[k] && cell.trim()){ segs=[{t:maskWhole(cell),rule:'col'}]; total++; counts.__col=(counts.__col||0)+1; }
+          else { var res=maskText(cell,{nameCell:!!nameCols[k]}); tally(res.hits); segs=res.segs; }
+          html+='<td>'+segsHtml(segs)+'</td>'; line.push(segsText(segs));
+        }
+        html+='</tr>'; outRows.push(line.join('\t'));
+      }
+      html+='</tbody></table>';
+      out.style.whiteSpace='normal';
+      out.innerHTML=html;
+      lastPlain=outRows.join('\n');
+      $('outTag').textContent='표 '+(grid.length-1)+'행 × '+ncol+'열';
+    } else {
+      $('modeTag').textContent='텍스트'; $('modeTag').className='tag';
+      var res2=maskText(text,{}); tally(res2.hits);
+      out.style.whiteSpace='pre-wrap';
+      out.innerHTML=text? segsHtml(res2.segs) : '<span class="note">왼쪽에 내용을 붙여 넣으면 여기에 가린 결과가 바로 나타나요.</span>';
+      lastPlain=segsText(res2.segs);
+      $('outTag').textContent='실시간';
+    }
+    RULES.forEach(function(r){
+      var n=$('n-'+r.id); n.textContent=counts[r.id]; n.className='n'+(counts[r.id]?'':' zero');
+    });
+    $('total').textContent=total;
+  }
+
+  // 칩
+  $('chips').innerHTML=RULES.map(function(r){
+    return '<label class="chip on" id="chip-'+r.id+'"><input type="checkbox" data-rule="'+r.id+'" checked> '+r.icon+' '+r.label+' <span class="n" id="n-'+r.id+'">0</span></label>';
+  }).join('');
+  $('chips').addEventListener('change',function(e){
+    var id=e.target.getAttribute('data-rule'); if(!id) return;
+    enabled[id]=e.target.checked;
+    $('chip-'+id).classList.toggle('on',e.target.checked);
+    render();
+  });
+  $('out').addEventListener('change',function(e){
+    var c=e.target.getAttribute('data-col'); if(c===null) return;
+    colMask[c]=e.target.checked; render();
+  });
+
+  var timer;
+  $('src').addEventListener('input',function(){clearTimeout(timer);timer=setTimeout(render,80);});
+  // 탭 키로 탭 문자 입력
+  $('src').addEventListener('keydown',function(e){
+    if(e.key==='Tab'){e.preventDefault();var t=e.target,s=t.selectionStart;t.setRangeText('\t',s,t.selectionEnd,'end');render();}
+  });
+  function load(v,keepCols){$('src').value=v; if(!keepCols) colMask={}; render();}
+  $('sampleTsv').addEventListener('click',function(){load(SAMPLE_TSV);});
+  $('sampleTxt').addEventListener('click',function(){load(SAMPLE_TXT);});
+  $('clearBtn').addEventListener('click',function(){load('');$('src').focus();});
+  $('pasteBtn').addEventListener('click',function(){
+    if(navigator.clipboard&&navigator.clipboard.readText){
+      navigator.clipboard.readText().then(function(t){load(t);toast('붙여 넣었어요');},function(){$('src').focus();toast('Ctrl+V로 붙여 넣어 주세요');});
+    } else {$('src').focus();toast('Ctrl+V로 붙여 넣어 주세요');}
+  });
+
+  function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1800);}
+  function copyText(s){
+    if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(s);}
+    return new Promise(function(ok,no){
+      var ta=document.createElement('textarea');ta.value=s;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy')?ok():no();}catch(err){no(err);} document.body.removeChild(ta);
+    });
+  }
+  $('copyBtn').addEventListener('click',function(){
+    if(!lastPlain){toast('복사할 내용이 없어요');return;}
+    copyText(lastPlain).then(function(){toast(isTsv($('src').value)?'복사 완료! 엑셀 칸에 그대로 붙여 넣으세요':'가린 결과를 복사했어요');},function(){toast('복사에 실패했어요. 결과를 직접 선택해 복사해 주세요');});
+  });
+  $('saveBtn').addEventListener('click',function(){
+    if(!lastPlain){toast('저장할 내용이 없어요');return;}
+    var blob=new Blob(['﻿'+lastPlain.replace(/\n/g,'\r\n')],{type:'text/plain;charset=utf-8'});
+    var a=document.createElement('a');
+    var d=new Date(),p=function(n){return String(n).padStart(2,'0');};
+    a.href=URL.createObjectURL(blob);a.download='가림막_결과_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.txt';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+    toast('TXT 파일로 저장했어요');
+  });
+
+  // 테스트용 노출
+  window.__mask={maskText:maskText,render:render,get plain(){return lastPlain;},setCol:function(c,v){colMask[c]=v;render();}};
+
+  load(SAMPLE_TSV);
+})();
+</script>
+</body>
+</html>

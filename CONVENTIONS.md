@@ -34,3 +34,10 @@
 - 체험 페이지: `ext-<slug>/index.html` — 확장을 설치하지 않아도 **같은 기능을 페이지 안에서 그대로 체험**(팝업 UI를 페이지에 띄우고, content script 로직을 예시 본문에 적용). 상단에 "크롬 확장" 배지, [zip 내려받기] 버튼(`../extensions/<slug>.zip`), 설치 3단계 안내. 첫 화면 1280×720이 썸네일.
 - 체험 페이지와 확장은 핵심 로직 JS를 같은 코드로 유지(복붙 허용, 단 동작 동일).
 - 검증: 체험 페이지는 위 검증 규칙 그대로. 확장은 manifest JSON 유효성, 모든 참조 파일 존재, JS 구문 검사(node --check). 가능하면 `--load-extension`으로 실제 로드해 보고, 크롬 정책상 막히면 그렇다고 보고.
+
+## 목록·배포·테스트 (2026-11-07 추가)
+- **목록 원본은 `catalog.json` 하나.** 새 앱을 넣거나 이름·소개를 고치면 `node tools/build-catalog.js` 실행 → 갤러리 `index.html`, `gallery-cards.md`, 각 페이지 OG 메타·CSP, `dist/act-board/`(개별 등록 패키지, git 제외)가 다시 만들어진다. `<!-- og:auto -->`, `<!-- csp:auto -->` 블록은 손으로 고치지 않는다.
+- **개별 업로드 가능해야 한다**(act-board.com): 페이지는 다른 파일을 상대 경로로 읽지 않는다. 데이터는 HTML 안에 인라인(fetch 금지). 확장 zip·아이콘 링크는 빌드가 절대 주소·data URI로 바꿔 준다.
+- **테스트**: `node tests/run-all.mjs [slug...]` — 정적 검사(외부 리소스·eval·lookbehind·noopener·CSP·메타), 로드 오류, 외부 요청, 375px 넘침, XSS(입력칸·붙여넣기·파일·주소·저장값 오염), 버튼 연타, `tests/specs/<slug>.js` 시나리오. 새 앱은 spec부터 쓰고(빨강) 앱을 만들어 통과(초록)시킨다.
+- **보안 규칙**: 사용자 입력·localStorage·URL·파일 내용을 `innerHTML`/속성 문자열에 넣을 때는 반드시 이스케이프(또는 textContent). CSV 내보내기는 `= + - @`로 시작하는 셀 앞에 `'`. 개인정보를 저장하는 앱은 "이 PC 기록 모두 지우기" 버튼을 둔다. 정규식 lookbehind 금지(구형 iOS).
+- 확장 체험 페이지 빌드: law-link `python tools/build-law.py`, page-qr `node tools/page-qr/build.js <저장소경로>`, pdf-tidy `node tools/pdf-tidy/build.js`(템플릿 `tools/pdf-tidy/template.html`을 고친다).

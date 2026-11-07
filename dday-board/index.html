@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교무실 알림판 - 교무실·교실 TV용 D-day 대시보드</title>
+<meta name="description" content="큰 날짜와 시계, 다가오는 학교 행사 D-day, 오늘 당번·회의·마감 공문, 이번 주 급식, 오늘의 한 마디, 흘러가는 공지 띠를 한 화면에 보여 주는 교무실·교실 TV용 알림판. 편집 모드와 표시 모드, 다크/라이트 전환.">
+<style>
+  :root{
+    --bg:#0e1424; --bg2:#151d33; --card:#1b2540; --ink:#f3f6ff; --sub:#9aa6c7; --line:#2a3658;
+    --acc:#ffb703; --acc2:#5eead4; --warn:#ff6b6b; --soft:#24304f;
+  }
+  body.light{
+    --bg:#f4f1ea; --bg2:#fbf8f2; --card:#fff; --ink:#1f2433; --sub:#6d6a63; --line:#e6e0d4;
+    --acc:#e07a00; --acc2:#0f766e; --warn:#d63939; --soft:#f3efe6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:radial-gradient(circle at 15% 0%,var(--bg2),var(--bg) 60%);color:var(--ink)}
+  .screen{height:100vh;min-height:620px;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;gap:1.6vh;padding:1.8vh 2vw 0}
+
+  .screen>*{min-width:0}
+  .top{display:flex;align-items:center;gap:10px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:clamp(15px,1.35vw,20px)}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:var(--acc);display:grid;place-items:center;font-size:19px}
+  .brand small{color:var(--sub);font-weight:600;font-size:.78em}
+  .grow{flex:1}
+  .tools{display:flex;gap:6px;opacity:.55;transition:opacity .2s}
+  .tools:hover,.tools:focus-within{opacity:1}
+  .btn{font:inherit;font-size:13.5px;font-weight:700;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(1.12)}
+  .btn.main{background:var(--acc);color:#1f1400;border-color:transparent}
+
+  .hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:1.4vw}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:1.6vh 1.4vw}
+  .clock{display:flex;align-items:center;gap:2vw}
+  .time{font-size:clamp(54px,7.4vw,120px);font-weight:900;letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums}
+  .time small{font-size:.32em;color:var(--sub);margin-left:4px;letter-spacing:0}
+  .date{font-size:clamp(18px,2vw,32px);font-weight:800;line-height:1.3}
+  .date .wd{color:var(--acc)}
+  .date small{display:block;color:var(--sub);font-size:.55em;font-weight:600;margin-top:4px}
+  .quote{display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  .quote .lab{font-size:13px;font-weight:800;color:var(--acc2);letter-spacing:.5px}
+  .quote p{margin:.6vh 0 0;font-size:clamp(18px,1.9vw,30px);font-weight:800;line-height:1.4;word-break:keep-all}
+  .quote::after{content:"“";position:absolute;right:16px;top:-24px;font-size:150px;color:var(--soft);font-family:Georgia,serif;z-index:0}
+  .quote>*{position:relative;z-index:1}
+
+  .ddays{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1vw}
+  .dd{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1.4vh 1vw;display:flex;flex-direction:column;gap:2px;min-width:0}
+  .dd .em{font-size:clamp(20px,2vw,30px)}
+  .dd .nm{font-weight:800;font-size:clamp(14px,1.25vw,19px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dd .dt{font-size:12.5px;color:var(--sub)}
+  .dd .d{font-size:clamp(28px,3.1vw,50px);font-weight:900;color:var(--acc);line-height:1.05;font-variant-numeric:tabular-nums}
+  .dd.first{background:linear-gradient(140deg,var(--acc),#fb8500);color:#1f1400;border-color:transparent}
+  .dd.first .d,.dd.first .dt{color:#1f1400}
+  .dd.today .d{animation:blink 1.4s ease-in-out infinite}
+  @keyframes blink{50%{opacity:.45}}
+  .dd.empty{align-items:center;justify-content:center;color:var(--sub);font-size:14px;border-style:dashed}
+
+  .lists{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1vw;min-height:0}
+  .lists .card{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .lists h2{margin:0 0 .8vh;font-size:clamp(15px,1.3vw,20px);display:flex;align-items:center;gap:6px}
+  .lists h2 .cnt{margin-left:auto;font-size:12px;color:var(--sub);font-weight:700}
+  .lists ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.7vh;overflow:auto}
+  .lists li{background:var(--soft);border-radius:12px;padding:.8vh .8vw;font-size:clamp(14px,1.2vw,19px);font-weight:700;display:flex;gap:8px;align-items:center;line-height:1.3}
+  .lists li .tm{color:var(--acc2);font-variant-numeric:tabular-nums;flex:none;font-weight:800}
+  .lists li .tm.done{color:var(--sub);text-decoration:line-through}
+  .lists li .tx{flex:1;min-width:0}
+  .badge{flex:none;font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 8px;background:var(--line);color:var(--ink)}
+  .badge.hot{background:var(--warn);color:#fff}
+  .badge.soon{background:var(--acc);color:#1f1400}
+
+  .meal{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.9vh 1vw;font-size:clamp(14px,1.2vw,18px);overflow:hidden}
+  .meal b{flex:none}
+  .src{font-size:11px;color:var(--sub);opacity:.8;margin:.4vh 0 0 4px}
+  .meal .days{display:flex;gap:8px;min-width:0;overflow:hidden}
+  .meal .dy{white-space:nowrap;color:var(--sub);font-weight:600}
+  .meal .dy i{font-style:normal;font-weight:800;margin-right:4px}
+  .meal .dy.on{color:var(--ink);background:var(--soft);border-radius:8px;padding:0 8px;font-weight:800}
+  .meal .dy.on i{color:var(--acc)}
+
+  .ticker{margin:0 -2vw;background:var(--acc);color:#1f1400;font-weight:800;font-size:clamp(15px,1.4vw,22px);overflow:hidden;white-space:nowrap;padding:1vh 0;display:flex;align-items:center}
+  .ticker .lab{flex:none;background:#1f1400;color:var(--acc);padding:2px 12px;margin:0 12px 0 2vw;border-radius:8px;font-size:.8em;position:relative;z-index:1}
+  .ticker .track{display:inline-flex;animation:scroll var(--dur,30s) linear infinite}
+  .ticker .track span{padding-right:4em}
+  .ticker .viewport{overflow:hidden;flex:1}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* 편집 모드 */
+  .editor{position:fixed;inset:0;z-index:50;background:rgba(5,8,18,.6);display:none;align-items:flex-start;justify-content:center;padding:3vh 12px;overflow:auto}
+  .editor.on{display:flex}
+  .ed{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:18px;width:min(980px,100%);padding:16px 18px}
+  .ed-h{display:flex;align-items:center;gap:8px;margin-bottom:6px;position:sticky;top:-3vh}
+  .ed-h h2{margin:0;font-size:19px}
+  .ed-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .ed section{background:var(--soft);border-radius:14px;padding:10px 12px}
+  .ed h3{margin:0 0 6px;font-size:14.5px;display:flex;align-items:center;gap:6px}
+  .ed h3 small{color:var(--sub);font-weight:500;font-size:11.5px}
+  .ed input,.ed textarea{font:inherit;font-size:13.5px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100%}
+  .ed textarea{resize:vertical;line-height:1.5}
+  .ev{display:grid;grid-template-columns:44px 1fr 140px 30px;gap:5px;margin-bottom:5px}
+  .ev input:first-child{text-align:center}
+  .dl{display:grid;grid-template-columns:1fr 140px 30px;gap:5px;margin-bottom:5px}
+  .x{border:0;background:none;color:var(--sub);font-size:18px;cursor:pointer}
+  .x:hover{color:var(--warn)}
+  .meals{display:grid;grid-template-columns:28px 1fr;gap:5px;align-items:center;font-weight:800;font-size:13px}
+  .wide{grid-column:1/-1}
+
+  .back{position:fixed;right:10px;bottom:6px;font-size:12px;color:var(--acc);background:#1f1400;padding:4px 10px;border-radius:20px;text-decoration:none;z-index:5}
+  .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--acc2);color:#04211d;font-weight:800;padding:8px 16px;border-radius:999px;z-index:60;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.on{opacity:1}
+
+  @media (max-width:900px){
+    .screen{height:auto;min-height:100vh;padding:12px 12px 0;gap:10px}
+    .top{flex-wrap:wrap}
+    .tools{opacity:1;flex-wrap:wrap}
+    .hero,.lists{grid-template-columns:1fr}
+    .ddays{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .dd.first{grid-column:1/-1}
+    .clock{flex-direction:column;align-items:flex-start;gap:6px}
+    .lists .card{overflow:visible}
+    .meal{flex-direction:column;align-items:flex-start}
+    .meal .days{flex-wrap:wrap}
+    .ticker{margin:0 -12px}
+    .ed-grid{grid-template-columns:1fr}
+    .ev{grid-template-columns:38px 1fr 122px 26px}
+    .dl{grid-template-columns:1fr 122px 26px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="교무실 알림판">
+<meta property="og:description" content="시계·행사 D-day·당번·회의·마감 공문·급식을 한 화면에 띄우는 TV 알림판">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/36-dday-board.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/dday-board/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<div class="screen">
+  <div class="top">
+    <div class="brand"><div class="logo" aria-hidden="true">📌</div><span>교무실 알림판 <small id="school">안계초등학교</small></span></div>
+    <div class="grow"></div>
+    <div class="tools">
+      <button class="btn main" id="editBtn" type="button">✏️ 편집</button>
+      <button class="btn" id="themeBtn" type="button">☀️ 라이트</button>
+      <button class="btn" id="fsBtn" type="button">⛶ 전체화면</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="card clock">
+      <div class="time" id="time">00:00</div>
+      <div class="date" id="date"></div>
+    </div>
+    <div class="card quote"><div class="lab">💬 오늘의 한 마디</div><p id="quote"></p></div>
+  </div>
+
+  <div class="ddays" id="ddays" aria-label="다가오는 학교 행사"></div>
+
+  <div class="lists">
+    <div class="card"><h2>🧹 오늘 당번 <span class="cnt" id="dutyCnt"></span></h2><ul id="duty"></ul></div>
+    <div class="card"><h2>🗣️ 오늘 회의 <span class="cnt" id="meetCnt"></span></h2><ul id="meet"></ul></div>
+    <div class="card"><h2>📮 마감 공문 <span class="cnt" id="dueCnt"></span></h2><ul id="due"></ul></div>
+  </div>
+
+  <div>
+    <div class="meal"><b id="mealLbl">🍱 이번 주 급식</b><div class="days" id="meal"></div></div>
+    <div class="src" id="src">자료: 나이스 교육정보 개방 포털(2026-11-07 기준), 경북 안계초등학교 학사일정·급식</div>
+    <div class="ticker" style="margin-top:1.4vh"><span class="lab">📢 공지</span><div class="viewport"><div class="track" id="track"></div></div></div>
+  </div>
+</div>
+
+<div class="editor" id="editor" role="dialog" aria-modal="true" aria-labelledby="edTitle">
+  <div class="ed">
+    <div class="ed-h"><h2 id="edTitle">✏️ 알림판 편집</h2><div class="grow"></div>
+      <button class="btn" id="edReset" type="button">↺ 예시로</button>
+      <button class="btn" id="edCancel" type="button">취소</button>
+      <button class="btn main" id="edSave" type="button">💾 저장하고 보기</button></div>
+    <p style="margin:0 0 10px;color:var(--sub);font-size:12.5px">저장하면 이 브라우저(localStorage)에만 남아요. 교무실 TV에서 열어 두면 시계와 D-day가 저절로 바뀌어요.</p>
+    <div class="ed-grid">
+      <section class="wide"><h3>🏫 학교 이름</h3><input type="text" id="eSchool" maxlength="20"></section>
+      <section class="wide"><h3>📅 학교 행사 D-day <small>지난 행사는 저절로 숨겨져요</small></h3><div id="eEvents"></div><button class="btn" id="addEv" type="button">+ 행사 추가</button></section>
+      <section><h3>🧹 오늘 당번 <small>한 줄에 하나</small></h3><textarea id="eDuty" rows="4"></textarea></section>
+      <section><h3>🗣️ 오늘 회의 <small>시각 | 내용</small></h3><textarea id="eMeet" rows="4"></textarea></section>
+      <section class="wide"><h3>📮 마감 공문 <small>마감일이 가까운 순으로 보여요</small></h3><div id="eDue"></div><button class="btn" id="addDue" type="button">+ 공문 추가</button></section>
+      <section><h3>🍱 이번 주 급식 <small>직접 입력</small></h3><div class="meals" id="eMeal"></div></section>
+      <section><h3>💬 오늘의 한 마디 <small>한 줄에 하나, 날마다 돌아가며</small></h3><textarea id="eQuote" rows="5"></textarea></section>
+      <section class="wide"><h3>📢 공지 띠 <small>한 줄에 하나, 아래에서 흘러가요</small></h3><textarea id="eNotice" rows="3"></textarea></section>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+(function(){
+  'use strict';
+  var KEY = 'dday-board-v1';
+  var WD = ['일','월','화','수','목','금','토'];
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  function ymd(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  function plus(n){ var d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + n); return ymd(d); }
+  function parse(s){ var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+  function diff(s){ var d = parse(s); if (!d) return null; var t = new Date(); t.setHours(0,0,0,0); return Math.round((d - t) / 864e5); }
+  function md(s){ var d = parse(s); return d ? (d.getMonth() + 1) + '/' + d.getDate() + '(' + WD[d.getDay()] + ')' : ''; }
+
+  // 경북 안계초등학교 실제 공개 자료 — 나이스 교육정보 개방 포털(2026-11-07 기준)
+  //  학사일정(SchoolSchedule, 2026-11-02 - 2027-02-26 평일 행사)과 중식 식단(2026-10-26 - 11-27, 주요 메뉴 3개만 추림)
+  var REAL_EVENTS = [
+    { em:'🎄', name:'성탄절', date:'2026-12-25' },
+    { em:'⛄', name:'겨울방학 시작', date:'2026-12-31' },
+    { em:'🎍', name:'신정', date:'2027-01-01' },
+    { em:'🎓', name:'졸업식 (6학년)', date:'2027-02-05' },
+    { em:'🌸', name:'종업식 (1-5학년)', date:'2027-02-05' },
+    { em:'🧧', name:'설날 · 학년말 방학', date:'2027-02-08' }
+  ];
+  var REAL_MEALS = [["10-26","황태연포탕·쌈배추무생채·콩단백숯불직화구이잡채"],["10-28","쇠고기주먹밥·미니우동·상하이버터떡"],["10-29","짬뽕국·깻잎찜·콩나물무침"],["10-30","소보로비빔밥·홍합미역국·고추찜무침"],["11-02","어묵무국·부추양파초절이·슈바인 족발"],["11-03","육개장·달걀찜·단배추무침"],["11-04","콩가루배추국·비빔막국수·친환경사과"],["11-05","순대국·부추무침·배추전"],["11-06","크림스파게티·들깨미역국·메추리알새송이장조림"],["11-09","맑은콩나물무국·도토리묵무침·치커리무생채"],["11-10","근대된장국·참나물된장무침·건파래자반"],["11-11","김밥볶음밥·유부장국·가래떡떡볶이"],["11-12","홍합미역국·쌈배추무생채·열탄오리불고기"],["11-13","소보로비빔밥·크로플/생크림·팽이버섯미소장국"],["11-16","닭봉데리야끼조림·꽈리고추찜(양념-자율)·단배추오이겉절이"],["11-17","쇠고기무맑은국·미트볼케첩조림·숙주미나리무침"],["11-18","사과샐러드&애플망고드레싱·인도식버터커리(마크니)·탄두리닭다리구이"],["11-19","건새우시금치된장국·하트뮤즐리멸치볶음·오향장육/무쌈"],["11-20","감자어묵국·열무배추겉절이·콩나물잡채"],["11-23","연근조림·미나리숙주나물·돈육버섯불고기(간장)"],["11-24","황기닭곰탕·도라지오이무침·빨간콩나물무침"],["11-25","가자미미역국·LA돈육갈비조림·시금치깨소스무침"],["11-26","쇠고기무맑은국국·깻잎찜·파래멸치볶음"],["11-27","불고기주먹밥·던킨먼치킨도넛·딸기"]];
+  // 이번 주 급식: 오늘이 든 주(주말이면 다음 주). 데이터 범위 밖이면 데이터의 첫 주
+  function realWeek(){
+    var t = new Date(); t.setHours(0,0,0,0);
+    var mon = new Date(t); mon.setDate(t.getDate() - ((t.getDay() + 6) % 7) + (t.getDay() === 6 || t.getDay() === 0 ? 7 : 0));
+    var y = 2026, days = REAL_MEALS.map(function(m){ var p = m[0].split('-'); return { d: new Date(y, +p[0] - 1, +p[1]), menu: m[1] }; });
+    var first = days[0].d, last = days[days.length - 1].d;
+    if (t < first || t > last) mon = new Date(first.getFullYear(), first.getMonth(), first.getDate() - ((first.getDay() + 6) % 7));
+    var hit = days.filter(function(x){ var k = Math.round((x.d - mon) / 864e5); return k >= 0 && k < 5; });
+    if (!hit.length){ var d0 = days.filter(function(x){ return x.d >= mon; })[0] || days[0]; mon = new Date(d0.d); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7)); }
+    var meal = [0,1,2,3,4].map(function(i){ var d = new Date(mon); d.setDate(mon.getDate() + i); var x = days.filter(function(z){ return +z.d === +d; })[0]; return x ? x.menu : ''; });
+    return { mon: ymd(mon), meal: meal };
+  }
+  // 예시 데이터: 행사·급식은 안계초 실제 자료, 당번·회의·공문 마감은 "오늘 기준" 가상 예시(이름도 가상)
+  function sample(){
+    var wk = realWeek();
+    return {
+      school: '안계초등학교', theme: 'dark', mealAuto: true, mealWeek: wk.mon,
+      events: REAL_EVENTS.map(function(e){ return { em: e.em, name: e.name, date: e.date }; }),
+      duty: ['교무실 당번 · 김바다 선생님', '급식 지도 · 3, 4학년 선생님', '등교 맞이 · 학생자치회 6학년', '방과후 하교 지도 · 이바람 선생님'],
+      meet: ['08:40 | 5학년 학년 협의회 (5학년 연구실)', '15:00 | 겨울방학 방과후 프로그램 협의 (회의실)', '16:00 | 학업성적관리위원회 (교장실)'],
+      due: [
+        { title:'학생 안전교육 실적 보고', date: plus(0) },
+        { title:'방과후학교 만족도 조사 결과 제출', date: plus(1) },
+        { title:'교원 직무연수 이수 실적 제출', date: plus(3) },
+        { title:'겨울방학 돌봄 수요 조사', date: plus(8) }
+      ],
+      meal: wk.meal,
+      quotes: ['작은 칭찬 하나가 한 아이의 하루를 바꿔요.', '물 한 잔, 기지개 한 번! 선생님도 쉬어 가요.', '오늘 가장 잘한 일 하나를 퇴근길에 떠올려 봐요.', '완벽한 수업보다 다정한 한 마디가 오래 남아요.', '서로에게 "고생 많으셨어요" 한 마디 건네는 날!'],
+      notices: ['🔔 다음 주 수요일 2교시 소방 대피 훈련이 있어요', '🅿️ 졸업식 날(2/5)은 운동장 주차가 어려워요', '📚 도서실 신간 30권 들어왔어요 — 학급 대출 환영', '☕ 교무실 정수기 필터를 새로 갈았어요']
+    };
+  }
+  var state;
+  try { state = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { state = null; }
+  if (!state || !state.events) state = sample();
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function toast(t){ var el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function(){ el.classList.remove('on'); }, 1800); }
+
+  // ---- 표시 ----
+  function tick(){
+    var n = new Date();
+    $('time').innerHTML = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0') + '<small>' + String(n.getSeconds()).padStart(2,'0') + '</small>';
+    var key = ymd(n);
+    if (tick.day !== key){ tick.day = key; renderAll(); }
+  }
+  function renderDate(){
+    var n = new Date();
+    $('date').innerHTML = n.getFullYear() + '년<br>' + (n.getMonth() + 1) + '월 ' + n.getDate() + '일 <span class="wd">' + WD[n.getDay()] + '요일</span>' +
+      '<small>' + (n.getDay() === 0 || n.getDay() === 6 ? '주말이에요. 푹 쉬세요 🌿' : '오늘도 좋은 하루 보내세요 ☀️') + '</small>';
+  }
+  function renderQuote(){
+    var q = state.quotes.filter(Boolean);
+    var n = new Date(), idx = Math.floor((n - new Date(n.getFullYear(), 0, 0)) / 864e5);
+    $('quote').textContent = q.length ? q[idx % q.length] : '오늘의 한 마디를 편집 모드에서 적어 보세요.';
+  }
+  function renderDdays(){
+    var list = state.events.map(function(e){ return { e: e, d: diff(e.date) }; })
+      .filter(function(x){ return x.d != null && x.d >= 0 && x.e.name; })
+      .sort(function(a, b){ return a.d - b.d; }).slice(0, 5);
+    var h = list.map(function(x, i){
+      return '<div class="dd' + (i === 0 ? ' first' : '') + (x.d === 0 ? ' today' : '') + '"><div class="em">' + esc(x.e.em || '📅') + '</div><div class="nm">' + esc(x.e.name) + '</div>' +
+        '<div class="d">' + (x.d === 0 ? 'D-DAY' : 'D-' + x.d) + '</div><div class="dt">' + md(x.e.date) + '</div></div>';
+    }).join('');
+    for (var i = list.length; i < 5; i++) h += '<div class="dd empty">' + (i === 0 ? '다가오는 행사가 없어요' : '＋ 편집에서 행사 추가') + '</div>';
+    $('ddays').innerHTML = h;
+  }
+  function renderLists(){
+    var duty = state.duty.filter(Boolean);
+    $('duty').innerHTML = duty.map(function(t){
+      var p = t.split('·');
+      return '<li>' + (p.length > 1 ? '<span class="tm">' + esc(p[0].trim()) + '</span><span class="tx">' + esc(p.slice(1).join('·').trim()) + '</span>' : '<span class="tx">' + esc(t) + '</span>') + '</li>';
+    }).join('') || '<li style="opacity:.6">당번 정보가 없어요</li>';
+    $('dutyCnt').textContent = duty.length + '건';
+
+    var now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
+    var meet = state.meet.filter(Boolean).map(function(t){ var p = t.split('|'); return { tm: p.length > 1 ? p[0].trim() : '', tx: (p.length > 1 ? p.slice(1).join('|') : t).trim() }; })
+      .sort(function(a, b){ return a.tm < b.tm ? -1 : 1; });
+    $('meet').innerHTML = meet.map(function(m){
+      var mm = /^(\d{1,2}):(\d{2})$/.exec(m.tm), done = mm && (+mm[1]) * 60 + (+mm[2]) + 50 < mins;
+      return '<li><span class="tm' + (done ? ' done' : '') + '">' + esc(m.tm || '—') + '</span><span class="tx">' + esc(m.tx) + '</span></li>';
+    }).join('') || '<li style="opacity:.6">오늘은 회의가 없어요 🎉</li>';
+    $('meetCnt').textContent = meet.length + '건';
+
+    var due = state.due.filter(function(x){ return x.title; }).map(function(x){ return { t: x.title, d: diff(x.date), date: x.date }; })
+      .filter(function(x){ return x.d == null || x.d >= 0; })
+      .sort(function(a, b){ return (a.d == null ? 999 : a.d) - (b.d == null ? 999 : b.d); });
+    $('due').innerHTML = due.map(function(x){
+      var b = x.d == null ? '' : x.d === 0 ? '<span class="badge hot">오늘 마감</span>' : x.d <= 2 ? '<span class="badge soon">D-' + x.d + '</span>' : '<span class="badge">' + md(x.date) + '</span>';
+      return '<li><span class="tx">' + esc(x.t) + '</span>' + b + '</li>';
+    }).join('') || '<li style="opacity:.6">마감 공문이 없어요 👍</li>';
+    $('dueCnt').textContent = due.filter(function(x){ return x.d === 0; }).length + '건 오늘 마감';
+  }
+  function renderMeal(){
+    // 실제 급식 자동 모드면 날짜가 바뀌어도 그 주 식단으로 다시 계산
+    if (state.mealAuto){ var rw = realWeek(); state.meal = rw.meal; state.mealWeek = rw.mon; }
+    var t = new Date().getDay();
+    // 오늘 급식이 먼저 보이도록 오늘부터 순서대로
+    var order = [0,1,2,3,4], start = t >= 1 && t <= 5 ? t - 1 : 0;
+    order = order.slice(start).concat(order.slice(0, start));
+    var wk = state.mealAuto && parse(state.mealWeek), thisWeek = true;
+    if (wk){ var tm = new Date(); tm.setHours(0,0,0,0); var k = Math.round((tm - wk) / 864e5); thisWeek = k >= 0 && k < 5; if (!thisWeek) order = [0,1,2,3,4]; }
+    var html = order.map(function(i){
+      var m = state.meal[i] || '', d = '월화수목금'[i];
+      if (wk){ var dd = new Date(wk); dd.setDate(wk.getDate() + i); d = (dd.getMonth() + 1) + '/' + dd.getDate() + ' ' + d; }
+      return m ? '<span class="dy' + (thisWeek && t === i + 1 ? ' on' : '') + '"><i>' + d + '</i>' + esc(m) + '</span>' : '';
+    }).join('');
+    var ahead = wk && !thisWeek && wk > new Date();
+    $('mealLbl').textContent = !wk || thisWeek ? '🍱 이번 주 급식' : ahead ? '🍱 다음 주 급식' : '🍱 ' + (wk.getMonth() + 1) + '/' + wk.getDate() + ' 주 급식';
+    if (thisWeek && (t === 0 || t === 6)) html = '<span class="dy on"><i>주말</i>급식이 없어요</span>' + html;
+    $('meal').innerHTML = html || '<span class="dy">편집 모드에서 급식을 적어 보세요</span>';
+    $('src').style.display = state.school === '안계초등학교' ? '' : 'none';
+  }
+  function renderTicker(){
+    var items = state.notices.filter(Boolean);
+    if (!items.length) items = ['공지 띠에 보여 줄 내용을 편집 모드에서 적어 보세요'];
+    var one = items.map(function(t){ return '<span>' + esc(t) + '</span>'; }).join('');
+    $('track').innerHTML = one + one;   // 두 번 이어 붙여 끊김 없이 흐르게
+    var len = items.join('').length;
+    $('track').style.setProperty('--dur', Math.max(18, Math.round(len * 0.42)) + 's');
+  }
+  function renderAll(){
+    $('school').textContent = state.school || '';
+    document.body.classList.toggle('light', state.theme === 'light');
+    $('themeBtn').textContent = state.theme === 'light' ? '🌙 다크' : '☀️ 라이트';
+    renderDate(); renderQuote(); renderDdays(); renderLists(); renderMeal(); renderTicker();
+  }
+
+  // ---- 편집 ----
+  function evRow(e){ return '<div class="ev"><input type="text" value="' + esc(e.em) + '" maxlength="4" aria-label="아이콘"><input type="text" value="' + esc(e.name) + '" maxlength="24" placeholder="행사 이름" aria-label="행사 이름"><input type="date" value="' + esc(e.date) + '" aria-label="날짜"><button class="x" type="button" title="삭제">×</button></div>'; }
+  function dueRow(e){ return '<div class="dl"><input type="text" value="' + esc(e.title) + '" maxlength="40" placeholder="공문 제목" aria-label="공문 제목"><input type="date" value="' + esc(e.date) + '" aria-label="마감일"><button class="x" type="button" title="삭제">×</button></div>'; }
+  function fillEditor(s){
+    $('eSchool').value = s.school || '';
+    $('eEvents').innerHTML = s.events.map(evRow).join('');
+    $('eDue').innerHTML = s.due.map(dueRow).join('');
+    $('eDuty').value = s.duty.join('\n');
+    $('eMeet').value = s.meet.join('\n');
+    $('eMeal').innerHTML = ['월','화','수','목','금'].map(function(d, i){ return '<span>' + d + '</span><input type="text" data-meal="' + i + '" value="' + esc(s.meal[i] || '') + '" maxlength="40">'; }).join('');
+    $('eQuote').value = s.quotes.join('\n');
+    $('eNotice').value = s.notices.join('\n');
+  }
+  function openEditor(){ fillEditor(state); $('editor').classList.add('on'); }
+  function closeEditor(){ $('editor').classList.remove('on'); }
+  var lines = function(id){ return $(id).value.split('\n').map(function(t){ return t.trim(); }).filter(Boolean); };
+  function readEditor(){
+    state.school = $('eSchool').value.trim();
+    state.events = [].map.call(document.querySelectorAll('#eEvents .ev'), function(r){ var i = r.querySelectorAll('input'); return { em: i[0].value.trim(), name: i[1].value.trim(), date: i[2].value }; }).filter(function(e){ return e.name; });
+    state.due = [].map.call(document.querySelectorAll('#eDue .dl'), function(r){ var i = r.querySelectorAll('input'); return { title: i[0].value.trim(), date: i[1].value }; }).filter(function(e){ return e.title; });
+    state.duty = lines('eDuty'); state.meet = lines('eMeet'); state.quotes = lines('eQuote'); state.notices = lines('eNotice');
+    var newMeal = [0,1,2,3,4].map(function(i){ return document.querySelector('[data-meal="' + i + '"]').value.trim(); });
+    state.mealAuto = newMeal.join('|') === realWeek().meal.join('|');   // 실제 급식 그대로면 자동 갱신, 직접 고치면 끔
+    state.meal = newMeal;
+  }
+  $('editBtn').addEventListener('click', openEditor);
+  $('edCancel').addEventListener('click', closeEditor);
+  $('edSave').addEventListener('click', function(){ readEditor(); save(); renderAll(); closeEditor(); toast('💾 저장했어요 — 표시 모드'); });
+  $('edReset').addEventListener('click', function(){ if (confirm('편집 칸을 예시 내용으로 채울까요? (저장해야 반영돼요)')) fillEditor(sample()); });
+  $('addEv').addEventListener('click', function(){ $('eEvents').insertAdjacentHTML('beforeend', evRow({ em:'📅', name:'', date: plus(7) })); var i = $('eEvents').querySelectorAll('.ev input'); i[i.length - 2].focus(); });
+  $('addDue').addEventListener('click', function(){ $('eDue').insertAdjacentHTML('beforeend', dueRow({ title:'', date: plus(3) })); var i = $('eDue').querySelectorAll('.dl input'); i[i.length - 2].focus(); });
+  $('editor').addEventListener('click', function(e){
+    if (e.target.classList.contains('x')) e.target.parentNode.remove();
+    else if (e.target === this) closeEditor();
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeEditor(); });
+
+  $('themeBtn').addEventListener('click', function(){ state.theme = state.theme === 'light' ? 'dark' : 'light'; save(); renderAll(); });
+  $('fsBtn').addEventListener('click', function(){
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function(){ toast('이 브라우저에서는 전체화면을 쓸 수 없어요 (F11)'); });
+    } catch (e) { toast('F11 키로 전체화면을 켜 보세요'); }
+  });
+
+  renderAll(); tick();
+  setInterval(tick, 1000);
+  setInterval(renderLists, 60000);   // 회의 지난 시각 줄 긋기
+  window.__board = { state: function(){ return state; }, openEditor: openEditor, readEditor: readEditor, save: save, renderAll: renderAll };
+})();
+</script>
+</body>
+</html>

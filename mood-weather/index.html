@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마음 날씨 - 아침 감정 체크인</title>
+<meta name="description" content="학생이 번호를 누르고 오늘 마음을 날씨 아이콘과 이유 한 단어로 고르는 아침 감정 체크인. 교사 화면(PIN 잠금)에서 학급 마음 날씨 분포, 연속 흐림 친구 알림, 주간 추이를 확인해요. 학생 화면에는 다른 친구 응답이 보이지 않아요.">
+<style>
+  :root{--ink:#1f2a44;--sub:#61708f;--line:#dbe4f3;--card:#fff;--brand:#3d7be0;--sun:#ffb703;--warn:#e8590c}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);min-height:100vh;background:linear-gradient(180deg,#bfe0ff 0%,#e3f1ff 45%,#f7fbff 100%)}
+  header{display:flex;align-items:center;gap:12px;padding:12px 22px}
+  .logo{width:44px;height:44px;border-radius:14px;background:#fff;display:grid;place-items:center;font-size:26px;box-shadow:0 3px 10px #3d7be022;flex:none}
+  h1{margin:0;font-size:24px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;color:var(--sub)}
+  .grow{flex:1}
+  .today{font-weight:800;font-size:15px;background:#fff;border-radius:999px;padding:6px 14px;box-shadow:0 2px 8px #3d7be01a;white-space:nowrap}
+  .btn{font:inherit;font-size:14px;font-weight:700;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 14px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(.97)}
+  .btn.main{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.dark{background:#1f2a44;color:#fff;border-color:transparent}
+  .btn:disabled{opacity:.4;cursor:default}
+
+  /* 학생 화면 */
+  .stu{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;padding:4px 22px 40px;max-width:1360px;margin:0 auto}
+  .ask{font-size:21px;font-weight:800;margin:4px 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .ask small{font-size:13px;color:var(--sub);font-weight:600}
+  .nums{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+  .num{position:relative;height:92px;border:0;border-radius:24px;background:#fff;font:inherit;font-size:34px;font-weight:900;color:var(--ink);cursor:pointer;box-shadow:0 5px 0 #c9daf2,0 10px 18px #3d7be014;transition:transform .12s}
+  .num:hover{transform:translateY(-2px)}
+  .num:active{transform:translateY(3px);box-shadow:0 2px 0 #c9daf2}
+  .num small{display:block;font-size:12px;color:var(--sub);font-weight:700;margin-top:2px}
+  .num.done{background:#eef6ee;color:#2f7d3a;box-shadow:0 5px 0 #cfe6d2}
+  .num.done small{color:#2f7d3a}
+  .side{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--card);border-radius:20px;padding:14px 16px;box-shadow:0 6px 18px #3d7be014}
+  .card h2{margin:0 0 8px;font-size:15.5px}
+  .prog{height:14px;border-radius:999px;background:#e8eef9;overflow:hidden;margin:6px 0}
+  .prog i{display:block;height:100%;background:linear-gradient(90deg,#74c0fc,#3d7be0);border-radius:999px;transition:width .4s}
+  .big{font-size:30px;font-weight:900}
+  .big small{font-size:14px;color:var(--sub);font-weight:700}
+  .legend{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .legend div{display:flex;align-items:center;gap:6px;font-size:13px;background:#f5f8fe;border-radius:12px;padding:6px 8px}
+  .legend b{font-size:24px}
+  .legend span{line-height:1.25}
+  .legend em{display:block;font-style:normal;font-size:11px;color:var(--sub)}
+  .secret{font-size:12.5px;color:var(--sub);line-height:1.5}
+
+  /* 모달 */
+  .modal{position:fixed;inset:0;background:rgba(20,32,60,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
+  .modal.on{display:flex}
+  .box{background:#fff;border-radius:26px;padding:20px 22px;width:min(640px,100%);max-height:94vh;overflow:auto;box-shadow:0 20px 50px #0003}
+  .box h3{margin:0 0 4px;font-size:22px}
+  .box .sub{color:var(--sub);font-size:14px;margin:0 0 12px}
+  .wx{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .wx button{font:inherit;border:3px solid transparent;background:#f3f7fe;border-radius:18px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .wx button b{font-size:44px;line-height:1.1}
+  .wx button span{font-weight:800;font-size:16px}
+  .wx button em{font-style:normal;font-size:12px;color:var(--sub)}
+  .wx button.on{border-color:var(--brand);background:#e7f0ff;transform:scale(1.03)}
+  .why{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+  .why button{font:inherit;font-weight:700;font-size:15px;border:2px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;cursor:pointer}
+  .why button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .lab{font-weight:800;margin-top:14px;font-size:15px}
+  .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+  .thanks{text-align:center;padding:20px 0}
+  .thanks b{font-size:80px;display:block;animation:bob 1s ease-in-out infinite alternate}
+  .thanks p{font-size:20px;font-weight:800;margin:8px 0 0}
+  @keyframes bob{to{transform:translateY(-8px)}}
+  .pin-dots{display:flex;gap:12px;justify-content:center;margin:12px 0}
+  .pin-dots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--brand)}
+  .pin-dots i.on{background:var(--brand)}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:280px;margin:0 auto}
+  .pad button{font:inherit;font-size:22px;font-weight:800;height:54px;border-radius:14px;border:1px solid var(--line);background:#f5f8fe;cursor:pointer}
+  .pin-msg{text-align:center;min-height:20px;font-size:13px;color:var(--warn);font-weight:700;margin-top:8px}
+  .shake{animation:shake .35s}
+  @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+  /* 교사 화면 */
+  .tch{display:none;padding:4px 22px 40px;max-width:1360px;margin:0 auto}
+  body.teacher .stu{display:none}
+  body.teacher .tch{display:block}
+  body.teacher #teachBtn{display:none}
+  body.teacher{background:linear-gradient(180deg,#dfe7f5,#f4f6fb 40%)}
+  .tbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .tbar .lock{background:#1f2a44;color:#fff;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:800}
+  .tgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+  .kpi{background:#fff;border-radius:16px;padding:10px 12px;box-shadow:0 4px 12px #1f2a4410}
+  .kpi b{display:block;font-size:26px}
+  .kpi span{font-size:12.5px;color:var(--sub)}
+  .dist .row{display:grid;grid-template-columns:100px 1fr 34px;gap:8px;align-items:center;margin:6px 0;font-size:14px;font-weight:700}
+  .dist .bar{height:22px;background:#eef2f9;border-radius:8px;overflow:hidden}
+  .dist .bar i{display:block;height:100%;border-radius:8px}
+  .dist .who{grid-column:2/4;font-size:11.5px;color:var(--sub);margin:-4px 0 2px;font-weight:600}
+  .alert{background:#fff4e6;border:2px solid #ffc078;border-radius:18px;padding:12px 14px}
+  .alert h2{color:#c2410c}
+  .alert ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .alert li{background:#fff;border-radius:12px;padding:8px 10px;display:flex;align-items:center;gap:10px;font-size:14px}
+  .alert li .n{font-size:20px;font-weight:900;color:#c2410c;min-width:44px}
+  .alert li .h{letter-spacing:2px;font-size:18px}
+  .alert li small{color:var(--sub);display:block;font-size:12px}
+  .trend{display:flex;align-items:flex-end;gap:14px;height:190px;padding:6px 4px 0}
+  .tcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+  .stack{flex:1;width:100%;max-width:64px;display:flex;flex-direction:column-reverse;border-radius:10px;overflow:hidden;background:#eef2f9}
+  .stack i{display:block;width:100%}
+  .tcol b{font-size:12.5px}
+  .tcol small{font-size:11px;color:var(--sub)}
+  .keys{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--sub);margin-top:8px}
+  .keys i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:3px;vertical-align:-1px}
+  .missing{font-size:13px;color:var(--sub);margin-top:8px}
+  .missing b{color:var(--ink)}
+  .set{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13.5px}
+  .set input{font:inherit;width:70px;padding:6px;border:1px solid var(--line);border-radius:8px;text-align:center}
+
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.9);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:5}
+  .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#1f2a44;color:#fff;font-weight:800;padding:8px 16px;border-radius:999px;z-index:60;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.on{opacity:1}
+
+  @media (max-width:900px){
+    header{flex-wrap:wrap;padding:10px 12px;gap:8px}
+    header p{display:none}
+    h1{font-size:20px}
+    .stu,.tch{padding:4px 12px 50px}
+    .stu{grid-template-columns:1fr}
+    .nums{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+    .num{height:70px;font-size:26px;border-radius:18px}
+    .tgrid{grid-template-columns:1fr}
+    .kpis{grid-template-columns:repeat(3,1fr);gap:6px}
+    .kpi b{font-size:20px}
+    .wx b{font-size:36px}
+    .wx button b{font-size:34px}
+    .wx button span{font-size:14px}
+    .ask{font-size:18px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="마음 날씨">
+<meta property="og:description" content="번호 누르고 날씨로 마음을 고르는 아침 체크인과 연속 흐림 알림">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/45-mood-weather.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/mood-weather/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🌤️</div>
+  <div><h1>마음 날씨</h1><p>아침마다 내 마음의 날씨를 살짝 알려 주세요</p></div>
+  <div class="grow"></div>
+  <span class="today" id="today"></span>
+  <button class="btn dark" id="teachBtn" type="button">🔒 선생님 화면</button>
+</header>
+
+<!-- 학생 화면: 다른 친구의 응답은 보이지 않아요 -->
+<main class="stu" id="stu">
+  <section>
+    <div class="ask">👆 내 번호를 눌러 오늘 마음 날씨를 골라요 <small>체크한 번호에는 ✔만 보여요. 날씨는 선생님만 볼 수 있어요.</small></div>
+    <div class="nums" id="nums" aria-label="번호 선택"></div>
+  </section>
+  <aside class="side">
+    <div class="card">
+      <h2>☀️ 오늘 우리 반 체크인</h2>
+      <div class="big" id="doneCnt">0<small> / 24명</small></div>
+      <div class="prog"><i id="doneBar" style="width:0"></i></div>
+      <div class="secret" id="doneMsg"></div>
+    </div>
+    <div class="card">
+      <h2>🌈 마음 날씨 고르는 법</h2>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="card secret">🤫 어떤 날씨를 골라도 괜찮아요. 흐린 날이 이어지면 선생님이 살짝 먼저 말을 걸어 줄게요.</div>
+  </aside>
+</main>
+
+<!-- 교사 화면 -->
+<main class="tch" id="tch">
+  <div class="tbar">
+    <span class="lock">🔓 선생님 화면</span>
+    <b id="tDate"></b>
+    <div class="grow"></div>
+    <button class="btn" id="setBtn" type="button">⚙ 설정</button>
+    <button class="btn main" id="lockBtn" type="button">🔒 학생 화면으로</button>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><b id="kResp">0/24</b><span>오늘 체크인</span></div>
+    <div class="kpi"><b id="kSun" style="color:#e8a400">0</b><span>☀️ 맑음 계열</span></div>
+    <div class="kpi"><b id="kCloud" style="color:#5b6b8c">0</b><span>☁️ 흐림 계열</span></div>
+  </div>
+  <div class="tgrid">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="alert"><h2>👀 오늘 살펴볼 친구 <small style="font-weight:600;color:#9a5b2b;font-size:12px">흐림·비·천둥이 2일 이상 이어진 친구</small></h2><ul id="watch"></ul></div>
+      <div class="card dist"><h2>🌦️ 오늘 학급 마음 날씨</h2><div id="dist"></div><div class="missing" id="missing"></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card"><h2>📈 최근 5일 추이</h2><div class="trend" id="trend"></div><div class="keys" id="keys"></div></div>
+      <div class="card" id="setCard" hidden>
+        <h2>⚙ 설정</h2>
+        <div class="set">학생 수 <input type="number" id="sN" min="1" max="40"> 명 · 새 PIN <input type="text" id="sPin" inputmode="numeric" maxlength="4" placeholder="4자리"> <button class="btn" id="sSave" type="button">저장</button></div>
+        <div class="set" style="margin-top:10px"><button class="btn" id="sToday" type="button">🧹 오늘 응답 지우기</button><button class="btn" id="sSample" type="button">↺ 예시 1주 데이터</button></div>
+        <div class="set" style="margin-top:10px"><button class="btn" id="sDemo" type="button">🎪 체험 모드: PIN을 1234로</button> <small style="color:#61708f">박람회·연수에서 여러 사람이 체험할 때만 쓰세요.</small></div>
+      </div>
+      <div class="card"><h2>💻 공용 PC에서 썼다면</h2><p style="margin:0 0 10px;font-size:13px;color:#61708f">기록은 이 브라우저에만 저장돼요. 여럿이 쓰는 PC라면 끝난 뒤 꼭 지워 주세요.</p><button class="btn" id="sWipe" type="button">🗑 이 기기의 기록 모두 지우기</button></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal" id="ckModal" role="dialog" aria-modal="true" aria-labelledby="ckTitle"><div class="box" id="ckBox"></div></div>
+<div class="modal" id="pinModal" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+  <div class="box" style="width:min(360px,100%)" id="pinBox">
+    <h3 id="pinTitle">🔒 선생님 PIN</h3>
+    <p class="sub" id="pinSub">선생님만 아는 숫자 4자리를 눌러요.</p>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+    <div class="pad" id="pad"></div>
+    <div class="pin-msg" id="pinMsg"></div>
+    <div class="acts"><button class="btn" id="pinCancel" type="button">닫기</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+(function(){
+  'use strict';
+  var KEY = 'mood-weather-v1';
+  var WX = [
+    { id:'sun',     ic:'☀️', nm:'맑음',     ds:'기분 좋아요',  col:'#ffc53d', mood:'up' },
+    { id:'rainbow', ic:'🌈', nm:'무지개',   ds:'신나고 설레요', col:'#b197fc', mood:'up' },
+    { id:'partly',  ic:'🌤️', nm:'구름 조금', ds:'그럭저럭 괜찮아요', col:'#91d5ff', mood:'mid' },
+    { id:'cloud',   ic:'☁️', nm:'흐림',     ds:'조금 처져요',  col:'#adb5bd', mood:'down' },
+    { id:'rain',    ic:'🌧️', nm:'비',       ds:'속상하고 슬퍼요', col:'#4dabf7', mood:'down' },
+    { id:'storm',   ic:'⛈️', nm:'천둥',     ds:'화나고 답답해요', col:'#845ef7', mood:'down' }
+  ];
+  var W = {}; WX.forEach(function(w){ W[w.id] = w; });
+  var REASONS = ['친구','가족','잠','몸','공부','놀이','날씨','반려동물','그냥'];
+  var DOWN = function(id){ return W[id] && W[id].mood === 'down'; };
+
+  var $ = function(id){ return document.getElementById(id); };
+  function ymd(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  var WD = ['일','월','화','수','목','금','토'];
+  function label(key){ var a = key.split('-'); var d = new Date(+a[0], +a[1] - 1, +a[2]); return (d.getMonth() + 1) + '/' + d.getDate() + '(' + WD[d.getDay()] + ')'; }
+  var TODAY = ymd(new Date());
+
+  // 예시 데이터: 오늘 + 앞선 평일 4일. 3번·11번은 흐린 날이 이어지도록.
+  function sampleDays(){
+    var keys = [TODAY], d = new Date();
+    while (keys.length < 5){ d.setDate(d.getDate() - 1); if (d.getDay() !== 0 && d.getDay() !== 6) keys.unshift(ymd(d)); }
+    return keys;
+  }
+  function sample(){
+    var seed = 7, rnd = function(){ seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    var keys = sampleDays(), days = {};
+    var pool = ['sun','sun','sun','partly','partly','rainbow','sun','partly','cloud','rain'];
+    keys.forEach(function(k, di){
+      var day = {}, isToday = k === TODAY;
+      for (var n = 1; n <= 24; n++){
+        if (isToday && [2,6,9,14,17,20,23].indexOf(n) >= 0) continue;   // 오늘은 아직 안 한 친구 7명
+        var w = pool[Math.floor(rnd() * pool.length)];
+        if (n === 3) w = ['partly','cloud','rain','cloud','rain'][di];
+        if (n === 11) w = ['sun','partly','storm','cloud','storm'][di];
+        if (n === 18 && di >= 3) w = 'cloud';
+        var r = DOWN(w) ? ['친구','잠','가족','공부','몸'][Math.floor(rnd() * 5)] : REASONS[Math.floor(rnd() * REASONS.length)];
+        if (n === 3) r = '친구';
+        if (n === 11) r = di % 2 ? '가족' : '잠';
+        day[n] = { w: w, r: r, t: '08:' + String(30 + Math.floor(rnd() * 25)).padStart(2,'0') };
+      }
+      days[k] = day;
+    });
+    return days;
+  }
+  var state;
+  try { state = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { state = null; }
+  if (!state || !state.days || typeof state.days !== 'object') state = { n: 24, pin: null, days: sample() };
+  // 저장값 검사: 알 수 없는 값은 버림 (화면에 그대로 넣지 않도록)
+  (function clean(){
+    var n = parseInt(state.n, 10); state.n = n >= 1 && n <= 40 ? n : 24;
+    state.pin = /^\d{4}$/.test(state.pin) ? state.pin : null;
+    var days = {};
+    Object.keys(state.days).forEach(function(k){
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !state.days[k] || typeof state.days[k] !== 'object') return;
+      var d = {};
+      Object.keys(state.days[k]).forEach(function(no){
+        var v = state.days[k][no];
+        if (/^\d{1,2}$/.test(no) && v && W[v.w] && REASONS.indexOf(v.r) >= 0) d[no] = { w: v.w, r: v.r, t: /^\d{2}:\d{2}$/.test(v.t) ? v.t : '' };
+      });
+      days[k] = d;
+    });
+    state.days = days;
+  })();
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function today(){ return state.days[TODAY] || (state.days[TODAY] = {}); }
+
+  function toast(t){ var el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function(){ el.classList.remove('on'); }, 1800); }
+
+  var now = new Date();
+  $('today').textContent = (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WD[now.getDay()] + '요일';
+  $('legend').innerHTML = WX.map(function(w){ return '<div><b>' + w.ic + '</b><span>' + w.nm + '<em>' + w.ds + '</em></span></div>'; }).join('');
+
+  // ---- 학생 화면 ----
+  function renderStudent(){
+    var t = today(), cnt = 0, h = '';
+    for (var n = 1; n <= state.n; n++){
+      var done = !!t[n]; if (done) cnt++;
+      h += '<button type="button" class="num' + (done ? ' done' : '') + '" data-n="' + n + '" aria-label="' + n + '번' + (done ? ' 체크 완료' : '') + '">' + n + '<small>' + (done ? '✔ 완료' : '번') + '</small></button>';
+    }
+    $('nums').innerHTML = h;
+    $('doneCnt').innerHTML = cnt + '<small> / ' + state.n + '명</small>';
+    $('doneBar').style.width = Math.round(cnt / state.n * 100) + '%';
+    $('doneMsg').textContent = cnt >= state.n ? '모두 체크했어요! 오늘도 좋은 하루 🌈' : '아직 ' + (state.n - cnt) + '명이 남았어요. 자기 번호를 눌러 주세요.';
+  }
+
+  var ck = null;
+  function openCheck(n){
+    ck = { n: n, w: null, r: null };
+    drawCheck(today()[n] ? 'again' : 'pick');
+    $('ckModal').classList.add('on');
+  }
+  function drawCheck(step){
+    var b = $('ckBox');
+    if (step === 'again'){
+      b.innerHTML = '<h3 id="ckTitle">' + ck.n + '번 친구, 오늘은 벌써 체크했어요 ✔</h3><p class="sub">마음이 바뀌었으면 다시 골라도 돼요.</p>' +
+        '<div class="acts"><button class="btn" data-act="close" type="button">닫기</button><button class="btn main" data-act="redo" type="button">다시 고르기</button></div>';
+      return;
+    }
+    if (step === 'thanks'){
+      b.innerHTML = '<div class="thanks"><b>' + W[ck.w].ic + '</b><p id="ckTitle">' + ck.n + '번, 알려 줘서 고마워요!</p><p class="sub" style="margin-top:6px">' + (DOWN(ck.w) ? '흐린 날도 괜찮아요. 필요하면 언제든 선생님께 말해 줘요 💙' : '오늘도 반짝이는 하루 보내요 ✨') + '</p></div>';
+      return;
+    }
+    b.innerHTML = '<h3 id="ckTitle">' + ck.n + '번, 오늘 마음 날씨는 어때요?</h3><p class="sub">지금 내 마음과 가장 닮은 날씨를 하나 골라요.</p>' +
+      '<div class="wx">' + WX.map(function(w){ return '<button type="button" data-w="' + w.id + '"' + (ck.w === w.id ? ' class="on"' : '') + '><b>' + w.ic + '</b><span>' + w.nm + '</span><em>' + w.ds + '</em></button>'; }).join('') + '</div>' +
+      '<div class="lab">왜 그런 것 같아요? <small style="color:#61708f;font-weight:600">(한 단어 고르기)</small></div>' +
+      '<div class="why">' + REASONS.map(function(r){ return '<button type="button" data-r="' + r + '"' + (ck.r === r ? ' class="on"' : '') + '>' + r + '</button>'; }).join('') + '</div>' +
+      '<div class="acts"><button class="btn" data-act="close" type="button">취소</button><button class="btn main" data-act="send" type="button"' + (ck.w && ck.r ? '' : ' disabled') + '>보내기 ✉️</button></div>';
+  }
+  $('nums').addEventListener('click', function(e){ var b = e.target.closest('[data-n]'); if (b) openCheck(+b.dataset.n); });
+  $('ckBox').addEventListener('click', function(e){
+    var t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.w){ ck.w = t.dataset.w; drawCheck('pick'); }
+    else if (t.dataset.r){ ck.r = t.dataset.r; drawCheck('pick'); }
+    else if (t.dataset.act === 'close') closeCheck();
+    else if (t.dataset.act === 'redo') drawCheck('pick');
+    else if (t.dataset.act === 'send' && ck.w && ck.r){
+      var n = new Date();
+      today()[ck.n] = { w: ck.w, r: ck.r, t: String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0') };
+      save(); drawCheck('thanks'); renderStudent();
+      clearTimeout(ck.timer); ck.timer = setTimeout(closeCheck, 1800);
+    }
+  });
+  function closeCheck(){ if (ck) clearTimeout(ck.timer); ck = null; $('ckModal').classList.remove('on'); }
+  $('ckModal').addEventListener('click', function(e){ if (e.target === this) closeCheck(); });
+
+  // ---- PIN ----
+  // 처음 열 때는 PIN을 새로 정함(두 번 입력). 5번 틀리면 30초 잠금(새로 고쳐도 유지)
+  var LOCK = KEY + '-lock', MAXTRY = 5, LOCKMS = 30000;
+  var pin = '', mode = 'enter', first = '', fails = 0, lockT = null;
+  $('pad').innerHTML = [1,2,3,4,5,6,7,8,9,'지움',0,'확인'].map(function(k){ return '<button type="button" data-k="' + k + '"' + (typeof k === 'string' ? ' style="font-size:15px"' : '') + '>' + k + '</button>'; }).join('');
+  function drawPin(){ [].forEach.call($('pinDots').children, function(d, i){ d.classList.toggle('on', i < pin.length); }); }
+  function lockLeft(){ var u = 0; try { u = +localStorage.getItem(LOCK) || 0; } catch (e) {} return Math.max(0, u - Date.now()); }
+  function showLock(){
+    clearTimeout(lockT);
+    var left = lockLeft();
+    if (!left){ $('pinMsg').textContent = ''; return; }
+    $('pinMsg').textContent = MAXTRY + '번 틀려서 잠겼어요. ' + Math.ceil(left / 1000) + '초 뒤에 다시 해 주세요.';
+    lockT = setTimeout(showLock, 1000);
+  }
+  function shake(msg){ $('pinMsg').textContent = msg; $('pinBox').classList.remove('shake'); void $('pinBox').offsetWidth; $('pinBox').classList.add('shake'); pin = ''; drawPin(); }
+  function openPin(){
+    pin = ''; first = ''; drawPin(); $('pinMsg').textContent = '';
+    mode = state.pin ? 'enter' : 'set1';
+    $('pinTitle').textContent = mode === 'enter' ? '🔒 선생님 PIN' : '🔒 선생님 PIN 정하기';
+    $('pinSub').textContent = mode === 'enter' ? '선생님만 아는 숫자 4자리를 눌러요.' : '처음이에요! 선생님 화면을 지킬 숫자 4자리를 정해 주세요.';
+    $('pinModal').classList.add('on'); showLock();
+  }
+  function tryPin(){
+    if (pin.length < 4) return;
+    if (mode === 'set1'){ first = pin; pin = ''; drawPin(); mode = 'set2'; $('pinSub').textContent = '한 번 더 눌러 확인해 주세요.'; return; }
+    if (mode === 'set2'){
+      if (pin !== first){ mode = 'set1'; first = ''; $('pinSub').textContent = '처음이에요! 선생님 화면을 지킬 숫자 4자리를 정해 주세요.'; return shake('두 번 누른 숫자가 달라요. 처음부터 다시 정해 주세요.'); }
+      state.pin = pin; save(); $('pinModal').classList.remove('on'); pin = ''; drawPin(); openTeacher(); toast('PIN을 정했어요. 잊지 마세요!'); return;
+    }
+    if (lockLeft()) { pin = ''; drawPin(); return showLock(); }
+    if (pin === state.pin){ fails = 0; $('pinModal').classList.remove('on'); pin = ''; drawPin(); openTeacher(); }
+    else {
+      fails++;
+      if (fails >= MAXTRY){ fails = 0; try { localStorage.setItem(LOCK, String(Date.now() + LOCKMS)); } catch (e) {} pin = ''; drawPin(); $('pinBox').classList.remove('shake'); void $('pinBox').offsetWidth; $('pinBox').classList.add('shake'); return showLock(); }
+      shake('PIN이 달라요. 다시 눌러 주세요. (' + fails + '/' + MAXTRY + ')');
+    }
+  }
+  function pressKey(k){
+    if (mode === 'enter' && lockLeft()) return showLock();
+    if (k === '지움') pin = pin.slice(0, -1);
+    else if (k === '확인') return tryPin();
+    else if (pin.length < 4) pin += k;
+    $('pinMsg').textContent = ''; drawPin();
+    if (pin.length === 4) setTimeout(tryPin, 120);
+  }
+  $('pad').addEventListener('click', function(e){ var b = e.target.closest('[data-k]'); if (b) pressKey(b.dataset.k); });
+  $('teachBtn').addEventListener('click', openPin);
+  $('pinCancel').addEventListener('click', function(){ $('pinModal').classList.remove('on'); });
+  document.addEventListener('keydown', function(e){
+    if ($('pinModal').classList.contains('on')){
+      if (/^\d$/.test(e.key)) pressKey(e.key);
+      else if (e.key === 'Backspace') pressKey('지움');
+      else if (e.key === 'Enter') pressKey('확인');
+    }
+    if (e.key === 'Escape'){ $('pinModal').classList.remove('on'); closeCheck(); }
+  });
+
+  // ---- 교사 화면 ----
+  function streakOf(n, keys){
+    // 가장 최근 응답부터 거꾸로 흐림 계열이 몇 일 이어졌는지 (응답 없는 날은 건너뜀)
+    var s = 0, hist = [];
+    for (var i = keys.length - 1; i >= 0; i--){
+      var v = state.days[keys[i]][n];
+      if (!v) continue;
+      if (DOWN(v.w)){ s++; hist.unshift(v); } else break;
+    }
+    return { s: s, hist: hist };
+  }
+  function renderTeacher(){
+    var t = today(), keys = Object.keys(state.days).filter(function(k){ return k <= TODAY; }).sort();
+    var recent = keys.slice(-5);
+    $('tDate').textContent = label(TODAY) + ' 마음 날씨';
+    var cnt = 0, up = 0, down = 0, by = {};
+    WX.forEach(function(w){ by[w.id] = []; });
+    for (var n = 1; n <= state.n; n++){ var v = t[n]; if (!v) continue; cnt++; by[v.w].push(n); if (W[v.w].mood === 'up') up++; if (DOWN(v.w)) down++; }
+    $('kResp').textContent = cnt + '/' + state.n; $('kSun').textContent = up; $('kCloud').textContent = down;
+
+    var max = Math.max(1, Math.max.apply(null, WX.map(function(w){ return by[w.id].length; })));
+    $('dist').innerHTML = WX.map(function(w){
+      var list = by[w.id];
+      return '<div class="row"><span>' + w.ic + ' ' + w.nm + '</span><div class="bar"><i style="width:' + (list.length / max * 100) + '%;background:' + w.col + '"></i></div><span>' + list.length + '</span>' +
+        (list.length ? '<div class="who">' + list.map(function(n){ return n + '번(' + t[n].r + ')'; }).join(' · ') + '</div>' : '') + '</div>';
+    }).join('');
+    var miss = []; for (var m = 1; m <= state.n; m++) if (!t[m]) miss.push(m);
+    $('missing').innerHTML = miss.length ? '🙋 아직 체크하지 않은 번호: <b>' + miss.join(', ') + '</b>' : '🎉 모두 체크했어요!';
+
+    var watch = [];
+    for (var k = 1; k <= state.n; k++){ var st = streakOf(k, keys); if (st.s >= 2) watch.push({ n: k, st: st }); }
+    watch.sort(function(a, b){ return b.st.s - a.st.s; });
+    $('watch').innerHTML = watch.length ? watch.map(function(x){
+      var reasons = x.st.hist.map(function(v){ return v.r; }).filter(function(r, i, a){ return a.indexOf(r) === i; });
+      return '<li><span class="n">' + x.n + '번</span><div style="flex:1"><span class="h">' + x.st.hist.map(function(v){ return W[v.w].ic; }).join('') + '</span><small>흐린 날 ' + x.st.s + '일째 · 이유: ' + reasons.join(', ') + (t[x.n] ? '' : ' · 오늘은 아직 체크 전') + '</small></div></li>';
+    }).join('') : '<li>👍 이어서 흐린 친구가 없어요.</li>';
+
+    var segOrder = ['sun','rainbow','partly','cloud','rain','storm'];
+    $('trend').innerHTML = recent.map(function(key){
+      var d = state.days[key], tot = 0, c = {};
+      segOrder.forEach(function(id){ c[id] = 0; });
+      Object.keys(d).forEach(function(n){ if (+n <= state.n){ c[d[n].w]++; tot++; } });
+      var segs = segOrder.map(function(id){ return c[id] ? '<i title="' + W[id].nm + ' ' + c[id] + '명" style="height:' + (c[id] / state.n * 100) + '%;background:' + W[id].col + '"></i>' : ''; }).join('');
+      var dn = c.cloud + c.rain + c.storm;
+      return '<div class="tcol"><small>☁️' + dn + '</small><div class="stack">' + segs + '</div><b>' + label(key) + '</b><small>' + tot + '명</small></div>';
+    }).join('');
+    $('keys').innerHTML = segOrder.map(function(id){ return '<span><i style="background:' + W[id].col + '"></i>' + W[id].ic + W[id].nm + '</span>'; }).join('');
+  }
+  function openTeacher(){ document.body.classList.add('teacher'); renderTeacher(); window.scrollTo(0, 0); }
+  function lockTeacher(){ document.body.classList.remove('teacher'); $('setCard').hidden = true; renderStudent(); toast('🔒 학생 화면으로 돌아왔어요'); }
+  $('lockBtn').addEventListener('click', lockTeacher);
+  $('setBtn').addEventListener('click', function(){ var c = $('setCard'); c.hidden = !c.hidden; $('sN').value = state.n; $('sPin').value = ''; });
+  $('sSave').addEventListener('click', function(){
+    var n = Math.max(1, Math.min(40, parseInt($('sN').value, 10) || 24)), p = $('sPin').value.trim();
+    if (p && !/^\d{4}$/.test(p)){ toast('PIN은 숫자 4자리로 적어 주세요'); return; }
+    state.n = n; if (p) state.pin = p; save(); renderTeacher(); toast(p ? '저장했어요 (새 PIN 적용)' : '저장했어요');
+  });
+  $('sDemo').addEventListener('click', function(){ state.pin = '1234'; save(); toast('체험 모드: PIN이 1234가 됐어요'); });
+  $('sWipe').addEventListener('click', function(){
+    if (!confirm('이 기기에 저장된 마음 날씨 기록과 PIN을 모두 지울까요? 되돌릴 수 없어요.')) return;
+    try { localStorage.removeItem(KEY); localStorage.removeItem(LOCK); } catch (e) {}
+    state = { n: 24, pin: null, days: {} }; lockTeacher(); toast('🗑 이 기기의 기록을 모두 지웠어요');
+  });
+  $('sToday').addEventListener('click', function(){ if (!confirm('오늘 응답을 모두 지울까요?')) return; state.days[TODAY] = {}; save(); renderTeacher(); });
+  $('sSample').addEventListener('click', function(){ if (!confirm('예시 1주 데이터로 바꿀까요? 지금 기록은 지워져요.')) return; state.days = sample(); save(); renderTeacher(); });
+
+  renderStudent();
+  window.__mood = { state: function(){ return state; }, openTeacher: openTeacher, renderTeacher: renderTeacher };
+})();
+</script>
+</body>
+</html>

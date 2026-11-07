@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>복무 한눈달력 - 학년·부서 복무를 달력 한 장에 (콘셉트)</title>
+<meta name="description" content="학교 월간 달력에 우리 학년·부서의 연가·출장·조퇴·육아시간·연수를 색 칩으로 모아 보고, 수업 보결이 필요한 날을 자동으로 표시하는 복무 달력 콘셉트 페이지">
+<style>
+  :root{--in:#3b3fb6;--in2:#ecedfb;--in3:#25287a;--sun:#ffc93c;--ink:#1c1d3a;--mut:#62647f;--bg:#f6f7fb;--line:#dfe1ee;--red:#e0453a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;word-break:keep-all}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+  nav{display:flex;align-items:center;gap:12px;height:58px}
+  .logo{font-weight:900;font-size:20px;display:flex;gap:8px;align-items:center;color:var(--in3)}
+  .logo svg{width:32px;height:32px}
+  .badge{background:var(--sun);color:#3a2a00;font-weight:800;font-size:13px;padding:4px 12px;border-radius:8px;border:2px solid var(--in3)}
+  nav .links{margin-left:auto;display:flex;gap:20px;font-size:14px;color:var(--mut)}
+  nav a{text-decoration:none;color:inherit}
+  .hero{display:grid;grid-template-columns:.78fr 1.45fr;gap:30px;align-items:center;padding:8px 0 40px}
+  .hero h1{font-size:40px;line-height:1.2;letter-spacing:-1.3px;margin:14px 0 12px}
+  .hero h1 em{font-style:normal;color:var(--in);background:linear-gradient(transparent 62%,#ffe7a3 62%)}
+  .lead{font-size:16px;color:var(--mut);margin-bottom:20px}
+  .btn{border:0;border-radius:10px;padding:12px 20px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn.p{background:var(--in);color:#fff;box-shadow:0 6px 16px #3b3fb640}
+  .btn.s{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .cta{display:flex;gap:10px;flex-wrap:wrap}
+  .kpi{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+  .kpi div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12.5px;color:var(--mut)}
+  .kpi b{display:block;font-size:20px;color:var(--in3)}
+  /* mock */
+  .mock{background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:0 20px 48px #1c1d3a1c;padding:14px;display:grid;grid-template-columns:1fr 200px;gap:12px}
+  .mtop{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .mon{display:flex;align-items:center;gap:6px}
+  .mon b{font-size:16px;min-width:96px;text-align:center}
+  .nb{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--line);background:#fff;cursor:pointer;font:inherit;font-weight:900;color:var(--in3)}
+  .nb:disabled{opacity:.35;cursor:default}
+  .who{margin-left:auto;font:inherit;font-size:12.5px;border:1.5px solid var(--line);border-radius:8px;padding:5px 6px;background:#fff;color:var(--ink)}
+  .sample{font-size:11px;color:#8a5a00;background:#fff4d6;border-radius:6px;padding:3px 7px}
+  .filters{grid-column:1/-1;display:flex;gap:5px;flex-wrap:wrap}
+  .fc{border:1.5px solid var(--c);color:var(--c);background:#fff;border-radius:999px;font:inherit;font-size:12px;font-weight:700;padding:3px 10px;cursor:pointer}
+  .fc.on{background:var(--c);color:#fff}
+  .fc.on::before{content:"✓ "}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+  .dh{text-align:center;font-size:12px;font-weight:800;color:var(--mut);padding:2px 0}
+  .cell{border:1.5px solid var(--line);border-radius:9px;min-height:66px;padding:4px 5px;font-size:11px;cursor:pointer;background:#fff;position:relative;text-align:left;font-family:inherit;color:inherit;display:flex;flex-direction:column;gap:2px;overflow:hidden}
+  .cell:hover{border-color:var(--in)}
+  .cell.sel{border-color:var(--in);box-shadow:0 0 0 2px var(--in) inset;background:var(--in2)}
+  .cell.out{background:#f8f8fb;color:#b9bacb;cursor:default}
+  .cell.hol{background:#fff5f4}
+  .cell .dn{font-weight:800;font-size:12px}
+  .cell.hol .dn{color:var(--red)}
+  .cell .ev{font-size:10px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip{display:block;border-radius:5px;padding:0 4px;color:#fff;font-weight:700;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--c)}
+  .more{font-size:10px;color:var(--mut)}
+  .bk{position:absolute;top:3px;right:4px;background:var(--red);color:#fff;font-size:9.5px;font-weight:800;border-radius:5px;padding:0 4px}
+  .side{background:var(--in2);border-radius:14px;padding:12px;font-size:12.5px;display:flex;flex-direction:column;gap:7px;min-width:0}
+  .side h4{font-size:14px;color:var(--in3)}
+  .side .row{background:#fff;border-radius:9px;padding:6px 8px;border-left:5px solid var(--c)}
+  .side .row small{display:block;color:var(--mut)}
+  .side .need{background:#fff0ee;color:#a32519;border-radius:9px;padding:7px 8px;font-weight:700}
+  .side .ok{background:#e9f7ee;color:#1c6b3d;border-radius:9px;padding:7px 8px;font-weight:700}
+  .side .empty{color:var(--mut)}
+  .sum{grid-column:1/-1;display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mut);border-top:1px dashed var(--line);padding-top:8px}
+  .sum b{color:var(--ink)}
+  section{padding:56px 0}
+  .tag{color:var(--in);font-weight:900;font-size:13px;letter-spacing:1px}
+  h2{font-size:30px;letter-spacing:-.8px;margin:6px 0 24px}
+  .ps{display:grid;grid-template-columns:1fr 70px 1fr;align-items:center;gap:10px}
+  .ps>div.c{border-radius:20px;padding:24px}
+  .ps .a{background:#fff;border:1px solid var(--line)}
+  .ps .b{background:var(--in3);color:#fff}
+  .ps .ar{font-size:34px;text-align:center;color:var(--in)}
+  .ps h3{font-size:18px;margin-bottom:10px}.ps ul{padding-left:18px;font-size:15px}.ps li{margin:5px 0}
+  .feat{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .feat div{background:#fff;border-radius:18px;padding:20px;border-top:5px solid var(--c)}
+  .feat span{font-size:28px}
+  .feat h3{font-size:16px;margin:8px 0 6px}.feat p{font-size:14px;color:var(--mut)}
+  .flow{display:flex;gap:0;counter-reset:s}
+  .flow div{flex:1;background:#fff;border:1px solid var(--line);padding:20px;position:relative}
+  .flow div:first-child{border-radius:18px 0 0 18px}.flow div:last-child{border-radius:0 18px 18px 0}
+  .flow div::before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--sun);font-weight:900;color:#3a2a00;margin-bottom:8px}
+  .flow h3{font-size:16px;margin-bottom:6px}.flow p{font-size:14px;color:var(--mut)}
+  .note{font-size:13px;color:var(--mut);margin-top:18px}
+  footer{border-top:1px solid var(--line);padding:26px 0 40px;font-size:13px;color:var(--mut)}
+  footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  footer a{font-weight:800;color:var(--in)}
+  @media (max-width:1000px){.hero{grid-template-columns:1fr}.feat{grid-template-columns:1fr 1fr}nav .links{display:none}}
+  @media (max-width:640px){
+    .wrap{padding:0 12px}.hero h1{font-size:30px}
+    .mock{grid-template-columns:1fr;padding:10px}
+    .who{margin-left:0}
+    .cell{min-height:58px;padding:3px}
+    .chip{font-size:9.5px;padding:0 2px}
+    .cell .ev{display:none}
+    .bk{font-size:8.5px;padding:0 2px;top:2px;right:2px}
+    .ps{grid-template-columns:1fr}.ps .ar{transform:rotate(90deg)}
+    .feat{grid-template-columns:1fr}.flow{flex-direction:column}
+    .flow div:first-child{border-radius:18px 18px 0 0}.flow div:last-child{border-radius:0 0 18px 18px}
+    h2{font-size:24px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="복무 한눈달력">
+<meta property="og:description" content="학년·부서 복무를 색 칩 달력으로 모아 보고, 보결 필요일을 자동 표시">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/38-duty-calendar.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/duty-calendar/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo"><svg viewBox="0 0 40 40"><rect x="4" y="7" width="32" height="29" rx="7" fill="#3b3fb6"/><rect x="4" y="7" width="32" height="9" rx="4" fill="#25287a"/><circle cx="13" cy="25" r="4" fill="#ffc93c"/><circle cx="27" cy="25" r="4" fill="#fff"/></svg>복무 한눈달력</div>
+    <span class="badge">💡 콘셉트</span>
+    <div class="links"><a href="#problem">왜 필요할까</a><a href="#features">기능</a><a href="#flow">사용 흐름</a></div>
+  </nav>
+  <header class="hero">
+    <div>
+      <span class="badge">💡 콘셉트 · 아이디어 시연</span>
+      <h1>누가 언제 비는지,<br><em>달력 한 장</em>으로 끝</h1>
+      <p class="lead">학교 월간 일정 위에 우리 학년·부서의 연가·출장·조퇴·육아시간·연수를 색 칩으로 겹쳐 보여 줍니다. 담임이 비는 날은 <b>“보결 필요”</b>가 자동으로 붙어요.</p>
+      <div class="cta"><a class="btn p" href="#demo">달력 넘겨 보기 →</a><a class="btn s" href="#flow">사용 흐름</a></div>
+      <div class="kpi"><div><b id="kAll">0</b>이번 달 복무</div><div><b id="kNeed">0</b>보결 필요일</div><div><b>6</b>복무 종류 색 구분</div></div>
+    </div>
+    <div class="mock" id="demo">
+      <div class="mtop">
+        <div class="mon"><button class="nb" id="prev" aria-label="이전 달">‹</button><b id="mlabel"></b><button class="nb" id="next" aria-label="다음 달">›</button></div>
+        <span class="sample">안내용으로 다시 만든 예시 화면</span>
+        <select class="who" id="who" aria-label="대상자 고르기"></select>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div>
+        <div class="grid" id="grid"></div>
+      </div>
+      <aside class="side" id="side"></aside>
+      <div class="sum" id="sum"></div>
+    </div>
+  </header>
+</div>
+
+<section id="problem" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">PROBLEM → SOLUTION</div>
+    <h2>복무는 결재함에, 일정은 달력에, 보결은 머릿속에</h2>
+    <div class="ps">
+      <div class="c a"><h3>😵 지금은</h3><ul><li>동학년 선생님 연가·출장을 결재 목록에서 하나씩 확인</li><li>학교 행사 달력과 복무가 따로 놀아 겹침을 늦게 발견</li><li>보결 필요한 날을 교무실에서 손으로 다시 정리</li></ul></div>
+      <div class="ar">➜</div>
+      <div class="c b"><h3>🗓️ 한눈달력에서는</h3><ul><li>학교 월간 일정 위에 부서원 복무를 색 칩으로 겹쳐 보기</li><li>종류·사람별로 필터해 필요한 것만</li><li>담임이 수업일에 비면 “보결 필요” 자동 표시</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="tag">FEATURES</div>
+    <h2>주요 기능</h2>
+    <div class="feat">
+      <div style="--c:#3b3fb6"><span>🎨</span><h3>복무 색 칩</h3><p>연가·출장·조퇴·육아시간·연수를 색으로 구분해 날짜 칸에 바로 표시합니다.</p></div>
+      <div style="--c:#e0453a"><span>🧑‍🏫</span><h3>보결 자동 표시</h3><p>담임이 수업 시간에 비는 날·교시를 계산해 빨간 표시로 알려 줍니다.</p></div>
+      <div style="--c:#ffc93c"><span>🎯</span><h3>대상자 고르기</h3><p>우리 학년, 우리 부서, 특정 선생님만 골라 볼 수 있습니다.</p></div>
+      <div style="--c:#1f9d63"><span>🏫</span><h3>학교 일정 겹쳐 보기</h3><p>공개수업·체험학습 같은 학교 일정과 복무가 겹치는지 한 번에 확인합니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="flow" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">HOW IT WORKS</div>
+    <h2>사용 흐름</h2>
+    <div class="flow">
+      <div><h3>복무 승인 내역 불러오기</h3><p>이미 결재가 끝난 복무 목록을 그대로 가져옵니다. 새로 입력할 것은 없습니다.</p></div>
+      <div><h3>학교 월간 일정과 합치기</h3><p>학교 일정 위에 복무 칩이 겹쳐지고, 담임 부재 칸에 보결 표시가 붙습니다.</p></div>
+      <div><h3>학년·부서별로 공유</h3><p>학년부장·교무는 필터된 달력을 보고 보결과 행사 인력을 미리 조정합니다.</p></div>
+    </div>
+    <p class="note">※ 미리보기의 이름·복무·일정은 모두 가상의 “햇살초등학교” 예시이며, 화면 안에서만 동작하고 어떤 정보도 전송하거나 저장하지 않습니다.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>복무 한눈달력 · 실제 운영 중인 서비스가 아닌 아이디어 시연용 페이지입니다.</span>
+    <a href="../">← 전체 데모 보기</a>
+  </div>
+</footer>
+
+<script>
+const TYPES={연가:'#3b3fb6',출장:'#0e8fa8',조퇴:'#e8892b',육아시간:'#c2449a',연수:'#1f9d63',병가:'#7a5cd6'};
+const PEOPLE=[['김하늘','3-1 담임',true],['이바다','3-2 담임',true],['박솔','3-3 담임',true],['최누리','3-4 담임',true],['정다온','영어 전담',false],['한겨울','학년부장·3-5 담임',true]];
+// [year, month(0-based), day, person index, type, detail, needPeriods (null=all day)]
+const EV=[
+ [2026,9,6,0,'출장','교육청 협의회 13:00-',[5,6]],[2026,9,8,4,'연수','원격 직무연수(퇴근 후)',[]],[2026,9,13,1,'연가','종일',null],
+ [2026,9,15,3,'육아시간','15:00-16:30',[]],[2026,9,20,5,'출장','학년부장 회의',[5,6]],[2026,9,22,2,'조퇴','14:00 병원',[6]],
+ [2026,9,27,0,'연수','교과 연구회',[]],[2026,9,29,1,'병가','종일',null],[2026,9,30,3,'육아시간','15:00-16:30',[]],
+ [2026,10,3,1,'연가','종일',null],[2026,10,3,4,'연수','원격 직무연수(퇴근 후)',[]],[2026,10,5,3,'육아시간','15:00-16:30',[]],
+ [2026,10,6,0,'출장','과학 연구회 10:00-',[3,4,5,6]],[2026,10,10,2,'조퇴','13:30 가족 행사',[5,6]],[2026,10,11,5,'출장','학년부장 회의',[5,6]],
+ [2026,10,12,3,'육아시간','15:00-16:30',[]],[2026,10,13,4,'연가','종일',null],[2026,10,17,1,'연수','수업 나눔 연수 14:30-',[]],
+ [2026,10,18,0,'연가','종일',null],[2026,10,18,2,'출장','현장체험 사전답사',[1,2,3,4,5,6]],[2026,10,19,3,'육아시간','15:00-16:30',[]],
+ [2026,10,24,5,'조퇴','14:00 개인 용무',[6]],[2026,10,25,2,'연수','에듀테크 연수(오후)',[]],[2026,10,26,3,'육아시간','15:00-16:30',[]],[2026,10,27,1,'병가','종일',null],
+ [2026,11,1,0,'연수','원격 직무연수',[]],[2026,11,3,3,'육아시간','15:00-16:30',[]],[2026,11,4,1,'출장','교육청 공모 심사',[1,2,3,4,5,6]],
+ [2026,11,9,2,'연가','종일',null],[2026,11,10,4,'출장','영어 캠프 협의',[3,4]],[2026,11,15,5,'조퇴','14:00 병원',[6]],
+ [2026,11,17,0,'연가','종일',null],[2026,11,17,3,'육아시간','15:00-16:30',[]],[2026,11,22,1,'연수','겨울방학 연수 사전 안내',[]],[2026,11,23,2,'연가','종일',null]
+];
+// school events & holidays
+const SCH={'2026-9-9':['한글날',1],'2026-9-21':['학부모 공개수업',0],'2026-10-20':['3학년 현장체험학습',0],'2026-10-13':['교내 과학의 날',0],'2026-11-25':['성탄절',1],'2026-11-31':['겨울방학식',0],'2026-11-11':['학예 발표회',0]};
+const MONTHS=[[2026,9],[2026,10],[2026,11]];
+let mi=1,who=-1,sel=null;const on=new Set(Object.keys(TYPES));
+const $=id=>document.getElementById(id);
+$('who').innerHTML='<option value="-1">우리 3학년 전체</option>'+PEOPLE.map((p,i)=>`<option value="${i}">${p[0]} (${p[1]})</option>`).join('');
+$('filters').innerHTML=Object.entries(TYPES).map(([t,c])=>`<button class="fc on" style="--c:${c}" data-t="${t}" aria-pressed="true">${t}</button>`).join('');
+const visible=()=>{const[y,m]=MONTHS[mi];return EV.filter(e=>e[0]===y&&e[1]===m&&on.has(e[4])&&(who<0||e[3]===who))};
+const needOf=e=>PEOPLE[e[3]][2]&&(e[6]===null||e[6].length>0);
+const per=e=>e[6]===null?'1-6교시':e[6].length?e[6].join('·')+'교시':'';
+function draw(){
+  const[y,m]=MONTHS[mi];$('mlabel').textContent=`${y}년 ${m+1}월`;
+  $('prev').disabled=mi===0;$('next').disabled=mi===MONTHS.length-1;
+  const evs=visible();
+  let h=['월','화','수','목','금'].map(d=>`<div class="dh">${d}</div>`).join('');
+  const first=new Date(y,m,1),start=new Date(first);start.setDate(1-((first.getDay()+6)%7));
+  const last=new Date(y,m+1,0);
+  for(let d=new Date(start);d<=last||((d.getDay()+6)%7)!==0;d.setDate(d.getDate()+1)){
+    const wd=d.getDay();if(wd===0||wd===6)continue;
+    const inM=d.getMonth()===m,dd=d.getDate();
+    if(!inM){h+=`<div class="cell out"><span class="dn">${d.getMonth()+1}/${dd}</span></div>`;continue}
+    const sc=SCH[`${y}-${m}-${dd}`],ds=evs.filter(e=>e[2]===dd),nd=ds.some(needOf)&&!(sc&&sc[1]);
+    h+=`<button class="cell ${sc&&sc[1]?'hol':''} ${sel===dd?'sel':''}" data-d="${dd}" aria-label="${m+1}월 ${dd}일 복무 ${ds.length}건">
+      <span class="dn">${dd}</span>${nd?'<span class="bk">보결</span>':''}${sc?`<span class="ev">🏫 ${sc[0]}</span>`:''}
+      ${ds.slice(0,2).map(e=>`<span class="chip" style="--c:${TYPES[e[4]]}">${PEOPLE[e[3]][0].slice(1)}·${e[4]}</span>`).join('')}
+      ${ds.length>2?`<span class="more">+${ds.length-2}건</span>`:''}</button>`;
+  }
+  $('grid').innerHTML=h;
+  const needDays=new Set(evs.filter(needOf).map(e=>e[2]));
+  $('kAll').textContent=evs.length;$('kNeed').textContent=needDays.size;
+  const cnt=Object.keys(TYPES).map(t=>[t,evs.filter(e=>e[4]===t).length]).filter(x=>x[1]);
+  $('sum').innerHTML=`<span>이번 달 <b>${evs.length}건</b></span>`+cnt.map(([t,n])=>`<span><span class="chip" style="--c:${TYPES[t]};display:inline">${t}</span> ${n}</span>`).join('')+`<span>· 보결 필요 <b style="color:var(--red)">${needDays.size}일</b></span>`;
+  side();
+}
+function side(){
+  const[y,m]=MONTHS[mi];
+  if(sel===null){$('side').innerHTML=`<h4>날짜를 눌러 보세요</h4><p class="empty">칸을 누르면 그날 누가 비는지, 몇 교시 보결이 필요한지 보여 줍니다.</p><p class="empty">위의 색 칩을 눌러 종류를 끄고 켜거나, 오른쪽 위에서 대상자를 골라 보세요.</p>`;return}
+  const ds=visible().filter(e=>e[2]===sel),sc=SCH[`${y}-${m}-${sel}`];
+  const wd='일월화수목금토'[new Date(y,m,sel).getDay()];
+  let h=`<h4>${m+1}월 ${sel}일 (${wd})</h4>`;
+  if(sc)h+=`<div class="row" style="--c:#999">🏫 ${sc[0]}<small>${sc[1]?'휴업일':'학교 일정'}</small></div>`;
+  if(!ds.length)h+=`<p class="empty">선택한 조건의 복무가 없습니다.</p>`;
+  ds.forEach(e=>{h+=`<div class="row" style="--c:${TYPES[e[4]]}"><b>${PEOPLE[e[3]][0]}</b> · ${e[4]}<small>${PEOPLE[e[3]][1]} · ${e[5]}</small></div>`});
+  const nd=ds.filter(needOf);
+  if(nd.length&&!(sc&&sc[1]))h+=`<div class="need">🔴 보결 필요<br>${nd.map(e=>`${PEOPLE[e[3]][1].split('·').pop().replace(' 담임','')||PEOPLE[e[3]][1]} ${per(e)}`).join('<br>')}</div>`;
+  else if(ds.length)h+=`<div class="ok">✓ 수업 시간 영향 없음</div>`;
+  $('side').innerHTML=h;
+}
+$('grid').addEventListener('click',e=>{const c=e.target.closest('button.cell');if(!c)return;sel=+c.dataset.d;draw()});
+$('filters').addEventListener('click',e=>{const b=e.target.closest('.fc');if(!b)return;const t=b.dataset.t;on.has(t)?on.delete(t):on.add(t);b.classList.toggle('on',on.has(t));b.setAttribute('aria-pressed',on.has(t));draw()});
+$('who').addEventListener('change',e=>{who=+e.target.value;draw()});
+$('prev').onclick=()=>{if(mi>0){mi--;sel=null;draw()}};
+$('next').onclick=()=>{if(mi<MONTHS.length-1){mi++;sel=null;draw()}};
+sel=18;draw();
+</script>
+</body>
+</html>

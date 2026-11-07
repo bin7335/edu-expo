@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>달님 달력 - 날짜별 달 모양과 위치 보기</title>
+<meta name="description" content="날짜를 고르면 그날 저녁 달 모양, 음력 날짜, 태양-지구-달 위치, 한 달 달 모양 달력, 언제 어디서 보이는지 알려 주는 과학 수업 도구.">
+<style>
+  :root{--bg:#0f1530;--panel:#182044;--panel2:#1f2a57;--ink:#eef1ff;--sub:#a9b2d8;--line:#2b3770;--moon:#fff3c4;--pri:#ffd166;--b:#7aa2ff}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:radial-gradient(1200px 600px at 20% -10%,#26326b,transparent),var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#3b4aa0,#ffd166);display:grid;place-items:center;font-size:26px;flex-shrink:0}
+  header>div:nth-child(2){flex:1;min-width:0}
+  header h1{margin:0;font-size:24px}
+  header small{display:block;color:var(--sub);font-size:13px}
+  .badge{font-size:12px;font-weight:800;background:#33407e;color:#ffd166;padding:3px 9px;border-radius:99px;margin-left:6px;vertical-align:middle}
+  .btn{border:0;font:inherit;font-weight:800;font-size:15px;padding:8px 13px;border-radius:11px;cursor:pointer;background:#2c3972;color:var(--ink);white-space:nowrap}
+  .btn.pri{background:var(--pri);color:#2a2100}
+  .btn:active{transform:scale(.97)}
+  .ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 20px 0}
+  .ctl .date{font-size:22px;font-weight:900;min-width:230px}
+  .ctl input[type=range]{flex:1;min-width:160px;accent-color:var(--pri);height:28px}
+  .ctl input[type=date]{font:inherit;font-size:15px;background:#232d60;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:6px 8px;color-scheme:dark}
+  main{flex:1;display:grid;grid-template-columns:minmax(250px,.78fr) minmax(470px,1.55fr) minmax(300px,1fr);gap:14px;padding:12px 20px;align-items:start;align-content:start}
+  main .hero{order:1} main .calp{order:2} main .orbp{order:3}
+  .panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:14px;min-width:0}
+  .panel h2{margin:0 0 8px;font-size:16px;color:var(--sub);font-weight:800}
+  /* 큰 달 */
+  .hero{display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;overflow:hidden}
+  .hero .sky{position:absolute;inset:0;pointer-events:none}
+  #bigMoon{width:min(210px,80%);height:auto;filter:drop-shadow(0 0 28px rgba(255,236,170,.35));position:relative}
+  .pname{font-size:40px;font-weight:900;color:var(--moon);margin:4px 0 2px;position:relative}
+  .facts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;position:relative}
+  .facts span{background:#27336b;border-radius:99px;padding:5px 11px;font-size:14px;font-weight:700}
+  .facts b{color:var(--pri)}
+  .keys{position:relative;margin-top:12px;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:left}
+  .keys div{background:#121a3b;border-radius:10px;padding:6px 9px;font-size:13px;line-height:1.3}
+  .keys b{color:var(--pri)} .keys small{display:block;color:var(--sub);font-size:11.5px}
+  .keys .ttl{grid-column:1/-1;background:none;padding:0 2px;color:var(--sub);font-size:12.5px;font-weight:800}
+  /* 위성도 */
+  #orbit{width:100%;height:auto;display:block}
+  .see{margin-top:8px;background:#121a3b;border-radius:14px;padding:10px 12px;font-size:15px;line-height:1.55}
+  .see b{color:var(--pri)}
+  .see .t{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .see .t span{background:#222c5c;border-radius:8px;padding:3px 8px;font-size:13px}
+  /* 달력 */
+  .calhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .calhead h2{margin:0;flex:1;color:var(--ink);font-size:19px}
+  .calhead .btn{padding:5px 11px}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal .wd{text-align:center;font-size:13px;font-weight:800;color:var(--sub);padding:2px 0}
+  .cal .wd:first-child{color:#ff8f8f}.cal .wd:last-child{color:#8fb3ff}
+  .day{background:#141c40;border:1.5px solid transparent;border-radius:10px;padding:3px 2px 2px;display:flex;flex-direction:column;align-items:center;cursor:pointer;min-height:70px;position:relative}
+  .day:hover{border-color:#4b5bb0}
+  .day.sel{border-color:var(--pri);background:#2a335f}
+  .day.today:after{content:"오늘";position:absolute;top:2px;right:3px;font-size:10px;color:var(--pri);font-weight:800}
+  .day .n{font-size:13px;font-weight:800;align-self:flex-start;padding-left:4px;line-height:1}
+  .day .n.sun{color:#ff9a9a}.day .n.sat{color:#9dbaff}
+  .day svg{width:38px;height:38px}
+  .day .lu{font-size:10.5px;color:var(--sub);line-height:1.1}
+  .day .ev{font-size:11px;font-weight:900;color:var(--pri);line-height:1.1}
+  .day.empty{background:transparent;cursor:default}
+  .note{font-size:12px;color:var(--sub);padding:0 20px 4px;line-height:1.5}
+  footer{text-align:right;padding:2px 20px 10px;font-size:13px}
+  footer a{color:var(--sub);text-decoration:none}
+  footer a:hover{color:var(--pri)}
+  @media (max-width:1100px){ main{grid-template-columns:1fr 1fr} main .calp{grid-column:1/-1;order:3} main .orbp{order:2} #bigMoon{width:min(260px,80%)} }
+  @media (max-width:700px){
+    header{padding:8px 12px} header h1{font-size:20px}
+    .ctl{padding:8px 10px 0}
+    .ctl .date{font-size:18px;min-width:0;width:100%;order:-1}
+    main{grid-template-columns:1fr;padding:10px} main .calp{order:2} main .orbp{order:3}
+    .pname{font-size:32px}
+    .day{min-height:56px}
+    .day svg{width:30px;height:30px}
+    .note{padding:0 10px 4px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="달님 달력">
+<meta property="og:description" content="날짜를 고르면 달 모양·음력·태양-지구-달 위치와 보이는 때를 알려 줌">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/47-moon-phase.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/moon-phase/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">🌙</div>
+  <div><h1>달님 달력 <span class="badge">천문 계산</span></h1><small>날짜를 고르면 그날 저녁 달 모양과 위치를 보여 줘요 · 과학 「달의 모양 변화」</small></div>
+</header>
+<div class="ctl">
+  <button class="btn" id="prev" title="하루 전">◀</button>
+  <div class="date" id="dateLbl"></div>
+  <button class="btn" id="next" title="하루 뒤">▶</button>
+  <input type="range" id="slider" min="1" max="30" aria-label="날짜 슬라이더">
+  <input type="date" id="picker" aria-label="날짜 고르기">
+  <button class="btn pri" id="play">▶ 한 달 재생</button>
+  <button class="btn" id="today">오늘</button>
+</div>
+<main>
+  <section class="panel hero">
+    <svg class="sky" id="sky" preserveAspectRatio="none" viewBox="0 0 100 100"></svg>
+    <h2 style="position:relative">저녁 9시에 보이는 달 (우리나라)</h2>
+    <svg id="bigMoon" viewBox="-110 -110 220 220"></svg>
+    <div class="pname" id="pname"></div>
+    <div class="facts" id="facts"></div>
+    <div class="keys" id="keys" aria-label="이달의 주요 위상"></div>
+  </section>
+  <section class="panel orbp">
+    <h2>☀️ 태양 · 🌍 지구 · 🌙 달의 위치 (북극 위에서 내려다본 모습)</h2>
+    <svg id="orbit" viewBox="0 0 380 270"></svg>
+    <div class="see" id="see"></div>
+  </section>
+  <section class="panel calp">
+    <div class="calhead"><button class="btn" id="mPrev">◀</button><h2 id="calTitle"></h2><button class="btn" id="mNext">▶</button></div>
+    <div class="cal" id="cal"></div>
+  </section>
+</main>
+<p class="note">※ 삭·상현·보름·하현 시각은 Meeus 『Astronomical Algorithms』 49장 식(주요 보정항 + 행성 보정)으로 계산해 실제와 1-2분 안쪽으로 맞고, 날짜는 한국 시각 기준이에요(2026년 삭·망 25회 모두 미국 해군천문대 값과 같은 날짜). 그날 저녁 달 모양은 그 사이를 나눠 그린 값, 뜨고 지는 시각은 계절에 따라 1-2시간 달라지는 대략값이에요. 그림의 크기·거리는 실제 비율과 달라요.</p>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<script>
+/* ===== 천문 계산 ===== */
+const SYN=29.530588, DAY=864e5, HOUR=36e5;
+const rad=Math.PI/180;
+/* ===== 천문 계산: Meeus 『Astronomical Algorithms』 49장 달의 위상 (주요 보정항 + 행성 보정 14항) ===== */
+const SYNM=29.530588861, DT_SEC=69;   // ΔT(TT-UT) 2026년 무렵 약 69초
+// q: 0=삭, .25=상현, .5=망(보름), .75=하현. k는 2000-01-06 기준 삭망 번호
+function phaseMs(k,q){
+  k=k+q; const T=k/1236.85, T2=T*T, T3=T2*T, T4=T3*T;
+  let jde=2451550.09766+SYNM*k+0.00015437*T2-0.000000150*T3+0.00000000073*T4;
+  const E=1-0.002516*T-0.0000074*T2, E2=E*E;
+  const M=(2.5534+29.10535670*k-0.0000014*T2-0.00000011*T3)*rad;
+  const Mp=(201.5643+385.81693528*k+0.0107582*T2+0.00001238*T3-0.000000058*T4)*rad;
+  const F=(160.7108+390.67050284*k-0.0016118*T2-0.00000227*T3+0.000000011*T4)*rad;
+  const O=(124.7746-1.56375588*k+0.0020672*T2+0.00000215*T3)*rad;
+  const s=Math.sin, c=Math.cos;
+  let d;
+  if(q===0||q===.5){
+    const nw=q===0;
+    d=(nw?-0.40720:-0.40614)*s(Mp)+(nw?0.17241:0.17302)*E*s(M)+(nw?0.01608:0.01614)*s(2*Mp)+(nw?0.01039:0.01043)*s(2*F)
+      +(nw?0.00739:0.00734)*E*s(Mp-M)-(nw?0.00514:0.00515)*E*s(Mp+M)+(nw?0.00208:0.00209)*E2*s(2*M)
+      -0.00111*s(Mp-2*F)-0.00057*s(Mp+2*F)+0.00056*E*s(2*Mp+M)-0.00042*s(3*Mp)+0.00042*E*s(M+2*F)
+      +0.00038*E*s(M-2*F)-0.00024*E*s(2*Mp-M)-0.00017*s(O)-0.00007*s(Mp+2*M)+0.00004*s(2*Mp-2*F)
+      +0.00004*s(3*M)+0.00003*s(Mp+M-2*F)+0.00003*s(2*Mp+2*F)-0.00003*s(Mp+M+2*F)+0.00003*s(Mp-M+2*F)
+      -0.00002*s(Mp-M-2*F)-0.00002*s(3*Mp+M)+0.00002*s(4*Mp);
+  }else{
+    d=-0.62801*s(Mp)+0.17172*E*s(M)-0.01183*E*s(Mp+M)+0.00862*s(2*Mp)+0.00804*s(2*F)+0.00454*E*s(Mp-M)
+      +0.00204*E2*s(2*M)-0.00180*s(Mp-2*F)-0.00070*s(Mp+2*F)-0.00040*s(3*Mp)-0.00034*E*s(2*Mp-M)
+      +0.00032*E*s(M+2*F)+0.00032*E*s(M-2*F)-0.00028*E2*s(Mp+2*M)+0.00027*E*s(2*Mp+M)-0.00017*s(O)
+      -0.00005*s(Mp-M-2*F)+0.00004*s(2*Mp+2*F)-0.00004*s(Mp+M+2*F)+0.00004*s(Mp-2*M)+0.00003*s(Mp+M-2*F)
+      +0.00003*s(3*M)-0.00002*s(2*Mp-2*F)+0.00002*s(Mp-M+2*F)-0.00002*s(3*Mp+M);
+    const W=0.00306-0.00038*E*c(M)+0.00026*c(Mp)-0.00002*c(Mp-M)+0.00002*c(Mp+M)+0.00002*c(2*F);
+    d+=q===.25?W:-W;
+  }
+  const A=[[299.77,0.107408,0.000325],[251.88,0.016321,0.000165],[251.83,26.651886,0.000164],[349.42,36.412478,0.000126],
+    [84.66,18.206239,0.000110],[141.74,53.303771,0.000062],[207.14,2.453732,0.000060],[154.84,7.306860,0.000056],
+    [34.52,27.261239,0.000047],[207.19,0.121824,0.000042],[291.34,1.844379,0.000040],[161.72,24.198154,0.000037],
+    [239.56,25.513099,0.000035],[331.55,3.592518,0.000023]];
+  let p=0; A.forEach(([a,b,co],i)=>{ p+=co*s((a+b*k-(i===0?0.009173*T2:0))*rad); });
+  jde+=d+p;
+  return (jde-2440587.5)*DAY-DT_SEC*1000;   // TT → UT, 유닉스 ms
+}
+// t 앞뒤의 위상 사건들(삭·상현·망·하현) [{ms, q}]
+function eventsAround(ms){
+  const k0=Math.floor(((ms/DAY+2440587.5)-2451550.09766)/SYNM);
+  const out=[]; for(let k=k0-1;k<=k0+1;k++) for(const q of [0,.25,.5,.75]) out.push({ms:phaseMs(k,q),q,k});
+  return out.sort((a,b)=>a.ms-b.ms);
+}
+// 이각(태양-달 경도 차) 0=삭, 90=상현, 180=보름, 270=하현 — 앞뒤 위상 사건 시각 사이를 보간
+function elong(ms){
+  const ev=eventsAround(ms);
+  for(let i=0;i<ev.length-1;i++) if(ev[i].ms<=ms&&ms<ev[i+1].ms) return (ev[i].q*360+(ms-ev[i].ms)/(ev[i+1].ms-ev[i].ms)*90)%360;
+  return 0;
+}
+const kst=(y,m,d,h=21)=>Date.UTC(y,m,d,h-9);  // 한국 시각 → ms
+const kDay=ms=>Math.floor((ms+9*HOUR)/DAY);
+function newMoonBefore(ms){ const ev=eventsAround(ms).filter(e=>e.q===0&&e.ms<=ms); return ev[ev.length-1].ms }
+const ageAt=ms=>(ms-newMoonBefore(ms))/DAY;   // 달 나이(일)
+const illum=e=>(1-Math.cos(e*rad))/2;        // 밝게 보이는 비율
+// 음력 날짜: 합삭(삭)이 든 한국 날짜가 초하루
+function lunarDay(y,m,d){ const end=kst(y,m,d,24)-1; return kDay(kst(y,m,d,0))-kDay(newMoonBefore(end))+1 }
+// 그날(한국 시각 0-24시) 안에 삭·상현·보름·하현 순간이 있으면 그 사건과 시각
+function phaseEvent(y,m,d){
+  const t0=kst(y,m,d,0), t1=kst(y,m,d,24);
+  const ev=eventsAround(t0+12*HOUR).find(e=>e.ms>=t0&&e.ms<t1);
+  if(!ev) return null;
+  const [k,ic]={0:['삭','🌑'],.25:['상현','🌓'],.5:['보름','🌕'],.75:['하현','🌗']}[ev.q];
+  const t=new Date(ev.ms+9*HOUR);
+  return {k,ic,tm:t.getUTCHours()+'시 '+String(t.getUTCMinutes()).padStart(2,'0')+'분'};
+}
+function phaseName(a){
+  if(a<1||a>=28.6) return {n:'삭 (안 보여요)',s:'삭'};
+  if(a<5.6) return {n:'초승달',s:'초승'};
+  if(a<9.4) return {n:'상현달',s:'상현'};
+  if(a<13.2) return {n:'차오르는 달',s:'차오름'};
+  if(a<16.4) return {n:'보름달',s:'보름'};
+  if(a<20.2) return {n:'기우는 달',s:'기움'};
+  if(a<24.0) return {n:'하현달',s:'하현'};
+  return {n:'그믐달',s:'그믐'};
+}
+const SEE={
+  '삭':'달이 해와 같은 쪽에 있어서 밝은 면이 지구 반대쪽을 향해요. 밤하늘에서 <b>보이지 않아요</b>.',
+  '초승':'해가 진 직후 <b>서쪽 하늘</b> 낮은 곳에서 잠깐 보이고, 곧 서쪽으로 져요. 오른쪽이 밝은 눈썹 모양!',
+  '상현':'해 질 무렵 <b>남쪽 하늘</b>에서 보이고, 한밤중에 서쪽으로 져요. 오른쪽 반이 밝아요.',
+  '차오름':'해 질 무렵 <b>남동쪽 하늘</b>에 떠 있고, 밤이 깊으면 서쪽으로 기울어요. 점점 둥글어지는 중!',
+  '보름':'해가 질 때 <b>동쪽</b>에서 떠올라 밤새도록 보이고, 새벽에 서쪽으로 져요.',
+  '기움':'저녁 늦게 <b>동쪽</b>에서 떠올라 새벽에 남서쪽 하늘에서 보여요. 오른쪽부터 줄어들어요.',
+  '하현':'한밤중에 <b>동쪽</b>에서 떠올라 새벽(해 뜰 무렵) <b>남쪽 하늘</b>에서 보여요. 왼쪽 반이 밝아요.',
+  '그믐':'새벽 해 뜨기 전 <b>동쪽 하늘</b> 낮은 곳에서 잠깐 보여요. 저녁에는 볼 수 없어요.'
+};
+
+/* ===== 그리기 ===== */
+// 지구에서 본 달 모양 (북반구: 차오를 때 오른쪽이 밝음)
+function litPath(e,R){
+  const f=e/360, c=Math.cos(e*rad), rx=Math.abs(c)*R; const wax=f<.5, gib=c<0;
+  if(wax) return `M0 ${-R} A${R} ${R} 0 0 1 0 ${R} A${rx} ${R} 0 0 ${gib?1:0} 0 ${-R}Z`;
+  return `M0 ${-R} A${R} ${R} 0 0 0 0 ${R} A${rx} ${R} 0 0 ${gib?0:1} 0 ${-R}Z`;
+}
+function moonSVG(e,R,id,craters){
+  let s=`<circle r="${R}" fill="#2a3358"/>`;
+  s+=`<clipPath id="cl${id}"><path d="${litPath(e,R)}"/></clipPath><g clip-path="url(#cl${id})"><circle r="${R}" fill="#fff3c4"/>`;
+  if(craters) s+=[[-30,-35,16],[28,-10,12],[-10,30,20],[40,40,9],[-50,15,8],[10,-60,7],[55,-45,6]].map(([x,y,r])=>`<circle cx="${x*R/100}" cy="${y*R/100}" r="${r*R/100}" fill="#ecdca6" opacity=".8"/>`).join('');
+  return s+`</g><circle r="${R}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="${R/50}"/>`;
+}
+function orbitSVG(e){
+  const ex=235, ey=135, r=100;
+  let s=`<defs><radialGradient id="sunG"><stop offset="0" stop-color="#fff4b0"/><stop offset=".6" stop-color="#ffcc33"/><stop offset="1" stop-color="#ff9a1a"/></radialGradient></defs>`;
+  s+=`<circle cx="-40" cy="${ey}" r="80" fill="url(#sunG)"/>`;
+  for(let i=0;i<5;i++){const y=ey-80+i*40; s+=`<line x1="50" y1="${y}" x2="105" y2="${y}" stroke="#ffd166" stroke-width="2" stroke-dasharray="5 5" opacity=".55"/><polygon points="105,${y-4} 113,${y} 105,${y+4}" fill="#ffd166" opacity=".55"/>`}
+  s+=`<text x="8" y="22" fill="#ffd166" font-size="13" font-weight="800">태양 → 햇빛</text>`;
+  s+=`<circle cx="${ex}" cy="${ey}" r="${r}" fill="none" stroke="#5363b8" stroke-width="1.5" stroke-dasharray="4 5"/>`;
+  // 공전 방향 화살표 (시계 반대)
+  s+=`<path d="M${ex+r*Math.cos(-.35)} ${ey-r*Math.sin(-.35)} A${r} ${r} 0 0 0 ${ex+r*Math.cos(.35)} ${ey-r*Math.sin(.35)}" fill="none" stroke="#9fb0ff" stroke-width="2.5"/><polygon points="${ex+r*Math.cos(.35)-6},${ey-r*Math.sin(.35)+2} ${ex+r*Math.cos(.35)+5},${ey-r*Math.sin(.35)-6} ${ex+r*Math.cos(.35)+6},${ey-r*Math.sin(.35)+7}" fill="#9fb0ff"/>`;
+  // 8개 위치(흐리게)
+  const lab={0:'삭',90:'상현',180:'보름',270:'하현'};
+  for(let k=0;k<8;k++){
+    const ph=k*45, a=(180+ph)*rad, x=ex+r*Math.cos(a), y=ey-r*Math.sin(a);
+    s+=`<g opacity=".38"><circle cx="${x}" cy="${y}" r="9" fill="#2a3358"/><path d="M${x} ${y-9} A9 9 0 0 0 ${x} ${y+9}Z" fill="#fff3c4"/></g>`;
+    if(lab[ph]!=null){const lx=ex+(r+26)*Math.cos(a), ly=ey-(r+22)*Math.sin(a)+4; s+=`<text x="${lx}" y="${ly}" text-anchor="middle" fill="#a9b2d8" font-size="12" font-weight="800">${lab[ph]}</text>`}
+  }
+  // 지구 (왼쪽=낮)
+  s+=`<circle cx="${ex}" cy="${ey}" r="20" fill="#1b2a55"/><path d="M${ex} ${ey-20} A20 20 0 0 0 ${ex} ${ey+20}Z" fill="#4c9cff"/><path d="M${ex-12} ${ey-6} q6 -6 10 0 q-2 8 -8 8z" fill="#5cc27a"/><text x="${ex}" y="${ey+38}" text-anchor="middle" fill="#cfe0ff" font-size="12" font-weight="800">지구</text>`;
+  // 오늘의 달
+  const a=(180+e)*rad, mx=ex+r*Math.cos(a), my=ey-r*Math.sin(a);
+  s+=`<line x1="${ex}" y1="${ey}" x2="${mx}" y2="${my}" stroke="#ffd166" stroke-width="1.5" stroke-dasharray="3 4"/>`;
+  s+=`<circle cx="${mx}" cy="${my}" r="19" fill="none" stroke="#ffd166" stroke-width="2.5"/><circle cx="${mx}" cy="${my}" r="14" fill="#2a3358"/><path d="M${mx} ${my-14} A14 14 0 0 0 ${mx} ${my+14}Z" fill="#fff3c4"/>`;
+  const tx=Math.min(340,Math.max(40,mx)), ty=my<ey? my-26 : my+36;
+  s+=`<text x="${tx}" y="${ty}" text-anchor="middle" fill="#ffd166" font-size="14" font-weight="900">이날의 달</text>`;
+  return s;
+}
+function skySVG(){let s='';for(let i=0;i<60;i++){const x=(i*37.3)%100,y=(i*61.7)%100;s+=`<circle cx="${x}" cy="${y}" r="${.18+(i%3)*.12}" fill="#fff" opacity="${.3+(i%4)*.15}"/>`}return s}
+document.getElementById('sky').innerHTML=skySVG();
+
+/* ===== 상태·화면 ===== */
+const $=s=>document.querySelector(s);
+const WD=['일','월','화','수','목','금','토'];
+const now=new Date();
+const TODAY={y:now.getFullYear(),m:now.getMonth(),d:now.getDate()};
+let S={...TODAY};
+const dim=(y,m)=>new Date(y,m+1,0).getDate();
+const hh=h=>{h=((h%24)+24)%24; const r=Math.round(h*2)/2; const H=Math.floor(r)%24, mm=r%1?'30분':''; if(H===0&&!mm) return '밤 12시(자정)'; if(H===12&&!mm) return '낮 12시(정오)'; return `${H<12?'오전':'오후'} ${H%12===0?12:H%12}시${mm?' '+mm:''}`};
+function render(){
+  const {y,m,d}=S, t=kst(y,m,d,21), e=elong(t), a=ageAt(t), p=phaseName(a), lu=lunarDay(y,m,d), il=Math.round(illum(e)*100);
+  const wd=WD[new Date(y,m,d).getDay()];
+  $('#dateLbl').textContent=`${y}년 ${m+1}월 ${d}일 (${wd})`;
+  $('#slider').max=dim(y,m); $('#slider').value=d;
+  $('#picker').value=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  $('#bigMoon').innerHTML=moonSVG(e,100,'big',true);
+  $('#pname').textContent=p.n;
+  const ev=phaseEvent(y,m,d);
+  $('#facts').innerHTML=`<span>음력 <b>${lu}일</b> 무렵</span><span>달 나이 <b>${a.toFixed(1)}일</b></span><span>밝은 부분 <b>${il}%</b></span>${ev?`<span>${ev.ic} 이날 <b>${ev.k}</b> ${ev.tm}</span>`:''}`;
+  $('#orbit').innerHTML=orbitSVG(e);
+  // 대략 시각: 달은 하루에 약 50분씩 늦게 뜸 (남중 ≈ 정오 + 달나이×0.81시간)
+  const tr=12+a*24/SYN;
+  $('#see').innerHTML=`🔭 <b>이날 언제 어디서 보일까?</b><br>${SEE[p.s]}${p.s==='삭'?'':`<div class="t"><span>🌄 뜨는 때 대략 ${hh(tr-6)}</span><span>⬆️ 남쪽 하늘 가장 높이 ${hh(tr)}</span><span>🌅 지는 때 대략 ${hh(tr+6)}</span></div>`}`;
+  renderCal();
+}
+function renderCal(){
+  const {y,m}=S; $('#calTitle').textContent=`${y}년 ${m+1}월 달 모양`;
+  const first=new Date(y,m,1).getDay(), n=dim(y,m);
+  let h=WD.map(w=>`<div class="wd">${w}</div>`).join('');
+  for(let i=0;i<first;i++) h+='<div class="day empty"></div>';
+  for(let d=1;d<=n;d++){
+    const e=elong(kst(y,m,d,21)), ev=phaseEvent(y,m,d), dw=(first+d-1)%7, lu=lunarDay(y,m,d);
+    const cls=(d===S.d?' sel':'')+(y===TODAY.y&&m===TODAY.m&&d===TODAY.d?' today':'');
+    h+=`<div class="day${cls}" data-d="${d}"><span class="n${dw===0?' sun':dw===6?' sat':''}">${d}</span><svg viewBox="-12 -12 24 24">${moonSVG(e,11,'c'+d,false)}</svg>${ev?`<span class="ev">${ev.k}</span>`:`<span class="lu">음 ${lu}</span>`}</div>`;
+  }
+  $('#cal').innerHTML=h;
+  // 이달의 주요 위상(삭·상현·보름·하현) 날짜와 한국 시각
+  let k=`<div class="ttl">${m+1}월 주요 위상 (한국 시각)</div>`;
+  for(let d=1;d<=n;d++){const ev=phaseEvent(y,m,d); if(ev) k+=`<div>${ev.ic} <b>${d}일 ${ev.k}</b><small>${ev.tm}</small></div>`}
+  $('#keys').innerHTML=k;
+}
+function shift(days){const dt=new Date(S.y,S.m,S.d+days); S={y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate()}; render()}
+$('#prev').onclick=()=>{stop();shift(-1)}; $('#next').onclick=()=>{stop();shift(1)};
+$('#slider').oninput=e=>{stop();S.d=+e.target.value;render()};
+$('#picker').onchange=e=>{const v=e.target.value.split('-').map(Number); if(v.length===3&&v[0]>1900){stop();S={y:v[0],m:v[1]-1,d:v[2]};render()}};
+$('#today').onclick=()=>{stop();S={...TODAY};render()};
+$('#mPrev').onclick=()=>{stop();const dt=new Date(S.y,S.m-1,1);S={y:dt.getFullYear(),m:dt.getMonth(),d:Math.min(S.d,dim(dt.getFullYear(),dt.getMonth()))};render()};
+$('#mNext').onclick=()=>{stop();const dt=new Date(S.y,S.m+1,1);S={y:dt.getFullYear(),m:dt.getMonth(),d:Math.min(S.d,dim(dt.getFullYear(),dt.getMonth()))};render()};
+$('#cal').onclick=e=>{const c=e.target.closest('.day[data-d]'); if(!c) return; stop(); S.d=+c.dataset.d; render()};
+let timer=null, played=0;
+function stop(){if(timer){clearInterval(timer);timer=null;$('#play').textContent='▶ 한 달 재생'}}
+$('#play').onclick=()=>{ if(timer) return stop(); played=0; $('#play').textContent='⏸ 멈춤'; timer=setInterval(()=>{shift(1); if(++played>=30) stop()},350) };
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return; if(e.key==='ArrowLeft'){stop();shift(-1)} if(e.key==='ArrowRight'){stop();shift(1)}});
+render();
+</script>
+</body>
+</html>

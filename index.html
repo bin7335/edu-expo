@@ -2,10 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>교실에서 바로 쓰는 웹 도구 26 · 찍먹 데모관</title>
+<title>교실에서 바로 쓰는 웹 도구 51 · 찍먹 데모관</title>
 <meta name="description" content="초등 교사가 직접 만든 수업·업무용 웹앱, 확장프로그램, 아이디어 시연 페이지를 한곳에 모았습니다. 눌러서 바로 체험해 보세요.">
-<meta property="og:title" content="교실에서 바로 쓰는 웹 도구 26 · 찍먹 데모관">
+<meta property="og:title" content="교실에서 바로 쓰는 웹 도구 51 · 찍먹 데모관">
 <meta property="og:image" content="thumbnails/08-classroom-tools.png">
 <style>
   *{box-sizing:border-box}
@@ -34,7 +35,7 @@
 </head>
 <body>
 <header>
-  <h1>교실에서 바로 쓰는 웹 도구 26</h1>
+  <h1>교실에서 바로 쓰는 웹 도구 51</h1>
   <p>초등 교사가 AI와 함께 직접 만든 앱·확장프로그램·아이디어 시연 모음 · 카드를 눌러 바로 체험해 보세요</p>
 </header>
 <div class="filters" id="filters"></div>
@@ -45,7 +46,7 @@
 </footer>
 <script>
 const APPS = [
-  // [썸네일, 이름, 종류, 한 줄 소개, 대상, 링크]
+  // [썸네일, 이름, 종류, 한 줄 소개, 대상, 링크]  ← catalog.json에서 생성
   ["01-eye-tracking","시선의 힘","체험형","웹캠으로 시선을 보정한 뒤 30초 동안 초록 구슬만 따라가는 집중력 챌린지","학생·누구나","https://bin7335.github.io/eye-tracking/"],
   ["02-leap-surgery-sim","로봇수술 시뮬레이션","체험형","양손 동작으로 3D 장기를 레이저로 절개·봉합해 보는 로봇수술 체험","학생·누구나","https://bin7335.github.io/leap-surgery-sim/"],
   ["03-youtube-classroom","클래스룸 for YouTube","확장프로그램","교실 TV에서 유튜브 추천·댓글·계정 기록을 가리고, 끝나면 검은 화면으로 멈추는 크롬 확장","교사","https://github.com/bin7335/youtube-classroom/releases/latest"],
@@ -72,6 +73,31 @@ const APPS = [
   ["24-easy-reader","술술 읽기","확장프로그램","글자 크기·줄 간격·배경색을 바꾸고 줄 가리개와 소리 내어 읽기로 읽기를 돕는 확장","학생·교사","ext-easy-reader/"],
   ["25-source-tag","출처 꼬리표","확장프로그램","웹 글을 복사하면 제목·사이트·주소·확인 날짜가 출처 한 줄로 저절로 따라붙는 확장","학생·교사","ext-source-tag/"],
   ["26-lesson-bag","수업 가방","확장프로그램","열린 탭들을 수업 세트로 담아 두고, 다음 시간엔 클릭 한 번으로 다시 여는 확장","교사","ext-lesson-bag/"],
+  ["27-privacy-mask","가림막","업무 도구","명단 속 이름·전화·주민번호·계좌를 골라 한 번에 가리기, 내 PC에서만 처리","교직원","privacy-mask/"],
+  ["28-pdf-tidy","쪽쪽 PDF","업무 도구","PDF를 쪽 카드로 펼쳐 끌고·돌리고·합치고·쪽번호까지, 내 PC에서만 처리","교직원","pdf-tidy/"],
+  ["29-table-merge","표 모으미","업무 도구","엑셀에서 복사한 반별 명단을 합치고 나누고, 중복·빈칸까지 찾기","교직원","table-merge/"],
+  ["30-file-renamer","이름척척","업무 도구","제출 파일 이름을 번호·날짜 규칙으로 한 번에 정리해 폴더나 ZIP으로 저장","교직원","file-renamer/"],
+  ["31-committee-forms","한번 서식","업무 도구","학운위 정보 한 번 입력으로 공고·방청안내·출석부·처리표·회의록 5종 인쇄","교직원","committee-forms/"],
+  ["32-fieldtrip-form","체험학습 서류척척","업무 도구","교외체험학습 서류 3종과 공휴일 뺀 수업일수·연간 누적 경고를 자동으로","교직원","fieldtrip-form/"],
+  ["33-quote-compare","견적 비교표","업무 도구","업체 3곳 견적 비교부터 품목별 최저가·품의 문구까지 자동","교직원(행정실)","quote-compare/"],
+  ["34-record-helper","생기부 다듬이","업무 도구","생기부 문장 NEIS 바이트 계산, 기재 유의 표현·반복 어미 점검, 문장 뼈대","교사","record-helper/"],
+  ["35-timetable","시수척척","업무 도구","교과 칩을 끌어 놓으면 시수·과부족·연간 시수가 자동 집계되는 시간표","교사","timetable/"],
+  ["36-dday-board","교무실 알림판","업무 도구","시계·행사 D-day·당번·회의·마감 공문·급식을 한 화면에 띄우는 TV 알림판","교직원","dday-board/"],
+  ["37-law-link","법령 콕","확장프로그램","법령명 드래그→우클릭이면 국가법령정보센터 조문으로 바로 가는 크롬 확장","교직원","ext-law-link/"],
+  ["38-duty-calendar","복무 한눈달력","콘셉트","학년·부서 복무를 색 칩 달력으로 모아 보고, 보결 필요일을 자동 표시","교직원","duty-calendar/"],
+  ["39-manual-bot","업무 물어봄","콘셉트","업무 질문에 매뉴얼 근거 쪽수와 관련 서식까지 함께 답하는 Q&A","교직원","manual-bot/"],
+  ["40-cert-collector","이수증 모으미","콘셉트","이수증 PDF를 끌어 넣으면 명단·연수시간·필수연수를 자동 정리","교직원","cert-collector/"],
+  ["41-timeline","시간줄 연표","수업 도구","사건을 실제 시간 간격대로 놓는 역사 연표와 순서 맞히기 게임","학생·교사","timeline/"],
+  ["42-fraction-pizza","분수 피자가게","수업 도구","피자·초콜릿 조각을 칠하며 분수 비교와 손님 주문 미션을 해결","학생","fraction-pizza/"],
+  ["43-robot-path","로봇 길찾기 코딩","체험형","앞으로·돌기·반복 블록을 쌓아 로봇을 깃발까지 보내는 8단계 코딩 체험","학생·누구나","robot-path/"],
+  ["44-typing","또박또박 타자","체험형","다음 키와 손가락 색을 보며 자리→낱말→문장→60초 도전 한글 타자","학생","typing/"],
+  ["45-mood-weather","마음 날씨","수업 도구","번호 누르고 날씨로 마음을 고르는 아침 체크인과 연속 흐림 알림","교사·학생","mood-weather/"],
+  ["46-quiz-show","다함께 퀴즈쇼","체험형","문제를 붙여 넣으면 타이머·정답 공개·모둠 점수판·순위 발표 퀴즈쇼","교사·학생","quiz-show/"],
+  ["47-moon-phase","달님 달력","수업 도구","날짜를 고르면 달 모양·음력·태양-지구-달 위치와 보이는 때를 알려 줌","학생","moon-phase/"],
+  ["48-pixel-beads","콩콩 픽셀 도안","체험형","구슬 20색 픽셀 그림, 대칭 그리기·재료표·번호 도안 인쇄","학생·누구나","pixel-beads/"],
+  ["49-career-match","꿈길 찾기","체험형","그림 카드 15장으로 흥미 육각형과 어울리는 직업 8장, 결과 카드 저장","학생·학부모","career-match/"],
+  ["50-multilang-notice","다가온 통신문","콘셉트","블록으로 쓰면 다국어 가정통신문이 나란히, 날짜·금액은 아이콘 숫자로","학부모·교사","multilang-notice/"],
+  ["51-page-qr","딸깍 QR","확장프로그램","아이콘 한 번에 지금 보는 페이지가 큰 QR로, 교실 TV 전체 화면까지","교사","ext-page-qr/"],
 ];
 const TAGCLS = {"콘셉트":"c","체험형":"w","확장프로그램":"x"};
 const KINDS = ["전체","체험형","수업 도구","업무 도구","확장프로그램","콘셉트"];

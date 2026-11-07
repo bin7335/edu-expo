@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시수척척 - 끌어 놓는 학급 시간표와 시수 자동 집계</title>
+<meta name="description" content="교과 칩을 끌어 주 5일×6교시 시간표를 만들면 교과별 주당 시수와 목표 대비 과부족, 전담 시간, 연간 시수 추정을 자동으로 계산해 주는 학급 시간표 도구. 인쇄용 큰 시간표와 교실 TV용 오늘 시간표 모드 지원.">
+<style>
+  :root{
+    --bg:#f3f5fb; --panel:#fff; --ink:#1f2433; --sub:#69708a; --line:#e1e5f0;
+    --brand:#3b5bdb; --brand2:#5c7cfa; --ok:#2b8a3e; --okbg:#e6f6ea; --low:#c92a2a; --lowbg:#fde8e8; --over:#d9480f; --overbg:#fff0e3;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff}
+  header .logo{width:38px;height:38px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.88}
+  header .grow{flex:1}
+  .cls{font-size:14px;font-weight:700;background:rgba(255,255,255,.18);border-radius:999px;padding:5px 12px;white-space:nowrap}
+  .btn{border-radius:10px;padding:8px 13px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;background:#fff;color:var(--ink);border:1px solid var(--line);white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn.tv{background:#ffd43b;color:#3d2f00;border-color:transparent}
+  .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.55)}
+  .btn.sm{font-size:12.5px;padding:6px 10px}
+
+  main{display:grid;grid-template-columns:200px minmax(0,1fr) 330px;gap:14px;padding:14px 20px 40px;max-width:1440px;margin:0 auto;align-items:start}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .panel h2{font-size:14.5px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+  .panel h2 small{font-weight:500;color:var(--sub);font-size:11.5px}
+  .hint{font-size:11.5px;color:var(--sub);line-height:1.45;margin-top:8px}
+
+  /* 교과 칩 */
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .chip{position:relative;border:2px solid transparent;border-radius:10px;padding:7px 6px;font:inherit;font-size:14px;font-weight:800;cursor:grab;user-select:none;text-align:center;color:#1f2433}
+  .chip .n{display:block;font-size:10.5px;font-weight:600;opacity:.75}
+  .chip.sel{border-color:#1f2433;transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.15)}
+  .chip.erase{background:#f1f3f5;color:#495057}
+  .chip .jd{position:absolute;top:-6px;right:-4px;background:#1f2433;color:#fff;font-size:9.5px;border-radius:6px;padding:1px 4px}
+
+  /* 시간표 */
+  .stage{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .msg{font-size:13px;color:var(--sub);flex:1;min-width:180px}
+  .msg b{color:var(--brand)}
+  .tt-wrap{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px}
+  .tt{display:grid;grid-template-columns:62px repeat(5,minmax(0,1fr));gap:5px}
+  .tt .h{font-weight:800;text-align:center;font-size:14px;padding:6px 0;border-radius:8px;background:#eef1fb;color:#3b4a7a}
+  .tt .h.today{background:var(--brand);color:#fff}
+  .tt .p{display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#3b4a7a;background:#f6f7fc;border-radius:8px;line-height:1.15}
+  .tt .p small{font-size:10px;font-weight:600;color:var(--sub)}
+  .tt .lunch{grid-column:1/-1;text-align:center;font-size:11.5px;color:var(--sub);background:repeating-linear-gradient(90deg,#f6f7fc 0 10px,#fff 10px 20px);border-radius:6px;padding:2px 0}
+  .cell{position:relative;height:60px;border-radius:10px;border:2px dashed #d5daea;background:#fbfcff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:17px;cursor:pointer;user-select:none;transition:transform .12s, box-shadow .12s}
+  .cell.f{border-style:solid;border-color:transparent;cursor:grab}
+  .cell .t{font-size:10px;font-weight:700;opacity:.8;margin-top:1px}
+  .cell .jb{position:absolute;top:3px;right:4px;font-size:9.5px;font-weight:800;background:rgba(31,36,51,.82);color:#fff;border-radius:5px;padding:0 4px}
+  .cell.over{outline:3px solid #ffd43b;outline-offset:1px;transform:scale(1.03)}
+  .cell.pick{outline:3px solid #1f2433;outline-offset:2px}
+  .cell.pop{animation:pop .3s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{from{transform:scale(.7)}to{transform:none}}
+  .dragghost{position:fixed;pointer-events:none;z-index:60;font-weight:800;padding:10px 16px;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,.25);transform:translate(-50%,-60%) rotate(-4deg)}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--sub)}
+  .src{font-size:11px;color:var(--sub);margin-top:4px}
+
+  /* 시수 집계 */
+  table.sum{width:100%;border-collapse:collapse;font-size:13px}
+  .sum th{font-size:11.5px;color:var(--sub);font-weight:700;text-align:center;padding:4px 2px;border-bottom:1px solid var(--line)}
+  .sum td{padding:3px 2px;text-align:center;border-bottom:1px solid #f0f2f8}
+  .sum td.nm{text-align:left;font-weight:800;white-space:nowrap}
+  .sum td.nm i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .sum input{width:40px;padding:2px 3px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:13px;text-align:center}
+  .st{display:inline-block;min-width:54px;border-radius:999px;font-size:11.5px;font-weight:800;padding:2px 6px}
+  .st.ok{background:var(--okbg);color:var(--ok)}
+  .st.low{background:var(--lowbg);color:var(--low)}
+  .st.over{background:var(--overbg);color:var(--over)}
+  .sum tfoot td{font-weight:800;border-top:2px solid var(--line);border-bottom:0;padding-top:5px}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+  .kpi{background:#f6f7fc;border-radius:10px;padding:7px 6px;text-align:center}
+  .kpi b{display:block;font-size:19px;color:var(--brand)}
+  .kpi span{font-size:11px;color:var(--sub)}
+  .weeks{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--sub);margin-top:8px;flex-wrap:wrap}
+  .weeks input{width:46px;padding:3px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:13px;text-align:center}
+
+  /* 설정 모달 */
+  .modal{position:fixed;inset:0;background:rgba(20,24,40,.45);display:none;align-items:center;justify-content:center;z-index:70;padding:14px}
+  .modal.on{display:flex}
+  .modal .box{background:#fff;border-radius:16px;padding:18px;width:min(560px,100%);max-height:92vh;overflow:auto}
+  .modal h3{margin:0 0 10px}
+  .modal label{font-size:12.5px;color:var(--sub);display:block;margin:10px 0 4px}
+  .modal input[type=text]{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit}
+  .times{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .times span{font-size:12px;display:flex;align-items:center;gap:4px}
+  .times input{flex:1;min-width:0;padding:5px;border:1px solid var(--line);border-radius:6px;font:inherit}
+  .jlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+  .jlist label{margin:0;display:flex;align-items:center;gap:6px;color:var(--ink);font-size:13px;border:1px solid var(--line);border-radius:8px;padding:5px 7px}
+  .jlist input[type=text]{padding:3px 5px;font-size:12px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
+
+  /* TV 모드 */
+  .tvmode{position:fixed;inset:0;z-index:80;background:radial-gradient(circle at 20% 10%,#24305e,#0d1226 70%);color:#fff;display:none;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:3vw;padding:4vh 4vw;align-items:center}
+  .tvmode.on{display:grid}
+  .tv-clock{font-size:clamp(56px,11vw,170px);font-weight:900;letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums}
+  .tv-clock small{font-size:.35em;opacity:.6;margin-left:6px}
+  .tv-date{font-size:clamp(20px,2.8vw,42px);font-weight:700;opacity:.85;margin-top:1.5vh}
+  .tv-now{margin-top:4vh;font-size:clamp(18px,2.2vw,32px);background:rgba(255,255,255,.1);border-radius:18px;padding:2vh 1.6vw;line-height:1.4}
+  .tv-now b{color:#ffd43b}
+  .tv-list{display:flex;flex-direction:column;gap:1.4vh}
+  .tv-row{display:grid;grid-template-columns:5.5em 1fr auto;align-items:center;gap:1.2vw;border-radius:16px;padding:1.4vh 1.4vw;background:rgba(255,255,255,.07);font-size:clamp(18px,2.4vw,40px);font-weight:800;position:relative;overflow:hidden}
+  .tv-row .pp{font-size:.6em;opacity:.7;line-height:1.2}
+  .tv-row .tm{font-size:.5em;opacity:.65;font-weight:600}
+  .tv-row .sw{display:inline-block;width:.5em;height:.5em;border-radius:4px;margin-right:.4em;vertical-align:.08em}
+  .tv-row.done{opacity:.42}
+  .tv-row.now{background:#fff;color:#1f2433;transform:scale(1.03);box-shadow:0 0 0 4px #ffd43b}
+  .tv-row.now .tag{background:#ffd43b;color:#3d2f00;font-size:.45em;border-radius:999px;padding:3px 10px;margin-left:.5em;vertical-align:.25em}
+  .tv-row .bar{position:absolute;left:0;bottom:0;height:5px;background:#ffd43b}
+  .tv-title{font-size:clamp(16px,1.6vw,24px);opacity:.75;margin-bottom:.6vh;font-weight:700}
+  .tv-close{position:fixed;top:14px;right:14px;background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.9);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:5}
+  .print-title{display:none}
+
+  @media (max-width:1080px){
+    main{grid-template-columns:180px minmax(0,1fr)}
+    .sumpanel{grid-column:1/-1}
+  }
+  @media (max-width:760px){
+    header{flex-wrap:wrap;padding:10px 12px;gap:8px}
+    header p,.cls{display:none}
+    header h1{font-size:19px}
+    main{grid-template-columns:1fr;padding:10px}
+    .palette{position:sticky;top:0;z-index:20}
+    .chips{grid-template-columns:repeat(6,1fr);gap:4px}
+    .chip{font-size:12.5px;padding:5px 2px}
+    .chip .n{font-size:9.5px}
+    .chip.erase .em{display:none}
+    .palette .hint{display:none}
+    .tt{grid-template-columns:36px repeat(5,minmax(0,1fr));gap:3px}
+    .tt-wrap{padding:6px}
+    .cell{height:50px;font-size:14px;border-width:1.5px}
+    .cell .t{display:none}
+    .tt .p{font-size:12px}
+    .tt .p small{display:none}
+    .tvmode{grid-template-columns:1fr;align-content:start;overflow:auto}
+  }
+  @media print{
+    @page{size:A4 landscape;margin:10mm}
+    body{background:#fff}
+    header,.palette,.sumpanel,.toolbar,.legend,.src,.back,.modal,.tvmode{display:none!important}
+    main{display:block;padding:0}
+    .tt-wrap{border:0;padding:0}
+    .print-title{display:block;text-align:center;font-size:28px;font-weight:900;margin:0 0 12px}
+    .tt{grid-template-columns:80px repeat(5,1fr);gap:4px}
+    .tt .h{font-size:20px;background:#fff!important;color:#000!important;border:2px solid #000}
+    .tt .p{font-size:20px;border:2px solid #000;background:#fff}
+    .tt .p small{font-size:12px;color:#333}
+    .cell{height:88px;font-size:30px;border:2px solid #000!important;print-color-adjust:exact;-webkit-print-color-adjust:exact;outline:none!important}
+    .cell .t{font-size:13px}
+    .tt .lunch{font-size:14px;border:1px dashed #000;background:#fff}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="시수척척">
+<meta property="og:description" content="교과 칩을 끌어 놓으면 시수·과부족·연간 시수가 자동 집계되는 시간표">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/35-timetable.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/timetable/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🗓️</div>
+  <div>
+    <h1>시수척척</h1>
+    <p>끌어다 놓으면 시수가 척척 맞춰지는 학급 시간표</p>
+  </div>
+  <div class="grow"></div>
+  <span class="cls" id="clsName">햇살초 5학년 2반</span>
+  <button class="btn tv" id="tvBtn" type="button">📺 오늘 시간표 (TV)</button>
+  <button class="btn ghost" id="printBtn" type="button">🖨 인쇄</button>
+  <button class="btn ghost" id="setBtn" type="button">⚙ 설정</button>
+</header>
+
+<main>
+  <section class="panel palette" aria-label="교과 칩">
+    <h2>교과 칩 <small>끌어서 칸에 놓기</small></h2>
+    <div class="chips" id="chips"></div>
+    <div class="hint">📱 휴대폰: 칩을 눌러 고른 뒤 칸을 차례로 누르세요.<br>칸끼리 끌거나, 두 칸을 차례로 누르면 서로 바뀌어요.<br><b>전</b> 표시는 전담 교과예요.</div>
+  </section>
+
+  <section class="stage">
+    <div class="toolbar">
+      <div class="msg" id="msg">교과 칩을 시간표 칸으로 <b>끌어다 놓아</b> 보세요.</div>
+      <button class="btn sm" id="sampleBtn" type="button">↺ 예시로</button>
+      <button class="btn sm" id="angyeBtn" type="button" title="경북 안계초등학교 1학년 1반 실제 시간표(나이스 공개 자료)">📥 샘플 불러오기: 안계초 1-1(2026.11.2 주)</button>
+      <button class="btn sm" id="clearBtn" type="button">🧹 모두 비우기</button>
+    </div>
+    <div class="tt-wrap">
+      <div class="print-title" id="printTitle">시간표</div>
+      <div class="tt" id="tt" aria-label="주간 시간표"></div>
+    </div>
+    <div class="legend">
+      <span><span class="st ok">✓ 맞음</span> 목표 시수와 같아요</span>
+      <span><span class="st low">−1 부족</span></span>
+      <span><span class="st over">+1 초과</span></span>
+    </div>
+    <div class="src" id="srcNote">자료: 나이스 교육정보 개방 포털(2026-11-07 기준), 경북 안계초등학교 1학년 1반 2026.11.2-11.6 시간표 · 목표 시수는 2022 개정 교육과정 1-2학년군 기준 추정</div>
+  </section>
+
+  <section class="panel sumpanel" aria-label="시수 집계">
+    <h2>📊 교과별 주당 시수 <small>목표는 직접 고칠 수 있어요</small></h2>
+    <table class="sum">
+      <thead><tr><th style="text-align:left">교과</th><th>배정</th><th>목표</th><th>과부족</th><th>연간 추정</th></tr></thead>
+      <tbody id="sumBody"></tbody>
+      <tfoot><tr><td class="nm">합계</td><td id="totA"></td><td id="totT"></td><td id="totD"></td><td id="totY"></td></tr></tfoot>
+    </table>
+    <div class="weeks">학기 주수 1학기 <input type="number" id="w1" min="1" max="25"> 주 + 2학기 <input type="number" id="w2" min="1" max="25"> 주</div>
+    <div class="kpis">
+      <div class="kpi"><b id="kAll">0</b><span>주당 수업</span></div>
+      <div class="kpi"><b id="kJeon">0</b><span>전담 시간</span></div>
+      <div class="kpi"><b id="kHome">0</b><span>담임 수업</span></div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="setModal" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="box">
+    <h3 id="setTitle">⚙ 시간표 설정</h3>
+    <label for="sClass">학급 이름 (인쇄 제목·TV 화면에 표시)</label>
+    <input type="text" id="sClass">
+    <label>교시 시작 시각 (수업 40분 기준, 오늘 시간표 TV 모드에 사용)</label>
+    <div class="times" id="sTimes"></div>
+    <label>전담 교과와 전담 선생님(장소)</label>
+    <div class="jlist" id="sJeon"></div>
+    <div class="row">
+      <button class="btn" id="sCancel" type="button">닫기</button>
+      <button class="btn tv" id="sSave" type="button">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="tvmode" id="tv" aria-live="polite">
+  <button class="tv-close" id="tvClose" type="button">✕ 닫기 (Esc)</button>
+  <div>
+    <div class="tv-title" id="tvClass"></div>
+    <div class="tv-clock" id="tvClock">00:00</div>
+    <div class="tv-date" id="tvDate"></div>
+    <div class="tv-now" id="tvNow"></div>
+  </div>
+  <div>
+    <div class="tv-title" id="tvDay"></div>
+    <div class="tv-list" id="tvList"></div>
+  </div>
+</div>
+
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+(function(){
+  'use strict';
+  var KEY = 'timetable-v1';
+  var DAYS = ['월','화','수','목','금'];
+  var SUBJ_UP = [
+    {id:'kor', name:'국어', color:'#ffc9c9', target:6},
+    {id:'math',name:'수학', color:'#a5d8ff', target:4},
+    {id:'soc', name:'사회', color:'#ffec99', target:3},
+    {id:'sci', name:'과학', color:'#b2f2bb', target:3},
+    {id:'eng', name:'영어', color:'#d0bfff', target:3},
+    {id:'mor', name:'도덕', color:'#fcc2d7', target:1},
+    {id:'prac',name:'실과', color:'#c3fae8', target:2},
+    {id:'pe',  name:'체육', color:'#ffd8a8', target:3},
+    {id:'mus', name:'음악', color:'#eebefa', target:2},
+    {id:'art', name:'미술', color:'#99e9f2', target:2},
+    {id:'cre', name:'창체', color:'#d8f5a2', target:2}
+  ];
+  // 1학년(2022 개정 교육과정 1-2학년군 연간 시수 ÷ 68주 ≈ 주당 목표)
+  var SUBJ_G1 = [
+    {id:'kor', name:'국어', color:'#ffc9c9', target:7},
+    {id:'math',name:'수학', color:'#a5d8ff', target:4},
+    {id:'bar', name:'바른생활', color:'#fcc2d7', target:2},
+    {id:'seul',name:'슬기로운생활', color:'#b2f2bb', target:3},
+    {id:'jeul',name:'즐거운생활', color:'#ffd8a8', target:6},
+    {id:'cre', name:'창체', color:'#d8f5a2', target:3}
+  ];
+  var BY = {}; SUBJ_UP.concat(SUBJ_G1).forEach(function(s){ if (!BY[s.id]) BY[s.id] = s; });
+  BY.bar = SUBJ_G1[2]; BY.seul = SUBJ_G1[3]; BY.jeul = SUBJ_G1[4];
+  function SUBJ(){ return state && state.set === 'g1' ? SUBJ_G1 : SUBJ_UP; }
+  // 실제 시간표: 경북 안계초등학교 1학년 1반, 2026-11-02(월) - 11-06(금) 한 주
+  // 자료: 나이스 교육정보 개방 포털 elsTimetable (2026-11-07 기준). '자율·자치활동'은 창체 칸으로 표시
+  var ANGYE_G1 = [
+    ['bar','bar','kor','math',null,null],
+    ['kor','kor','math','jeul','jeul',null],
+    ['cre','seul','jeul','math',null,null],
+    ['kor','kor','kor','seul','seul',null],
+    ['kor','cre','kor','jeul','jeul',null]
+  ];
+  // 예시 시간표 (5일 × 6교시, null = 빈 칸) — 일부러 국어·음악 1시간 부족, 창체 1시간 초과
+  var SAMPLE_GRID = [
+    ['kor','math','sci','eng','pe','art'],
+    ['math','kor','soc','mus','cre','cre'],
+    ['kor','eng','math','pe','mor','cre'],
+    ['sci','kor','soc','prac','prac','art'],
+    ['math','eng','kor','soc','sci','pe']
+  ];
+  function defaults(set){
+    var t = {}, j = {};
+    (set === 'g1' ? SUBJ_G1 : SUBJ_UP).forEach(function(s){ t[s.id] = s.target; });
+    if (set === 'g1') return {
+      set: 'g1',
+      grid: ANGYE_G1.map(function(d){ return d.slice(); }),
+      targets: t, jeon: {}, w1: 17, w2: 17,
+      cls: '안계초 1학년 1반',
+      times: ['09:00','09:50','10:40','11:30','13:00','13:50']
+    };
+    return {
+      set: 'up',
+      grid: SAMPLE_GRID.map(function(d){ return d.slice(); }),
+      targets: t,
+      jeon: { eng:'영어실 김영어', sci:'과학실 이과학', pe:'강당 박체육' },
+      w1: 17, w2: 17,
+      cls: '햇살초 5학년 2반',
+      times: ['09:00','09:50','10:40','11:30','13:00','13:50']
+    };
+  }
+  var state;
+  function load(){
+    try{
+      var s = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (s && s.grid && s.grid.length === 5){ state = Object.assign(defaults(s.set), s); var dt = defaults(s.set).times; state.times = (Array.isArray(state.times) ? state.times : dt).map(function(t, i){ return /^d{2}:d{2}$/.test(t) ? t : (dt[i] || "09:00"); }); return; }
+    }catch(e){}
+    state = defaults();
+  }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+  load();
+
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var selChip = null;   // 고른 교과 id 또는 'erase'
+  var pickCell = null;  // 탭으로 고른 칸 [d,p]
+
+  function counts(){
+    var c = {}; SUBJ().forEach(function(s){ c[s.id] = 0; });
+    state.grid.forEach(function(d){ d.forEach(function(id){ if (id && c[id] != null) c[id]++; }); });
+    return c;
+  }
+  function addMin(hm, m){
+    var a = hm.split(':'); var t = (+a[0]) * 60 + (+a[1]) + m;
+    return String(Math.floor(t / 60)).padStart(2,'0') + ':' + String(t % 60).padStart(2,'0');
+  }
+  function todayIdx(){ var d = new Date().getDay(); return d >= 1 && d <= 5 ? d - 1 : -1; }
+
+  function msg(html){ $('msg').innerHTML = html; }
+
+  function renderChips(){
+    var c = counts();
+    $('chips').innerHTML = SUBJ().map(function(s){
+      return '<button type="button" class="chip' + (selChip === s.id ? ' sel' : '') + '" data-chip="' + s.id + '" style="background:' + s.color + '">' +
+        (state.jeon[s.id] != null ? '<span class="jd">전</span>' : '') + esc(s.name) + '<span class="n">' + c[s.id] + ' / ' + (state.targets[s.id] || 0) + '</span></button>';
+    }).join('') + '<button type="button" class="chip erase' + (selChip === 'erase' ? ' sel' : '') + '" data-chip="erase"><span class="em">🧽 </span>지우개<span class="n">칸 비우기</span></button>';
+  }
+
+  function renderGrid(){
+    var ti = todayIdx();
+    var h = '<div></div>' + DAYS.map(function(d, i){ return '<div class="h' + (i === ti ? ' today' : '') + '">' + d + '</div>'; }).join('');
+    for (var p = 0; p < 6; p++){
+      if (p === 4) h += '<div class="lunch">🍚 점심시간</div>';
+      h += '<div class="p">' + (p + 1) + '교시<small>' + state.times[p] + '</small></div>';
+      for (var d = 0; d < 5; d++){
+        var id = state.grid[d][p], s = id && BY[id];
+        var picked = pickCell && pickCell[0] === d && pickCell[1] === p;
+        if (s){
+          var j = state.jeon[id];
+          h += '<div class="cell f' + (picked ? ' pick' : '') + '" data-d="' + d + '" data-p="' + p + '" style="background:' + s.color + '" aria-label="' + DAYS[d] + '요일 ' + (p+1) + '교시 ' + s.name + '">' +
+            (j != null ? '<span class="jb">전담</span>' : '') + esc(s.name) + (j ? '<span class="t">' + esc(j) + '</span>' : '') + '</div>';
+        } else {
+          h += '<div class="cell' + (picked ? ' pick' : '') + '" data-d="' + d + '" data-p="' + p + '" aria-label="' + DAYS[d] + '요일 ' + (p+1) + '교시 빈 칸"></div>';
+        }
+      }
+    }
+    $('tt').innerHTML = h;
+    $('printTitle').textContent = state.cls + ' 시간표';
+    $('clsName').textContent = state.cls;
+  }
+
+  function renderSum(){
+    var c = counts(), weeks = (+state.w1 || 0) + (+state.w2 || 0), tA = 0, tT = 0, jeon = 0;
+    $('sumBody').innerHTML = SUBJ().map(function(s){
+      var a = c[s.id], t = +state.targets[s.id] || 0, d = a - t;
+      tA += a; tT += t; if (state.jeon[s.id] != null) jeon += a;
+      var st = d === 0 ? '<span class="st ok">✓ 맞음</span>' : d < 0 ? '<span class="st low">' + d + ' 부족</span>' : '<span class="st over">+' + d + ' 초과</span>';
+      return '<tr><td class="nm"><i style="background:' + s.color + '"></i>' + s.name + (state.jeon[s.id] != null ? ' <small style="color:#69708a;font-weight:600">전담</small>' : '') + '</td><td>' + a + '</td>' +
+        '<td><input type="number" min="0" max="15" value="' + t + '" data-target="' + s.id + '" aria-label="' + s.name + ' 목표 시수"></td><td>' + st + '</td><td>' + (a * weeks) + '시간</td></tr>';
+    }).join('');
+    var D = tA - tT;
+    $('totA').textContent = tA; $('totT').textContent = tT;
+    $('totD').innerHTML = D === 0 ? '<span class="st ok">✓ 맞음</span>' : D < 0 ? '<span class="st low">' + D + ' 부족</span>' : '<span class="st over">+' + D + ' 초과</span>';
+    $('totY').textContent = (tA * weeks) + '시간';
+    $('kAll').textContent = tA; $('kJeon').textContent = jeon; $('kHome').textContent = tA - jeon;
+    $('w1').value = state.w1; $('w2').value = state.w2;
+  }
+
+  function renderAll(){ renderChips(); renderGrid(); renderSum(); $('srcNote').style.display = state.set === 'g1' ? '' : 'none'; }
+
+  // ---- 배치 동작 ----
+  function cellAt(el){ var c = el && el.closest ? el.closest('.cell') : null; return c ? [+c.dataset.d, +c.dataset.p] : null; }
+  function popCell(d, p){ var c = document.querySelector('.cell[data-d="' + d + '"][data-p="' + p + '"]'); if (c){ c.classList.add('pop'); } }
+  function place(id, d, p){
+    state.grid[d][p] = id === 'erase' ? null : id;
+    save(); renderAll(); popCell(d, p);
+    if (id !== 'erase'){
+      var c = counts(), t = +state.targets[id] || 0, s = BY[id];
+      msg('<b>' + DAYS[d] + ' ' + (p + 1) + '교시</b>에 ' + s.name + ' 배치 · 이번 주 ' + s.name + ' ' + c[id] + '/' + t + '시간' + (c[id] > t ? ' <b style="color:#d9480f">(초과!)</b>' : c[id] === t ? ' ✓' : ''));
+    } else msg(DAYS[d] + ' ' + (p + 1) + '교시 칸을 비웠어요.');
+  }
+  function swap(a, b){
+    var t = state.grid[a[0]][a[1]];
+    state.grid[a[0]][a[1]] = state.grid[b[0]][b[1]];
+    state.grid[b[0]][b[1]] = t;
+    save(); renderAll(); popCell(b[0], b[1]); popCell(a[0], a[1]);
+    msg('<b>' + DAYS[a[0]] + ' ' + (a[1]+1) + '교시</b> ↔ <b>' + DAYS[b[0]] + ' ' + (b[1]+1) + '교시</b> 바꿨어요.');
+  }
+
+  function tapChip(id){
+    selChip = selChip === id ? null : id; pickCell = null;
+    renderChips(); renderGrid();
+    if (selChip === 'erase') msg('🧽 지우개: 비울 칸을 누르세요.');
+    else if (selChip) msg('<b>' + BY[selChip].name + '</b> 선택됨 — 넣을 칸을 차례로 누르세요. (칩을 다시 누르면 해제)');
+    else msg('교과 칩을 시간표 칸으로 <b>끌어다 놓아</b> 보세요.');
+  }
+  function tapCell(at){
+    if (selChip){ place(selChip, at[0], at[1]); return; }
+    if (pickCell){
+      var a = pickCell; pickCell = null;
+      if (a[0] === at[0] && a[1] === at[1]){ renderGrid(); msg('선택을 취소했어요.'); return; }
+      swap(a, at); return;
+    }
+    if (!state.grid[at[0]][at[1]]){ msg('먼저 왼쪽 <b>교과 칩</b>을 고르거나 끌어 오세요.'); return; }
+    pickCell = at; renderGrid();
+    msg('<b>' + DAYS[at[0]] + ' ' + (at[1]+1) + '교시</b> 선택 — 바꿀 칸을 누르세요.');
+  }
+
+  // 마우스는 끌기, 터치는 탭 방식 (화면 스크롤을 막지 않도록)
+  var drag = null;
+  document.addEventListener('pointerdown', function(e){
+    var chip = e.target.closest('[data-chip]'), cell = e.target.closest('.cell');
+    if (!chip && !cell) return;
+    if (e.pointerType === 'touch') return;
+    if (cell && !cell.classList.contains('f')) return;
+    var src = chip ? { chip: chip.dataset.chip } : { cell: cellAt(cell) };
+    if (src.chip === 'erase') return;
+    drag = { src: src, x: e.clientX, y: e.clientY, moved: false, ghost: null, over: null };
+  });
+  window.addEventListener('pointermove', function(e){
+    if (!drag) return;
+    if (!drag.moved){
+      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 6) return;
+      drag.moved = true;
+      var id = drag.src.chip || state.grid[drag.src.cell[0]][drag.src.cell[1]];
+      var g = document.createElement('div'); g.className = 'dragghost'; g.textContent = BY[id].name; g.style.background = BY[id].color;
+      document.body.appendChild(g); drag.ghost = g; drag.id = id;
+    }
+    drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+    var over = document.elementFromPoint(e.clientX, e.clientY);
+    over = over && over.closest('.cell');
+    if (drag.over && drag.over !== over) drag.over.classList.remove('over');
+    if (over) over.classList.add('over');
+    drag.over = over;
+  });
+  window.addEventListener('pointerup', function(e){
+    if (!drag) return;
+    var d = drag; drag = null;
+    if (!d.moved) return; // 클릭 처리로 넘김
+    d.ghost.remove(); if (d.over) d.over.classList.remove('over');
+    suppressClick = true;
+    var under = document.elementFromPoint(e.clientX, e.clientY), to = cellAt(under);
+    if (d.src.chip){ if (to) place(d.src.chip, to[0], to[1]); }
+    else if (to){ if (to[0] !== d.src.cell[0] || to[1] !== d.src.cell[1]) swap(d.src.cell, to); }
+    else if (under && under.closest('.palette')){
+      place('erase', d.src.cell[0], d.src.cell[1]); msg('칩 상자로 돌려보내 칸을 비웠어요.');
+    }
+  });
+  window.addEventListener('pointercancel', function(){ if (drag && drag.ghost) drag.ghost.remove(); drag = null; });
+  var suppressClick = false;
+  document.addEventListener('click', function(e){
+    if (suppressClick){ suppressClick = false; return; }
+    var chip = e.target.closest('[data-chip]'); if (chip){ tapChip(chip.dataset.chip); return; }
+    var at = cellAt(e.target); if (at) tapCell(at);
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){
+      if ($('tv').classList.contains('on')) closeTV();
+      else if (selChip || pickCell){ selChip = null; pickCell = null; renderChips(); renderGrid(); msg('선택을 취소했어요.'); }
+      $('setModal').classList.remove('on');
+    }
+  });
+
+  // 목표·주수 입력
+  $('sumBody').addEventListener('input', function(e){
+    var id = e.target.dataset.target; if (!id) return;
+    state.targets[id] = Math.max(0, Math.min(15, parseInt(e.target.value, 10) || 0));
+    save(); renderChips();
+    clearTimeout(renderSum.t); renderSum.t = setTimeout(function(){ var f = document.activeElement && document.activeElement.dataset.target; renderSum(); if (f){ var i = document.querySelector('[data-target="' + f + '"]'); if (i){ i.focus(); } } }, 400);
+  });
+  ['w1','w2'].forEach(function(k){ $(k).addEventListener('change', function(){ state[k] = Math.max(1, Math.min(25, parseInt(this.value, 10) || 17)); save(); renderSum(); }); });
+
+  $('sampleBtn').addEventListener('click', function(){ if (!confirm('예시 시간표로 되돌릴까요? 지금 시간표는 지워져요.')) return; state = defaults(); selChip = null; pickCell = null; save(); renderAll(); msg('예시 시간표를 불러왔어요.'); });
+  $('angyeBtn').addEventListener('click', function(){ if (!confirm('안계초 1학년 1반 실제 시간표(2026.11.2 주)를 불러올까요? 지금 시간표는 지워져요.')) return; state = defaults('g1'); selChip = null; pickCell = null; save(); renderAll(); msg('<b>안계초 1학년 1반</b> 실제 한 주 시간표를 불러왔어요. 1학년 교과 칩으로 바뀌었어요.'); });
+  $('clearBtn').addEventListener('click', function(){ if (!confirm('시간표 칸을 모두 비울까요?')) return; state.grid = DAYS.map(function(){ return [null,null,null,null,null,null]; }); save(); renderAll(); msg('모두 비웠어요. 교과 칩을 끌어다 놓아 새로 만들어 보세요.'); });
+  $('printBtn').addEventListener('click', function(){ window.print(); });
+
+  // ---- 설정 ----
+  function openSet(){
+    $('sClass').value = state.cls;
+    $('sTimes').innerHTML = state.times.map(function(t, i){ return '<span>' + (i + 1) + '교시 <input type="time" value="' + t + '" data-time="' + i + '"></span>'; }).join('');
+    $('sJeon').innerHTML = SUBJ().map(function(s){
+      var on = state.jeon[s.id] != null;
+      return '<label><input type="checkbox" data-jeon="' + s.id + '"' + (on ? ' checked' : '') + '>' + s.name + ' <input type="text" data-jt="' + s.id + '" placeholder="선생님/장소" value="' + esc(on ? state.jeon[s.id] : '') + '"></label>';
+    }).join('');
+    $('setModal').classList.add('on');
+  }
+  $('setBtn').addEventListener('click', openSet);
+  $('sCancel').addEventListener('click', function(){ $('setModal').classList.remove('on'); });
+  $('setModal').addEventListener('click', function(e){ if (e.target === this) this.classList.remove('on'); });
+  $('sSave').addEventListener('click', function(){
+    state.cls = $('sClass').value.trim().slice(0, 30) || '우리 반';
+    document.querySelectorAll('[data-time]').forEach(function(i){ if (/^\d{2}:\d{2}$/.test(i.value)) state.times[+i.dataset.time] = i.value; });
+    var j = {};
+    document.querySelectorAll('[data-jeon]').forEach(function(c){ if (c.checked){ j[c.dataset.jeon] = document.querySelector('[data-jt="' + c.dataset.jeon + '"]').value.trim().slice(0, 12); } });
+    state.jeon = j;
+    save(); renderAll(); $('setModal').classList.remove('on'); msg('설정을 저장했어요.');
+  });
+
+  // ---- 오늘 시간표 TV 모드 ----
+  var tvTimer = null;
+  var WD = ['일','월','화','수','목','금','토'];
+  function renderTV(){
+    var now = new Date();
+    var hh = String(now.getHours()).padStart(2,'0'), mm = String(now.getMinutes()).padStart(2,'0'), ss = String(now.getSeconds()).padStart(2,'0');
+    $('tvClock').innerHTML = hh + ':' + mm + '<small>' + ss + '</small>';
+    $('tvDate').textContent = (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WD[now.getDay()] + '요일';
+    $('tvClass').textContent = '🗓️ ' + state.cls;
+    var di = todayIdx(), weekend = di < 0;
+    if (weekend) di = 0;
+    $('tvDay').textContent = weekend ? '오늘은 주말 — 월요일 시간표를 미리 볼게요' : DAYS[di] + '요일 시간표';
+    var mins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    var toM = function(hm){ var a = hm.split(':'); return (+a[0]) * 60 + (+a[1]); };
+    var cur = -1, next = -1, html = '';
+    for (var p = 0; p < 6; p++){
+      var st = toM(state.times[p]), en = st + 40;
+      var id = state.grid[di][p], s = id && BY[id];
+      var cls = '';
+      if (!weekend){
+        if (mins >= st && mins < en){ cls = ' now'; cur = p; }
+        else if (mins >= en) cls = ' done';
+        else if (next < 0) next = p;
+      }
+      var bar = cls === ' now' ? '<div class="bar" style="width:' + Math.round((mins - st) / 40 * 100) + '%"></div>' : '';
+      html += '<div class="tv-row' + cls + '"><div class="pp">' + (p + 1) + '교시<div class="tm">' + state.times[p] + '-' + addMin(state.times[p], 40) + '</div></div>' +
+        '<div>' + (s ? '<span class="sw" style="background:' + s.color + '"></span>' + esc(s.name) : '<span style="opacity:.5">(빈 시간)</span>') + (cls === ' now' ? '<span class="tag">지금</span>' : '') + '</div>' +
+        '<div class="tm">' + (s && state.jeon[id] ? '📍 ' + esc(state.jeon[id]) : '') + '</div>' + bar + '</div>';
+    }
+    $('tvList').innerHTML = html;
+    var n;
+    if (weekend) n = '즐거운 주말 보내요! 🌿';
+    else if (cur >= 0){
+      var cs = BY[state.grid[di][cur]];
+      var left = Math.ceil(toM(state.times[cur]) + 40 - mins);
+      n = '지금은 <b>' + (cur + 1) + '교시 ' + (cs ? cs.name : '빈 시간') + '</b> · 끝나기까지 ' + left + '분';
+    } else if (next >= 0){
+      var ns = BY[state.grid[di][next]];
+      var wait = Math.ceil(toM(state.times[next]) - mins);
+      n = (next === 0 ? '수업 시작 전이에요. ' : '쉬는 시간! ') + '다음은 <b>' + (next + 1) + '교시 ' + (ns ? ns.name : '빈 시간') + '</b> (' + wait + '분 뒤)' + (ns && state.jeon[state.grid[di][next]] ? '<br>📍 ' + esc(state.jeon[state.grid[di][next]]) + '(으)로 이동해요' : '');
+    } else n = '오늘 수업 끝! 안전하게 집에 가요 👋';
+    $('tvNow').innerHTML = n;
+  }
+  function openTV(){
+    $('tv').classList.add('on'); renderTV();
+    clearInterval(tvTimer); tvTimer = setInterval(renderTV, 1000);
+    try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function(){}); } catch(e){}
+  }
+  function closeTV(){
+    $('tv').classList.remove('on'); clearInterval(tvTimer);
+    try { if (document.fullscreenElement) document.exitFullscreen().catch(function(){}); } catch(e){}
+  }
+  $('tvBtn').addEventListener('click', openTV);
+  $('tvClose').addEventListener('click', closeTV);
+
+  renderAll();
+  window.__tt = { state: function(){ return state; }, counts: counts, place: place, swap: swap, openTV: openTV, closeTV: closeTV };
+})();
+</script>
+</body>
+</html>

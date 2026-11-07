@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>귀쫑긋 받아쓰기 - 읽어 주고 채점해 주는 받아쓰기 출제기</title>
 <meta name="description" content="문장을 넣으면 기기 음성으로 또박또박 읽어 주고, 학생이 쓴 답을 자동 채점해 틀린 글자까지 표시해 주는 받아쓰기 출제기.">
@@ -92,6 +93,14 @@
     .btn{padding:9px 11px;font-size:13.5px}
   }
 </style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="귀쫑긋 받아쓰기">
+<meta property="og:description" content="문장을 또박또박 읽어 주고, 틀린 글자·띄어쓰기까지 짚어 자동 채점">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/13-dictation.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/dictation/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
 </head>
 <body>
 <header>
@@ -182,6 +191,10 @@
   function sentence(){return st.list[st.order[st.cur]]||''}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
+  function updDone(){
+    var n=st.list.length,done=Object.keys(st.answers).filter(function(k){return (st.answers[k]||'').trim()}).length;
+    $('doneInfo').textContent=st.graded?'채점 완료! 아래 결과를 확인하세요.':done+' / '+n+' 문제 답을 썼어요.';
+  }
   function render(){
     var n=st.list.length;
     if(!n){$('qno').innerHTML='0<small>번 / 0</small>';$('ansTxt').textContent='문제 문장을 입력해 주세요.';$('dots').innerHTML='';return}
@@ -203,8 +216,7 @@
     $('tabStu').classList.toggle('on',st.student);$('tabTea').classList.toggle('on',!st.student);
     $('stuInput').value=st.answers[st.cur]||'';
     $('stuInput').disabled=!!st.graded;
-    var done=Object.keys(st.answers).filter(function(k){return (st.answers[k]||'').trim()}).length;
-    $('doneInfo').textContent=st.graded?'채점 완료! 아래 결과를 확인하세요.':done+' / '+n+' 문제 답을 썼어요.';
+    updDone();
     $('prevBtn').disabled=st.cur===0;
     $('nextBtn').textContent=st.cur===n-1?(st.student&&!st.graded?'✅ 채점하기':'처음으로 ↺'):'다음 문제 ▶';
     $('gradeBtn').disabled=!!st.graded;
@@ -323,7 +335,7 @@
   };
   $('showBtn').onclick=function(){st.show=!st.show;render()};
   $('dots').addEventListener('click',function(e){var b=e.target.closest('button');if(b)go(+b.dataset.i)});
-  $('stuInput').addEventListener('input',function(){st.answers[st.cur]=this.value;var b=$('dots').children[st.cur];if(b)b.classList.toggle('done',!!this.value.trim())});
+  $('stuInput').addEventListener('input',function(){st.answers[st.cur]=this.value;var b=$('dots').children[st.cur];if(b)b.classList.toggle('done',!!this.value.trim());updDone()});
   $('stuInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();$('nextBtn').click()}});
   $('gradeBtn').onclick=grade;
   $('retryBtn').onclick=function(){st.answers={};st.graded=null;st.cur=0;st.show=false;$('result').classList.remove('show');render()};

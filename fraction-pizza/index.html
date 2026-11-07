@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>분수 피자가게 - 조각을 칠하며 배우는 분수</title>
+<meta name="description" content="피자와 초콜릿을 똑같이 나누고 조각을 눌러 칠하면 분수가 보여요. 두 분수 크기 비교, 같은 크기 분수 찾기, 손님 주문 미션 게임(3-5학년 수학).">
+<style>
+  :root{--bg:#fff7ec;--card:#fff;--ink:#2d2320;--sub:#7a6a60;--line:#f1e1cc;--pri:#e8542f;--pri2:#ffe3d8;--g:#22a663;--r:#dc4040;--b:#3a6fd8;--ch:#ffc93c;--choc:#7a4528}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--card);border-bottom:2px solid var(--line);flex-wrap:wrap}
+  .logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#ff7a45,#ffc93c);display:grid;place-items:center;font-size:26px;flex-shrink:0}
+  header h1{margin:0;font-size:24px}
+  header small{display:block;color:var(--sub);font-size:13px}
+  .tabs{margin-left:auto;display:flex;gap:6px;background:#f7ede0;padding:5px;border-radius:14px}
+  .tab{border:0;font:inherit;font-weight:800;font-size:16px;padding:9px 16px;border-radius:10px;cursor:pointer;background:transparent;color:var(--sub)}
+  .tab.on{background:#fff;color:var(--pri);box-shadow:0 2px 0 var(--line)}
+  .btn{border:0;font:inherit;font-weight:800;font-size:15px;padding:9px 14px;border-radius:11px;cursor:pointer;background:var(--pri2);color:var(--pri);white-space:nowrap}
+  .btn.pri{background:var(--pri);color:#fff}
+  .btn.ghost{background:#f4ece2;color:var(--sub)}
+  .btn.g{background:var(--g);color:#fff}
+  .btn.big{font-size:20px;padding:13px 22px;border-radius:14px}
+  .btn:active{transform:scale(.97)}
+  main{flex:1;padding:14px 20px;display:flex;flex-direction:column}
+  .view{display:none;flex:1}
+  .view.on{display:flex}
+  .panel{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:16px}
+  svg.food{width:100%;height:auto;touch-action:manipulation;user-select:none}
+  svg.food .pc{cursor:pointer;transition:filter .12s}
+  svg.food .pc:hover{filter:brightness(1.06)}
+  .pop{animation:pop .25s}
+  @keyframes pop{50%{transform:scale(1.04)}}
+
+  /* 분수 표기 */
+  .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1;font-weight:900;margin:0 .1em}
+  .fr i{font-style:normal;padding:0 .12em}
+  .fr i:first-child{border-bottom:.08em solid currentColor;padding-bottom:.06em}
+  .fr i:last-child{padding-top:.06em}
+
+  /* 만들기 */
+  #vMake{gap:18px;align-items:stretch}
+  .stage{flex:1.15;display:grid;place-items:center;position:relative;min-width:0}
+  #mFood{width:100%;display:grid;place-items:center}
+  .stage .food{max-width:520px;max-height:calc(100vh - 170px)}
+  .stage .tip{position:absolute;top:12px;left:14px;background:var(--pri2);color:var(--pri);font-weight:800;font-size:15px;padding:6px 12px;border-radius:99px}
+  header>div:nth-child(2){flex:1;min-width:0}
+  .side{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0}
+  .bigfrac{display:flex;align-items:center;gap:22px;justify-content:center;padding:10px 6px}
+  .bigfrac .fr{font-size:110px;color:var(--pri)}
+  .bigfrac .say{font-size:22px;font-weight:800;line-height:1.5}
+  .bigfrac .say small{display:block;color:var(--sub);font-size:16px;font-weight:700}
+  .eq{font-size:20px;font-weight:800;color:var(--g);text-align:center;min-height:30px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .lbl{font-weight:800;font-size:15px;color:var(--sub);min-width:76px}
+  .seg{display:flex;gap:4px;flex-wrap:wrap}
+  .seg button{border:2px solid var(--line);background:#fff;font:inherit;font-weight:800;font-size:16px;min-width:40px;height:40px;border-radius:10px;cursor:pointer;color:var(--ink)}
+  .seg button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+  .bar{height:34px;border-radius:9px;border:2.5px solid #c9a888;display:flex;overflow:hidden;background:#fff}
+  .bar span{flex:1;border-right:1.5px solid #c9a888}
+  .bar span:last-child{border-right:0}
+  .bar span.f{background:var(--ch)}
+  .bar.choc span.f{background:var(--choc)}
+
+  /* 비교하기 */
+  #vCmp{flex-direction:column;gap:12px}
+  .cmpTop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .cmpTop .msg{font-weight:800;font-size:18px;color:var(--b)}
+  .cmpGrid{display:grid;grid-template-columns:1fr 150px 1fr;gap:14px;align-items:center;flex:1}
+  .cmpSide{display:flex;flex-direction:column;gap:8px;align-items:center}
+  .cmpSide .food{max-width:300px;max-height:calc(100vh - 360px);min-height:180px}
+  .cmpSide .fr{font-size:56px}
+  .cmpSide.l .fr{color:var(--pri)} .cmpSide.r .fr{color:var(--b)}
+  .sign{font-size:110px;font-weight:900;text-align:center;color:var(--ink);line-height:1}
+  .sign small{display:block;font-size:17px;color:var(--sub);margin-top:6px}
+  .bars{display:grid;gap:6px}
+  .bars .bar{height:30px}
+  .bars .bar.r span.f{background:#7ea6ff}
+  .stepper{display:flex;gap:6px;align-items:center;font-weight:800}
+  .stepper button{width:38px;height:38px;border-radius:10px;border:0;background:#f4ece2;font:inherit;font-size:20px;font-weight:900;cursor:pointer;color:var(--ink)}
+
+  /* 게임 */
+  #vGame{gap:18px}
+  .cust{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0}
+  .shop{display:flex;align-items:center;gap:16px;padding:18px}
+  .face{font-size:96px;line-height:1}
+  .face.shake{animation:sh .4s}
+  @keyframes sh{25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+  .bubble{position:relative;background:#fff;border:3px solid var(--ink);border-radius:22px;padding:14px 20px;font-size:28px;font-weight:900}
+  .bubble:before{content:"";position:absolute;left:-16px;top:40%;border:9px solid transparent;border-right:14px solid var(--ink)}
+  .bubble .fr{font-size:48px;color:var(--pri)}
+  .prog{display:flex;gap:6px;flex-wrap:wrap}
+  .prog span{width:28px;height:28px;border-radius:50%;background:#f1e4d3;display:grid;place-items:center;font-size:14px;font-weight:800;color:var(--sub)}
+  .prog span.ok{background:var(--g);color:#fff}
+  .prog span.no{background:#f3b23a;color:#fff}
+  .prog span.cur{outline:3px solid var(--pri)}
+  .gmsg{font-size:20px;font-weight:800;min-height:56px;padding:10px 14px;border-radius:14px;background:#f8f1e7}
+  .gmsg.ok{background:#e4f7ec;color:#167a46}
+  .gmsg.no{background:#fdecec;color:#b02f2f}
+  .coins{font-size:22px;font-weight:900}
+  .gfood{flex:1.1;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
+  .gfood .food{max-width:420px;max-height:calc(100vh - 230px)}
+  .now{font-size:20px;font-weight:800;color:var(--sub)}
+  .end{text-align:center;padding:30px}
+  .end .stars{font-size:64px}
+  .conf{position:fixed;top:-40px;font-size:30px;pointer-events:none;animation:fall linear forwards;z-index:50}
+  @keyframes fall{to{transform:translateY(110vh) rotate(600deg)}}
+
+  footer{text-align:right;padding:2px 20px 10px;font-size:13px}
+  footer a{color:var(--sub);text-decoration:none}
+  footer a:hover{color:var(--pri)}
+
+  @media (max-width:760px){
+    header{padding:8px 12px}
+    header h1{font-size:20px}
+    .tabs{margin-left:0;width:100%}
+    .tab{flex:1;font-size:14px;padding:8px 4px}
+    main{padding:10px}
+    .view.on{flex-direction:column}
+    .stage .food{max-width:330px}
+    .bigfrac .fr{font-size:76px}
+    .bigfrac .say{font-size:18px}
+    .cmpGrid{grid-template-columns:1fr 1fr;gap:8px}
+    .cmpGrid .mid{grid-column:1/-1;order:3}
+    .cmpSide .fr{font-size:40px}
+    .cmpSide .food{min-height:0}
+    .sign{font-size:64px}
+    .face{font-size:64px}
+    .bubble{font-size:20px}
+    .bubble .fr{font-size:36px}
+    .seg button{min-width:34px;height:36px;font-size:15px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="분수 피자가게">
+<meta property="og:description" content="피자·초콜릿 조각을 칠하며 분수 비교와 손님 주문 미션을 해결">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/42-fraction-pizza.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/fraction-pizza/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">🍕</div>
+  <div><h1>분수 피자가게</h1><small>똑같이 나누고, 조각을 눌러 칠하면 분수가 보여요 · 수학 3-5학년</small></div>
+  <nav class="tabs">
+    <button class="tab on" data-v="vMake">🍕 만들기</button>
+    <button class="tab" data-v="vCmp">⚖️ 비교하기</button>
+    <button class="tab" data-v="vGame">🛵 주문 게임</button>
+  </nav>
+</header>
+<main>
+  <!-- 만들기 -->
+  <section class="view on" id="vMake">
+    <div class="panel stage"><span class="tip">👆 조각을 눌러 칠해 보세요</span><div id="mFood"></div></div>
+    <div class="side">
+      <div class="panel">
+        <div class="bigfrac" id="mFrac"></div>
+        <div class="eq" id="mEq"></div>
+        <div class="bar" id="mBar"></div>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+        <div class="row"><span class="lbl">무엇을?</span><div class="seg" id="mShape"><button data-s="pizza" class="on">🍕 피자</button><button data-s="choc">🍫 초콜릿</button></div></div>
+        <div class="row"><span class="lbl">몇 조각?</span><div class="seg" id="mDen"></div></div>
+        <div class="row"><span class="lbl">한 번에</span><button class="btn" id="mAll">모두 칠하기</button><button class="btn ghost" id="mClear">지우기</button><button class="btn ghost" id="mRand">🎲 아무거나</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 비교하기 -->
+  <section class="view" id="vCmp">
+    <div class="cmpTop">
+      <div class="seg" id="cShape"><button data-s="pizza" class="on">🍕 피자</button><button data-s="choc">🍫 초콜릿</button></div>
+      <button class="btn pri" id="cEquiv">🔍 같은 크기 분수 찾기</button>
+      <button class="btn ghost" id="cRand">🎲 새 문제</button>
+      <span class="msg" id="cMsg">조각을 눌러 칠하고, 어느 쪽이 더 많은지 비교해 보세요!</span>
+    </div>
+    <div class="panel cmpGrid">
+      <div class="cmpSide l"><div id="cFoodL"></div><div id="cFracL"></div><div class="stepper">분모 <button data-d="L-">−</button><span id="cDenL"></span><button data-d="L+">+</button></div></div>
+      <div class="mid"><div class="sign" id="cSign"></div></div>
+      <div class="cmpSide r"><div id="cFoodR"></div><div id="cFracR"></div><div class="stepper">분모 <button data-d="R-">−</button><span id="cDenR"></span><button data-d="R+">+</button></div></div>
+    </div>
+    <div class="panel bars" id="cBars"></div>
+  </section>
+
+  <!-- 게임 -->
+  <section class="view" id="vGame"></section>
+</main>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+
+<script>
+const $=s=>document.querySelector(s);
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const fr=(a,b)=>`<span class="fr"><i>${a}</i><i>${b}</i></span>`;
+const readF=(a,b)=>`${b}분의 ${a}`;
+
+/* 그리기: 피자(원)·초콜릿(직사각형) */
+function pizzaSVG(n,filled,id){
+  const R=100; let s=`<svg class="food" viewBox="-118 -118 236 236" data-id="${id}" role="img" aria-label="${n}조각 피자">`;
+  s+=`<circle r="114" fill="#f4e6d4"/><circle r="110" fill="#fff" stroke="#e8d5bd" stroke-width="2"/>`;
+  for(let i=0;i<n;i++){
+    const a0=-Math.PI/2+i*2*Math.PI/n, a1=a0+2*Math.PI/n, am=(a0+a1)/2;
+    const p=(a,r)=>`${(Math.cos(a)*r).toFixed(2)} ${(Math.sin(a)*r).toFixed(2)}`;
+    const f=filled[i];
+    s+=`<g class="pc" data-i="${i}"><path d="M0 0 L${p(a0,R)} A${R} ${R} 0 0 1 ${p(a1,R)} Z" fill="${f?'#ffc93c':'#fbecd2'}" stroke="#fff" stroke-width="2.5"/>`;
+    if(f){
+      const k=n<=4?3:n<=8?2:1;
+      for(let j=0;j<k;j++){
+        const t=k===1?.5:(j+1)/(k+1);
+        const aa=a0+(a1-a0)*t, r2=R*(k===1?.62:j%2?.78:.45);
+        s+=`<circle cx="${(Math.cos(aa)*r2).toFixed(1)}" cy="${(Math.sin(aa)*r2).toFixed(1)}" r="${n>8?7:9}" fill="#d43b2a"/>`;
+      }
+      s+=`<circle cx="${(Math.cos(am+.12)*R*.3).toFixed(1)}" cy="${(Math.sin(am+.12)*R*.3).toFixed(1)}" r="3.5" fill="#3f8f3a"/>`;
+    }
+    s+=`</g>`;
+  }
+  s+=`<circle r="${R}" fill="none" stroke="#d98a3a" stroke-width="9" pointer-events="none"/>`;
+  return s+`</svg>`;
+}
+function chocSVG(n,filled,id){
+  let rows=1; if(n>6){for(let r=Math.floor(Math.sqrt(n));r>1;r--) if(n%r===0){rows=r;break}}
+  const cols=n/rows, Wd=220, Ht=rows===1?120:170, cw=Wd/cols, chh=Ht/rows;
+  let s=`<svg class="food" viewBox="-6 -6 ${Wd+12} ${Ht+12}" data-id="${id}" role="img" aria-label="${n}조각 초콜릿">`;
+  s+=`<rect x="-4" y="-4" width="${Wd+8}" height="${Ht+8}" rx="10" fill="#5a3019"/>`;
+  for(let i=0;i<n;i++){
+    const c=i%cols, r=Math.floor(i/cols), x=c*cw, y=r*chh, f=filled[i];
+    s+=`<g class="pc" data-i="${i}"><rect x="${x+2}" y="${y+2}" width="${cw-4}" height="${chh-4}" rx="5" fill="${f?'#8a4f2c':'#f3e3d0'}" stroke="${f?'#5a3019':'#d8bfa3'}" stroke-width="1.5"/>`;
+    if(f) s+=`<rect x="${x+cw*.2}" y="${y+chh*.18}" width="${cw*.6}" height="${chh*.22}" rx="3" fill="#a8693f"/>`;
+    s+=`</g>`;
+  }
+  return s+`</svg>`;
+}
+const draw=(shape,n,filled,id)=>shape==='pizza'?pizzaSVG(n,filled,id):chocSVG(n,filled,id);
+const barHtml=(n,k,cls='')=>`<div class="bar ${cls}">${Array.from({length:n},(_,i)=>`<span class="${i<k?'f':''}"></span>`).join('')}</div>`;
+const count=a=>a.filter(Boolean).length;
+
+/* 탭 */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id===t.dataset.v));
+  if(t.dataset.v==='vGame'&&!G.started) startGame();
+});
+
+/* ===== 만들기 ===== */
+const M={shape:'pizza',n:8,filled:[1,1,1,0,0,0,0,0].map(Boolean)};
+$('#mDen').innerHTML=Array.from({length:11},(_,i)=>`<button data-n="${i+2}">${i+2}</button>`).join('');
+function renderMake(){
+  $('#mFood').innerHTML=draw(M.shape,M.n,M.filled,'m');
+  const k=count(M.filled), g=gcd(k,M.n);
+  const unit=M.shape==='pizza'?'판':'개';
+  $('#mFrac').innerHTML=`${fr(k,M.n)}<div class="say">${M.n}조각 중 ${k}조각<br>${readF(k,M.n)}${unit}<small>${M.shape==='pizza'?'🍕 피자':'🍫 초콜릿'}를 똑같이 ${M.n}조각으로 나눴어요</small></div>`;
+  let eq='';
+  if(k===0) eq='조각을 눌러 칠해 보세요 👆';
+  else if(k===M.n) eq=`${fr(k,M.n)} = 1 ${unit} (한 ${unit} 전부!)`;
+  else if(g>1) eq=`${fr(k,M.n)} 는 ${fr(k/g,M.n/g)} 와 크기가 같아요!`;
+  else eq=`남은 조각은 ${fr(M.n-k,M.n)}`;
+  $('#mEq').innerHTML=eq;
+  $('#mBar').outerHTML=barHtml(M.n,k,M.shape==='choc'?'choc':'').replace('class="bar','id="mBar" class="bar');
+  document.querySelectorAll('#mDen button').forEach(b=>b.classList.toggle('on',+b.dataset.n===M.n));
+  document.querySelectorAll('#mShape button').forEach(b=>b.classList.toggle('on',b.dataset.s===M.shape));
+}
+$('#mFood').addEventListener('click',e=>{const p=e.target.closest('.pc'); if(!p) return; const i=+p.dataset.i; M.filled[i]=!M.filled[i]; renderMake(); $('#mFood svg').classList.add('pop')});
+$('#mDen').onclick=e=>{const n=+e.target.dataset.n; if(!n) return; M.n=n; M.filled=Array(n).fill(false); renderMake()};
+$('#mShape').onclick=e=>{const s=e.target.closest('button')?.dataset.s; if(!s) return; M.shape=s; renderMake()};
+$('#mAll').onclick=()=>{M.filled=Array(M.n).fill(true);renderMake()};
+$('#mClear').onclick=()=>{M.filled=Array(M.n).fill(false);renderMake()};
+$('#mRand').onclick=()=>{M.n=2+Math.floor(Math.random()*11); const k=1+Math.floor(Math.random()*(M.n-1)); M.filled=Array.from({length:M.n},(_,i)=>i<k); renderMake()};
+renderMake();
+
+/* ===== 비교하기 ===== */
+const C={shape:'pizza',L:{n:4,f:[1,1,1,0].map(Boolean)},R:{n:8,f:[1,1,1,1,1,0,0,0].map(Boolean)}};
+function renderCmp(msg){
+  const a=count(C.L.f), b=C.L.n, c=count(C.R.f), d=C.R.n;
+  $('#cFoodL').innerHTML=draw(C.shape,b,C.L.f,'L');
+  $('#cFoodR').innerHTML=draw(C.shape,d,C.R.f,'R');
+  $('#cFracL').innerHTML=fr(a,b); $('#cFracR').innerHTML=fr(c,d);
+  $('#cDenL').textContent=b; $('#cDenR').textContent=d;
+  const x=a*d, y=c*b; const sg=x>y?'&gt;':x<y?'&lt;':'=';
+  $('#cSign').innerHTML=`${sg}<small>${x>y?'왼쪽이 더 커요':x<y?'오른쪽이 더 커요':'크기가 같아요!'}</small>`;
+  $('#cSign').style.color=x===y?'var(--g)':'var(--ink)';
+  $('#cBars').innerHTML=`<div class="row" style="gap:10px"><b style="width:56px;text-align:right">${a}/${b}</b><div style="flex:1">${barHtml(b,a,C.shape==='choc'?'choc':'')}</div></div><div class="row" style="gap:10px"><b style="width:56px;text-align:right">${c}/${d}</b><div style="flex:1">${barHtml(d,c,'r')}</div></div>`;
+  $('#cMsg').innerHTML=msg||(x===y&&a>0?`🎉 ${fr(a,b)} 와 ${fr(c,d)} 는 크기가 같은 분수예요!`:'조각을 눌러 칠하고, 어느 쪽이 더 많은지 비교해 보세요!');
+  document.querySelectorAll('#cShape button').forEach(bt=>bt.classList.toggle('on',bt.dataset.s===C.shape));
+}
+document.querySelector('.cmpGrid').addEventListener('click',e=>{
+  const p=e.target.closest('.pc'), sv=e.target.closest('svg.food');
+  if(p&&sv){const side=C[sv.dataset.id]; const i=+p.dataset.i; side.f[i]=!side.f[i]; return renderCmp()}
+  const dd=e.target.dataset.d; if(!dd) return;
+  const side=C[dd[0]]; const n=Math.min(12,Math.max(2,side.n+(dd[1]==='+'?1:-1)));
+  const k=Math.min(count(side.f),n); side.n=n; side.f=Array.from({length:n},(_,i)=>i<k); renderCmp();
+});
+$('#cShape').onclick=e=>{const s=e.target.closest('button')?.dataset.s; if(!s) return; C.shape=s; renderCmp()};
+$('#cEquiv').onclick=()=>{
+  const a=count(C.L.f), b=C.L.n, d=C.R.n;
+  if(a===0) return renderCmp('먼저 왼쪽에서 조각을 칠해 주세요 👈');
+  if((a*d)%b===0){ const k=a*d/b; C.R.f=Array.from({length:d},(_,i)=>i<k); renderCmp(`🎉 ${fr(a,b)} = ${fr(k,d)} — 분모와 분자에 같은 수를 곱하거나 나누면 크기가 같아요!`); return;}
+  const ok=[]; for(let n=2;n<=12;n++) if((a*n)%b===0&&n!==b) ok.push(n);
+  renderCmp(ok.length?`🤔 ${d}조각으로는 ${fr(a,b)}와 똑같이 만들 수 없어요. 오른쪽 분모를 <b>${ok.join(', ')}</b>(으)로 바꿔 보세요!`:`🤔 ${fr(a,b)}와 크기가 같은 분수를 분모 2-12 안에서는 만들 수 없어요.`);
+};
+$('#cRand').onclick=()=>{
+  const b=[2,3,4,5,6][Math.floor(Math.random()*5)], m=[2,3][Math.floor(Math.random()*2)], a=1+Math.floor(Math.random()*(b-1));
+  C.L={n:b,f:Array.from({length:b},(_,i)=>i<a)}; const d=Math.min(12,b*m); C.R={n:d,f:Array(d).fill(false)};
+  renderCmp(`오른쪽 ${d}조각 피자에서 ${fr(a,b)}와 크기가 같게 칠해 보세요!`);
+};
+renderCmp();
+
+/* ===== 주문 게임 ===== */
+const ORDERS=[
+  {a:1,b:2,n:2,s:'pizza',who:'🧒'},{a:3,b:4,n:4,s:'pizza',who:'👵'},{a:2,b:3,n:3,s:'choc',who:'👦'},
+  {a:5,b:8,n:8,s:'pizza',who:'🧑‍🍳'},{a:1,b:2,n:6,s:'pizza',who:'👩'},{a:3,b:5,n:5,s:'choc',who:'🐻'},
+  {a:2,b:3,n:6,s:'choc',who:'👴'},{a:7,b:12,n:12,s:'pizza',who:'🦊'},{a:3,b:4,n:8,s:'pizza',who:'👧'},{a:5,b:6,n:12,s:'choc',who:'🐼'}
+];
+const G={started:false,i:0,f:[],res:[],tries:0,msg:'',cls:'',done:false};
+function startGame(){G.started=true;G.i=0;G.res=[];newOrder()}
+function newOrder(){const o=ORDERS[G.i]; G.f=Array(o.n).fill(false); G.tries=0; G.done=false; G.msg=`조각 ${o.n}개로 나눠 둔 ${o.s==='pizza'?'피자':'초콜릿'}예요. 주문한 만큼 눌러 칠하고 <b>배달하기</b>!`; G.cls=''; renderGame()}
+function renderGame(){
+  const v=$('#vGame');
+  if(G.i>=ORDERS.length){
+    const ok=G.res.filter(r=>r==='ok').length; const st=ok>=9?'⭐⭐⭐':ok>=6?'⭐⭐':'⭐';
+    v.innerHTML=`<div class="panel end" style="flex:1"><div class="stars">${st}</div><h2 style="font-size:32px;margin:8px 0">영업 끝! 한 번에 맞힌 주문 ${ok} / ${ORDERS.length}</h2><p style="font-size:18px;color:var(--sub)">💰 번 돈: ${ok*3+ (G.res.length-ok)}냥</p><button class="btn pri big" id="gAgain">🔁 다시 장사하기</button></div>`;
+    $('#gAgain').onclick=startGame; return;
+  }
+  const o=ORDERS[G.i], k=count(G.f), unit=o.s==='pizza'?'판':'개', food=o.s==='pizza'?'피자':'초콜릿';
+  v.innerHTML=`<div class="cust">
+    <div class="panel shop"><div class="face" id="gFace">${G.done?'😋':o.who}</div><div class="bubble">${food} ${fr(o.a,o.b)}${unit} 주세요!</div></div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+      <div class="row" style="justify-content:space-between"><b style="font-size:18px">주문 ${G.i+1} / ${ORDERS.length}</b><span class="coins">💰 ${G.res.filter(r=>r==='ok').length*3+G.res.filter(r=>r==='no').length}냥</span></div>
+      <div class="prog">${ORDERS.map((_,i)=>`<span class="${G.res[i]||''}${i===G.i?' cur':''}">${i+1}</span>`).join('')}</div>
+      <div class="gmsg ${G.cls}">${G.msg}</div>
+      <div class="row">${G.done?`<button class="btn g big" id="gNext">다음 손님 ▶</button>`:`<button class="btn pri big" id="gGo">🛵 배달하기</button><button class="btn ghost" id="gClr">지우기</button>`}</div>
+    </div></div>
+    <div class="panel gfood"><div class="now">지금 칠한 양: ${fr(k,o.n)} ${unit}</div><div id="gFood" style="width:100%;display:grid;place-items:center">${draw(o.s,o.n,G.f,'g')}</div></div>`;
+  $('#gFood').onclick=e=>{if(G.done) return; const p=e.target.closest('.pc'); if(!p) return; G.f[+p.dataset.i]=!G.f[+p.dataset.i]; renderGame()};
+  if(G.done){$('#gNext').onclick=()=>{G.i++; if(G.i<ORDERS.length) newOrder(); else renderGame()}; return}
+  $('#gClr').onclick=()=>{G.f=G.f.map(()=>false);renderGame()};
+  $('#gGo').onclick=()=>{
+    const k=count(G.f);
+    if(k*o.b===o.a*o.n){
+      G.done=true; G.res[G.i]=G.tries===0?'ok':'no'; G.cls='ok';
+      G.msg=`정답! ${fr(k,o.n)}${o.n!==o.b?` = ${fr(o.a,o.b)}`:''} ${unit} 배달 완료 ${G.tries===0?'+3냥 🎉':'+1냥'}`;
+      renderGame(); confetti(o.s==='pizza'?'🍕':'🍫');
+    }else{
+      G.tries++; G.cls='no';
+      const need=o.a*o.n/o.b;
+      G.msg=k===0?'아직 아무 조각도 안 칠했어요!':`앗, 지금은 ${fr(k,o.n)}${unit}이에요. ${k*o.b>o.a*o.n?'너무 많아요 😅':'조금 모자라요 🤏'}${G.tries>=2?` 힌트: ${fr(o.a,o.b)} = ${fr(need,o.n)}`:''}`;
+      renderGame(); $('#gFace').classList.add('shake');
+    }
+  };
+}
+function confetti(e){
+  const em=[e,'⭐','🎉','✨','🪙'];
+  for(let i=0;i<34;i++){const d=document.createElement('div');d.className='conf';d.textContent=em[i%em.length];d.style.left=Math.random()*100+'vw';d.style.animationDuration=(1.5+Math.random()*1.5)+'s';d.style.animationDelay=Math.random()*.4+'s';document.body.appendChild(d);setTimeout(()=>d.remove(),3800)}
+}
+</script>
+</body>
+</html>

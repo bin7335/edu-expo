@@ -2,81 +2,75 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>원의 넓이 시각적 증명</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <meta name="description" content="원을 피자 조각처럼 잘게 쪼개 지그재그로 붙이면 직사각형이 되어 넓이가 πr²임을 보여 주는 시각적 증명.">
   <style>
-    body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
-    canvas { background-color: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); width: 100%; max-width: 800px; height: 400px; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f8fafc;color:#1e293b;word-break:keep-all}
+    header{background:#4f46e5;color:#fff;padding:32px 20px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+    header h1{margin:0 0 8px;font-size:clamp(24px,4vw,36px);font-weight:800}
+    header p{margin:0;color:#e0e7ff;font-size:18px}
+    main{max-width:896px;margin:0 auto;padding:32px 16px;display:flex;flex-direction:column;gap:24px}
+    .stage{position:relative;max-width:800px;margin:0 auto;width:100%}
+    canvas{display:block;background:#fff;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);width:100%;height:auto;aspect-ratio:2/1}
+    .lbl{position:absolute;font-weight:700;font-size:clamp(12px,2vw,18px);opacity:0;transition:opacity .3s}
+    #label-height{left:41.25%;top:45%;color:#dc2626}
+    #label-width{left:65%;top:75%;color:#2563eb}
+    .card{background:#fff;padding:24px;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:32px;align-items:center}
+    label{display:flex;justify-content:space-between;font-size:18px;font-weight:700;color:#334155;margin-bottom:12px}
+    input[type=range]{width:100%;accent-color:#4f46e5}
+    #slider-t{accent-color:#22c55e;flex:1}
+    .row{display:flex;gap:12px;align-items:center}
+    .hint{font-size:12px;color:#64748b;margin:12px 0 0}
+    button{font:inherit;background:#1e293b;color:#fff;border:0;padding:6px 16px;border-radius:8px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    button:hover{background:#334155}
+    .explain{background:#eef2ff;padding:24px;border-radius:12px;border:1px solid #e0e7ff;display:flex;gap:16px;align-items:flex-start}
+    .explain .icon{font-size:30px}
+    .explain h3{margin:0 0 8px;font-size:20px;color:#312e81}
+    .explain ul{margin:0;padding-left:20px;font-size:18px;color:#334155;line-height:1.7}
+    .formula{list-style:none;margin:16px 0 0 -20px;padding:12px;background:#fff;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.06);display:inline-block}
+    .r{color:#ef4444;font-weight:700}.b{color:#3b82f6;font-weight:700}
   </style>
 </head>
-<body class="text-slate-800">
-
-  <header class="bg-indigo-600 text-white py-8 px-6 text-center shadow-md">
-    <h1 class="text-4xl font-extrabold mb-2"><i class="fa-solid fa-chart-pie mr-3"></i>원의 넓이, 왜 πr² 일까요?</h1>
-    <p class="text-indigo-100 text-lg">원을 무수히 많은 피자 조각으로 쪼개서 지그재그로 붙여보세요!</p>
+<body>
+  <header>
+    <h1>🍕 원의 넓이, 왜 πr² 일까요?</h1>
+    <p>원을 무수히 많은 피자 조각으로 쪼개서 지그재그로 붙여보세요!</p>
   </header>
-
-  <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
-    
-    <!-- Canvas Area -->
-    <div class="flex justify-center relative">
+  <main>
+    <div class="stage">
       <canvas id="simCanvas" width="800" height="400"></canvas>
-      
-      <!-- Math Labels (Controlled by JS) -->
-      <div id="label-height" class="absolute left-[330px] top-[180px] text-red-600 font-bold text-lg opacity-0 transition-opacity duration-300">세로 = r</div>
-      <div id="label-width" class="absolute left-[520px] top-[300px] text-blue-600 font-bold text-lg opacity-0 transition-opacity duration-300">가로 = π × r (원주의 절반)</div>
+      <div id="label-height" class="lbl">세로 = r</div>
+      <div id="label-width" class="lbl">가로 = π × r (원주의 절반)</div>
     </div>
-
-    <!-- Controls Area -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-      <div class="grid md:grid-cols-2 gap-8 items-center">
-        
-        <!-- Slices Slider -->
-        <div class="space-y-4">
-          <label class="block text-lg font-bold text-slate-700 flex justify-between">
-            <span>조각 개수 (쪼개기)</span>
-            <span id="val-n" class="text-indigo-600">8개</span>
-          </label>
-          <input type="range" id="slider-n" min="4" max="100" step="2" value="8" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
-          <p class="text-xs text-slate-500">개수를 100개까지 늘려보면 테두리가 직선에 가까워집니다.</p>
-        </div>
-
-        <!-- Transform Slider -->
-        <div class="space-y-4">
-          <label class="block text-lg font-bold text-slate-700 flex justify-between">
-            <span>도형 변환 (펼치기)</span>
-            <span id="val-t" class="text-green-600">0%</span>
-          </label>
-          <div class="flex gap-3">
-            <input type="range" id="slider-t" min="0" max="100" step="1" value="0" class="flex-1 h-3 mt-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-green-500">
-            <button id="btn-play" class="bg-slate-800 text-white px-4 py-1.5 rounded-lg shadow hover:bg-slate-700 focus:outline-none transition"><i class="fa-solid fa-play"></i> 자동</button>
-          </div>
-          <p class="text-xs text-slate-500">슬라이더를 우측으로 당기면 직사각형 모양으로 재배열됩니다.</p>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- Explanation Box -->
-    <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100 flex gap-4 items-start">
-      <i class="fa-solid fa-lightbulb text-3xl text-yellow-500 mt-1"></i>
+    <div class="card"><div class="grid">
       <div>
-        <h3 class="text-xl font-bold text-indigo-900 mb-2">시뮬레이션 결과 정리</h3>
-        <ul class="list-disc list-inside space-y-2 text-slate-700 text-lg">
+        <label><span>조각 개수 (쪼개기)</span><span id="val-n" style="color:#4f46e5">8개</span></label>
+        <input type="range" id="slider-n" min="4" max="100" step="2" value="8">
+        <p class="hint">개수를 100개까지 늘려보면 테두리가 직선에 가까워집니다.</p>
+      </div>
+      <div>
+        <label><span>도형 변환 (펼치기)</span><span id="val-t" style="color:#16a34a">0%</span></label>
+        <div class="row"><input type="range" id="slider-t" min="0" max="100" step="1" value="0"><button id="btn-play" type="button">▶ 자동</button></div>
+        <p class="hint">슬라이더를 우측으로 당기면 직사각형 모양으로 재배열됩니다.</p>
+      </div>
+    </div></div>
+    <div class="explain">
+      <div class="icon">💡</div>
+      <div>
+        <h3>시뮬레이션 결과 정리</h3>
+        <ul>
           <li>원을 잘게 쪼개어 이어 붙이면 <strong>점점 직사각형</strong>과 비슷한 모양이 됩니다.</li>
-          <li>이 사각형의 <strong>세로</strong>는 원래 원의 <strong>반지름(<span class="text-red-500 font-bold">r</span>)</strong>과 같습니다.</li>
-          <li>이 사각형의 <strong>가로</strong>는 원의 테두리(원주 = 2πr)의 딱 절반이므로 <strong><span class="text-blue-500 font-bold">πr</span></strong>이 됩니다.</li>
-          <li class="mt-4 p-3 bg-white rounded shadow-sm inline-block">
-            직사각형의 넓이 = <span class="text-blue-500 font-bold">가로(πr)</span> × <span class="text-red-500 font-bold">세로(r)</span> = <strong>πr²</strong>
-          </li>
+          <li>이 사각형의 <strong>세로</strong>는 원래 원의 <strong>반지름(<span class="r">r</span>)</strong>과 같습니다.</li>
+          <li>이 사각형의 <strong>가로</strong>는 원의 테두리(원주 = 2πr)의 딱 절반이므로 <strong><span class="b">πr</span></strong>이 됩니다.</li>
+          <li class="formula">직사각형의 넓이 = <span class="b">가로(πr)</span> × <span class="r">세로(r)</span> = <strong>πr²</strong></li>
         </ul>
       </div>
     </div>
-
   </main>
-
   <script>
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');

@@ -1,0 +1,58 @@
+/* ==css:start== 딸깍 QR 화면 모양 (확장과 체험 페이지 공통) */
+.pq{--pq-ink:#1f2937;--pq-muted:#6b7280;--pq-line:#e5e7eb;--pq-brand:#4f46e5;--pq-soft:#eef2ff;
+  font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--pq-ink);font-size:14px;line-height:1.45}
+.pq *{box-sizing:border-box}
+.pq-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.pq-logo{width:34px;height:34px;border-radius:9px;flex:none;background:var(--pq-brand);position:relative}
+.pq-logo::before{content:"";position:absolute;inset:7px;background:
+  linear-gradient(#fff,#fff) 0 0/8px 8px no-repeat,linear-gradient(#fff,#fff) 100% 0/8px 8px no-repeat,
+  linear-gradient(#fff,#fff) 0 100%/8px 8px no-repeat,linear-gradient(#fff,#fff) 100% 100%/4px 4px no-repeat}
+.pq-head b{font-size:17px;display:block}
+.pq-head small{color:var(--pq-muted);font-size:12px}
+.pq-page{background:var(--pq-soft);border-radius:10px;padding:7px 10px;margin-bottom:8px;min-width:0}
+.pq-title{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pq-url{font-size:12px;color:#4338ca;word-break:break-all;max-height:3.1em;overflow:hidden}
+.pq-url:empty{display:none}
+.pq-box{display:grid;place-items:center;background:#fff;border:1px solid var(--pq-line);border-radius:12px;padding:6px;min-height:150px}
+.pq-canvas{display:block;width:100%;max-width:280px;height:auto;aspect-ratio:1;image-rendering:pixelated}
+.pq-canvas[hidden],.pq-empty[hidden]{display:none}
+.pq-empty{padding:18px 14px;text-align:center;color:#92400e;background:#fffbeb;border-radius:10px;font-size:13px;line-height:1.55}
+.pq-meta{min-height:18px;margin:5px 0 8px;font-size:12px;color:var(--pq-muted);text-align:center}
+.pq-meta.pq-warn{color:#b45309;font-weight:700}
+.pq-secret{margin:0 0 8px;padding:7px 9px;border-radius:8px;background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c;font-size:12px;font-weight:700;line-height:1.4}
+.pq-secret[hidden]{display:none}
+.pq-btn{font:inherit;font-weight:700;font-size:14px;border-radius:10px;border:1px solid var(--pq-line);background:#fff;color:var(--pq-ink);padding:8px 12px;cursor:pointer}
+.pq-btn:hover{filter:brightness(.96)}
+.pq-btn:disabled{opacity:.45;cursor:default;filter:none}
+.pq-btn:focus-visible{outline:2px solid #a5b4fc;outline-offset:2px}
+.pq-primary{width:100%;background:var(--pq-brand);color:#fff;border:0;font-size:15px;padding:10px 12px}
+.pq-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.pq-sm{font-size:13px;padding:6px 10px;border-radius:8px}
+.pq-check{display:flex;gap:7px;align-items:flex-start;margin-top:9px;padding:7px 9px;border:1px dashed #c7d2fe;border-radius:10px;font-size:13px;cursor:pointer}
+.pq-check[hidden]{display:none}
+.pq-check input{margin:2px 0 0;accent-color:var(--pq-brand)}
+.pq-check small{color:var(--pq-muted);word-break:break-all}
+.pq-edit{margin-top:9px}
+.pq-edit label{font-weight:700;font-size:13px}
+.pq-edit label small{font-weight:500;color:var(--pq-muted)}
+.pq-edit-row{display:flex;gap:6px;margin-top:4px}
+.pq-edit input{flex:1;min-width:0;font:inherit;font-size:13px;border:1px solid #d1d5db;border-radius:9px;padding:7px 9px}
+.pq-edit input:focus{outline:2px solid #a5b4fc;border-color:#818cf8}
+.pq-edit .pq-btn[hidden]{display:none}
+.pq-msg{min-height:20px;margin-top:6px;font-size:13px;font-weight:600;color:var(--pq-brand)}
+
+/* 전체 화면 (교실 TV) */
+.pq-big{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#fff;color:#111;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow:hidden;position:relative;text-align:center}
+.pq-big *{box-sizing:border-box}
+.pq-big-bar{position:absolute;top:10px;right:12px;display:flex;gap:6px}
+.pq-big-bar .pq-btn{font-family:inherit;font-weight:700;border:1px solid #e5e7eb;background:#fff;color:#374151;cursor:pointer}
+.pq-big-bar .pq-btn[hidden]{display:none}
+.pq-big-title{margin:0;padding:0 150px 0 20px;max-width:100%;font-size:clamp(22px,4.2vh,46px);line-height:1.2;font-weight:900;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pq-big-canvas{display:block;image-rendering:pixelated}
+.pq-big-canvas[hidden]{display:none}
+.pq-big-url{font-size:clamp(16px,3.2vh,34px);font-weight:700;color:#3730a3;word-break:break-all;padding:0 20px}
+.pq-big-tip{font-size:clamp(13px,2vh,20px);color:#6b7280}
+@media (max-width:600px){.pq-big-title{padding:36px 14px 0}}
+/* ==css:end== */

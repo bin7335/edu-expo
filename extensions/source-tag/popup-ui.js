@@ -3,7 +3,7 @@
 const SourceTagPopup = (() => {
   function mount(root, adapter){
     const T = SourceTag;
-    let st = { enabled: true, format: 'easy', history: [] };
+    let st = { enabled: true, format: 'easy', fullUrl: false, history: [] };
     let pageMeta = null, clearArmed = 0;
     root.classList.add('st');
     root.innerHTML = `
@@ -12,6 +12,7 @@ const SourceTagPopup = (() => {
       <div class="st-row"><span class="st-lab">형식</span><div class="st-seg" data-r="seg">
         ${Object.entries(T.FORMATS).map(([k, f]) => `<button type="button" data-f="${k}">${f.label}</button>`).join('')}
       </div></div>
+      <label class="st-opt"><input type="checkbox" data-r="fullUrl"> 주소의 ?·# 뒷부분까지 넣기 <small>(기본: 떼고 넣어요)</small></label>
       <div class="st-card">
         <div class="st-card-h">📄 지금 이 페이지</div>
         <p class="st-cite" data-r="pageCite">읽는 중…</p>
@@ -32,6 +33,7 @@ const SourceTagPopup = (() => {
 
     function render(){
       $('enabled').checked = !!st.enabled;
+      $('fullUrl').checked = !!st.fullUrl;
       $('onoff').textContent = st.enabled ? '켜짐' : '꺼짐';
       root.classList.toggle('st-off', !st.enabled);
       [...$('seg').children].forEach(b => b.classList.toggle('on', b.dataset.f === st.format));
@@ -46,6 +48,7 @@ const SourceTagPopup = (() => {
     async function save(patch){ Object.assign(st, patch); render(); await adapter.set(patch); }
 
     $('enabled').addEventListener('change', e => save({ enabled: e.target.checked }));
+    $('fullUrl').addEventListener('change', async e => { await save({ fullUrl: e.target.checked }); try { pageMeta = await adapter.getPageMeta(); } catch (_) { pageMeta = null; } render(); });
     $('seg').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (b) save({ format: b.dataset.f }); });
     $('copyPage').addEventListener('click', async () => {
       if (!pageMeta) return;

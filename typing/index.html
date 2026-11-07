@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>또박또박 타자 - 한글 두벌식 타자 연습</title>
+<meta name="description" content="다음 누를 키와 손가락 색을 보여 주는 한글 두벌식 타자 연습. 자리 연습 → 낱말 → 교과 문장 → 60초 도전과 기록판.">
+<style>
+  :root{--bg:#f3f6fb;--ink:#1f2540;--sub:#68708c;--line:#dfe4ef;--pri:#2f6bff;--pri2:#e6eeff;--ok:#16a06b;--bad:#e5484d;
+    --f5:#ff8fa3;--f4:#ffc94a;--f3:#7fd6a0;--f2:#7eb2ff;--ft:#c39bff}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);min-height:100vh;
+    background:radial-gradient(circle at 0 0,#dfe9ff 0,transparent 40%),radial-gradient(circle at 100% 0,#ffe9f0 0,transparent 35%),var(--bg)}
+  header{display:flex;align-items:center;gap:10px;padding:10px 18px}
+  header .logo{font-size:30px}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header small{color:var(--sub);font-size:12.5px;display:block}
+  .grow{flex:1}
+  .hbtn{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font:inherit;font-size:13.5px;cursor:pointer;white-space:nowrap}
+  .hbtn:hover{background:var(--pri2)}
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:14px;padding:0 18px 36px;max-width:1360px;margin:0 auto}
+  .tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .tabs button{border:0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 14px;font:inherit;font-size:14.5px;font-weight:700;color:var(--sub);cursor:pointer}
+  .tabs button .n{display:inline-block;width:20px;height:20px;line-height:20px;border-radius:50%;background:var(--line);color:var(--ink);font-size:12px;margin-right:4px;text-align:center}
+  .tabs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .tabs button.on .n{background:#fff;color:var(--pri)}
+  .tabs button.chal{background:#fff4dc;border-color:#ffd277;color:#a35f00}
+  .tabs button.chal.on{background:#ff9f1c;border-color:#ff9f1c;color:#fff}
+  .card{background:#fff;border-radius:18px;box-shadow:0 6px 20px rgba(40,60,120,.08);padding:12px 18px 14px}
+  .meta{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub)}
+  .meta .tag{background:var(--pri2);color:var(--pri);font-weight:800;border-radius:20px;padding:2px 10px}
+  .meta .prog{margin-left:auto;font-weight:700}
+  .target{font-size:30px;font-weight:700;letter-spacing:1px;margin:8px 0 2px;line-height:1.5;word-break:keep-all;min-height:45px}
+  .target span{border-radius:4px;transition:background .15s}
+  .target .todo{color:#a9b0c4}
+  .target .ok{color:var(--ink)}
+  .target .bad{color:var(--bad);background:#ffe3e4;text-decoration:underline wavy var(--bad)}
+  .target .cur{color:var(--pri);box-shadow:inset 0 -3px 0 var(--pri)}
+  .target .curbad{color:var(--bad);box-shadow:inset 0 -3px 0 var(--bad)}
+  .target .next{color:#a9b0c4;box-shadow:inset 0 -3px 0 var(--pri);animation:blink 1s infinite}
+  .target .sp{display:inline-block;min-width:.45em}
+  @keyframes blink{50%{box-shadow:inset 0 -3px 0 transparent}}
+  .after{color:#b6bccd;font-size:15px;min-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .inrow{display:flex;gap:8px;margin-top:6px}
+  #inp{flex:1;min-width:0;font:inherit;font-size:24px;padding:9px 14px;border:2px solid var(--line);border-radius:12px;outline:none;background:#fbfcff}
+  #inp:focus{border-color:var(--pri);box-shadow:0 0 0 4px rgba(47,107,255,.15)}
+  #inp.err{border-color:var(--bad);animation:shake .25s}
+  @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+  .stat{background:#f6f8fd;border-radius:12px;padding:6px 10px;text-align:center}
+  .stat b{display:block;font-size:24px;line-height:1.2}
+  .stat small{color:var(--sub);font-size:12px}
+  .stat.time b{color:#ff8a00}
+  .kb{user-select:none;-webkit-user-select:none;display:flex;flex-direction:column;gap:5px;background:#eef1f8;border-radius:14px;padding:8px}
+  .kr{display:flex;gap:5px}
+  .k{flex:1;min-width:0;height:44px;border-radius:9px;background:#fff;border:1px solid #d6dbe8;border-bottom:4px solid var(--fc,#ccc);position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;color:var(--ink);transition:transform .06s}
+  .k .s{position:absolute;left:5px;top:2px;font-size:10.5px;color:#9aa1b8;font-weight:600}
+  .k .e{position:absolute;right:5px;bottom:1px;font-size:9.5px;color:#b5bbcc;font-weight:600;text-transform:uppercase}
+  .k.w15{flex:1.6;font-size:13px}
+  .k.space{flex:6;font-size:13px;color:var(--sub)}
+  .k.hi{background:var(--fc);color:#fff;transform:translateY(-2px);box-shadow:0 0 0 3px #fff,0 0 0 6px var(--fc);z-index:2}
+  .k.hi .s,.k.hi .e{color:rgba(255,255,255,.85)}
+  .k.press{transform:translateY(2px);filter:brightness(.92)}
+  .k.bs{flex:1.3;font-size:12px}
+  .k.bs.hi{--fc:var(--bad)}
+  .pad1{flex:.35}.pad2{flex:.7}
+  .side{display:flex;flex-direction:column;gap:12px}
+  .panel{background:#fff;border-radius:18px;box-shadow:0 6px 20px rgba(40,60,120,.08);padding:12px 14px}
+  .panel h3{margin:0 0 6px;font-size:15px}
+  .nextkey{display:flex;align-items:center;gap:12px}
+  .nextkey .big{width:66px;height:66px;border-radius:16px;background:var(--fc,#ccd);color:#fff;font-size:36px;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 4px 0 rgba(0,0,0,.12)}
+  .nextkey .big.sm{font-size:16px}
+  .nextkey .fn{font-weight:800;font-size:16px}
+  .nextkey .fx{color:var(--sub);font-size:12.5px;margin-top:2px}
+  .hands{width:100%;height:auto;display:block;margin-top:6px}
+  .hands rect.f{transition:all .15s}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11.5px;color:var(--sub);margin-top:4px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:3px;vertical-align:-1px}
+  .rec{list-style:none;margin:0;padding:0}
+  .rec li{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px dashed var(--line);font-size:14px}
+  .rec li .r{width:22px;text-align:center;font-weight:900;color:var(--sub)}
+  .rec li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+  .rec li .v{font-weight:900;color:var(--pri)}
+  .rec li .a{font-size:11.5px;color:var(--sub);width:40px;text-align:right}
+  .rec li.sample{opacity:.55}
+  .rec li.sample .nm::after{content:" (예시)";font-weight:500;font-size:11px}
+  .tip{font-size:12.5px;color:var(--sub);line-height:1.55;margin:0}
+  .tip b{color:var(--ink)}
+  .modal{position:fixed;inset:0;background:rgba(25,30,60,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:40}
+  .modal.on{display:flex}
+  .box{background:#fff;border-radius:20px;padding:22px;width:100%;max-width:420px;text-align:center;animation:pop .3s}
+  @keyframes pop{from{transform:scale(.85);opacity:0}}
+  .box h2{margin:0 0 4px}
+  .box .res{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+  .box .res div{background:#f6f8fd;border-radius:12px;padding:8px}
+  .box .res b{display:block;font-size:26px}
+  .box .res small{color:var(--sub);font-size:12px}
+  .box input{font:inherit;font-size:17px;padding:10px 12px;border:2px solid var(--line);border-radius:10px;width:100%;margin-bottom:10px;text-align:center}
+  .btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .b{border:0;font:inherit;font-weight:800;font-size:15px;padding:11px 18px;border-radius:12px;cursor:pointer;background:var(--pri2);color:var(--pri)}
+  .b.pri{background:var(--pri);color:#fff}
+  .toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-weight:700;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:50;max-width:92vw;text-align:center}
+  .toast.on{opacity:1}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:#fff;background:rgba(31,37,64,.6);padding:5px 10px;border-radius:20px;text-decoration:none;z-index:20}
+  #fx{position:fixed;inset:0;pointer-events:none;z-index:45}
+  .burst{position:absolute;font-size:24px;animation:burst 1s ease-out forwards}
+  @keyframes burst{to{transform:translate(var(--dx),var(--dy)) rotate(260deg);opacity:0}}
+
+  @media (max-width:900px){
+    .wrap{grid-template-columns:minmax(0,1fr);padding:0 10px 44px}
+    header{padding:10px 12px;flex-wrap:wrap}
+    header small{display:none}
+    .target{font-size:22px}
+    #inp{font-size:19px}
+    .stat b{font-size:19px}
+    .k{height:38px;font-size:15px;border-radius:7px}
+    .k .e{display:none}
+    .k .s{font-size:9px;left:3px}
+    .kb{padding:5px;gap:4px}.kr{gap:3px}
+    .k.w15,.k.bs{font-size:10px}
+    .tabs{display:grid;grid-template-columns:1fr 1fr}
+    .tabs button{padding:8px 6px;font-size:14px;white-space:nowrap}
+    #guide{display:none}.meta .tag,.meta .prog{white-space:nowrap}
+    .stat small{font-size:11px;white-space:nowrap}.stat{padding:6px 4px}
+    .hbtn{padding:7px 9px;font-size:12.5px}
+    .hands{max-width:260px;margin:6px auto 0}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="또박또박 타자">
+<meta property="og:description" content="다음 키와 손가락 색을 보며 자리→낱말→문장→60초 도전 한글 타자">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/44-typing.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/typing/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">⌨️</div>
+  <div><h1>또박또박 타자</h1><small>다음 키가 반짝! 손가락 색을 따라 한글 두벌식을 익혀요</small></div>
+  <div class="grow"></div>
+  <button class="hbtn" id="mute" title="소리 켜기/끄기">🔊 소리</button>
+  <button class="hbtn" id="restart" title="이 단계 다시 시작">↺ 다시</button>
+</header>
+
+<div class="wrap">
+  <main>
+    <div class="tabs" id="tabs">
+      <button data-m="home"><span class="n">1</span>자리 연습</button>
+      <button data-m="word"><span class="n">2</span>낱말</button>
+      <button data-m="sent" class="on"><span class="n">3</span>짧은 문장</button>
+      <button data-m="chal" class="chal">⏱ 60초 도전</button>
+    </div>
+    <section class="card">
+      <div class="meta"><span class="tag" id="tag">교과 문장</span><span id="guide">문장 끝 마침표까지 치면 다음 줄로 넘어가요</span><span class="prog" id="prog">1 / 10</span></div>
+      <div class="target" id="target"></div>
+      <div class="after" id="after"></div>
+      <div class="inrow">
+        <input id="inp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="여기에 따라 쳐 보세요" aria-label="타자 입력">
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="sCpm">0</b><small>타수 (타/분)</small></div>
+        <div class="stat"><b id="sAcc">100%</b><small>정확도</small></div>
+        <div class="stat"><b id="sErr">0</b><small>오타</small></div>
+        <div class="stat time"><b id="sTime">0:00</b><small id="sTimeL">걸린 시간</small></div>
+      </div>
+      <div class="kb" id="kb"></div>
+    </section>
+  </main>
+
+  <aside class="side">
+    <div class="panel">
+      <h3>지금 누를 키</h3>
+      <div class="nextkey"><div class="big" id="nkBig">ㅁ</div><div><div class="fn" id="nkFinger">왼손 새끼</div><div class="fx" id="nkTip">키보드에서 색이 같은 손가락으로!</div></div></div>
+      <svg class="hands" id="hands" viewBox="0 0 300 110" aria-hidden="true"></svg>
+      <div class="legend"><span><i style="background:var(--f5)"></i>새끼</span><span><i style="background:var(--f4)"></i>약지</span><span><i style="background:var(--f3)"></i>중지</span><span><i style="background:var(--f2)"></i>검지</span><span><i style="background:var(--ft)"></i>엄지</span></div>
+    </div>
+    <div class="panel">
+      <h3>🏆 60초 도전 기록판</h3>
+      <ul class="rec" id="rec"></ul>
+    </div>
+    <div class="panel">
+      <p class="tip"><b>타수</b>는 1분 동안 바르게 친 자모 수예요. ‘닭’은 ㄷ·ㅏ·ㄹ·ㄱ 4타!<br>
+      입력창에 영어가 나오면 <b>한/영</b> 키를 눌러요. 화면 키보드를 눌러도 쳐져요.</p>
+    </div>
+  </aside>
+</div>
+
+<a class="back" href="../">← 전체 데모 보기</a>
+<div class="modal" id="modal"><div class="box" id="box"></div></div>
+<div class="toast" id="toast"></div>
+<div id="fx"></div>
+
+<script>
+/*CORE-START*/
+const CHO='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+const JUNG='ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+const JONG=['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const SPLIT={'ㅘ':'ㅗㅏ','ㅙ':'ㅗㅐ','ㅚ':'ㅗㅣ','ㅝ':'ㅜㅓ','ㅞ':'ㅜㅔ','ㅟ':'ㅜㅣ','ㅢ':'ㅡㅣ','ㄳ':'ㄱㅅ','ㄵ':'ㄴㅈ','ㄶ':'ㄴㅎ','ㄺ':'ㄹㄱ','ㄻ':'ㄹㅁ','ㄼ':'ㄹㅂ','ㄽ':'ㄹㅅ','ㄾ':'ㄹㅌ','ㄿ':'ㄹㅍ','ㅀ':'ㄹㅎ','ㅄ':'ㅂㅅ'};
+const JOIN={}; for(const k in SPLIT) JOIN[SPLIT[k]]=k;
+const isV=j=>JUNG.includes(j);
+const isC=j=>j.length===1&&CHO.includes(j);
+const isHangul=ch=>{const c=ch.charCodeAt(0);return (c>=0xAC00&&c<=0xD7A3)||(c>=0x3131&&c<=0x3163);};
+const splitJ=j=>j?(SPLIT[j]?[...SPLIT[j]]:[j]):[];
+// 글자 하나 → 누르는 자모 키 목록 (두벌식: 겹모음·겹받침은 두 번 누름, 쌍자음은 Shift+한 번)
+function charKeys(ch){
+  const c=ch.charCodeAt(0);
+  if(c>=0xAC00&&c<=0xD7A3){
+    const s=c-0xAC00;
+    return [CHO[Math.floor(s/588)],...splitJ(JUNG[Math.floor((s%588)/28)]),...splitJ(JONG[s%28])];
+  }
+  return splitJ(ch);
+}
+const toKeys=str=>[...str].flatMap(charKeys);
+const keyCount=str=>toKeys(str).length;
+// 자모 키 목록 → 한글 문자열 (두벌식 오토마타)
+function compose(keys){
+  let out='',cho='',jung='',jong='';
+  const flush=()=>{
+    if(cho&&jung) out+=String.fromCharCode(0xAC00+(CHO.indexOf(cho)*21+JUNG.indexOf(jung))*28+JONG.indexOf(jong));
+    else out+=cho+jung+jong;
+    cho=jung=jong='';
+  };
+  for(const k of keys){
+    if(isV(k)){
+      if(jong){let keep='',mv=jong;if(SPLIT[jong]){keep=SPLIT[jong][0];mv=SPLIT[jong][1];}jong=keep;flush();cho=mv;jung=k;}
+      else if(jung){const c=JOIN[jung+k];if(c&&isV(c))jung=c;else{flush();jung=k;}}
+      else jung=k;
+    }else if(isC(k)){
+      if(cho&&jung&&!jong){if(JONG.includes(k))jong=k;else{flush();cho=k;}}
+      else if(cho&&jung&&jong){const c=JOIN[jong+k];if(c&&JONG.includes(c))jong=c;else{flush();cho=k;}}
+      else{flush();cho=k;}
+    }else{flush();out+=k;}
+  }
+  flush();return out;
+}
+// 목표 문장과 입력값 비교. final=false면 마지막 한글 글자는 조합 중일 수 있어 '판정 보류'
+function judge(target,value,final){
+  const n=value.length,st=[];let okKeys=0,okChars=0,wrong=0,done=0;
+  const tent=!final&&n>0&&isHangul(value[n-1]);
+  const committed=tent?n-1:n;
+  for(let i=0;i<target.length;i++){
+    if(i<committed){done++;
+      if(value[i]===target[i]){st.push('ok');okKeys+=charKeys(target[i]).length;okChars++;}
+      else{st.push('bad');wrong++;}
+    }else if(i===committed&&tent){
+      const tk=toKeys(value.slice(i)),tt=toKeys(target.slice(i));
+      st.push(tk.every((k,j)=>k===tt[j])?'cur':'curbad');
+    }else if(final){st.push('bad');wrong++;done++;}
+    else st.push(i===committed?'next':'todo');
+  }
+  if(committed>target.length){wrong+=committed-target.length;done+=committed-target.length;}
+  // 다음에 누를 키
+  const base=committed;
+  const tk=toKeys(value.slice(base)),tt=toKeys(target.slice(base));
+  const prefixOk=tk.every((k,j)=>k===tt[j]);
+  const nextKey=!prefixOk?'BS':(tt[tk.length]||'END');
+  return {st,okKeys,okChars,wrong,done,nextKey};
+}
+const cpm=(keys,ms)=>ms>0?Math.round(keys*60000/ms):0;
+const accuracy=(done,wrong)=>done>0?Math.max(0,Math.round(100*(done-wrong)/done)):100;
+/*CORE-END*/
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- 자료 ---------- */
+const HOME=[
+  {tag:'기본자리',text:'아나 나라 마라 어머 아이 이리'},
+  {tag:'기본자리',text:'하나 머리 허리 나이 라마 하하'},
+  {tag:'윗줄',text:'고기 바다 저기 소리 거리 대기'},
+  {tag:'윗줄',text:'여기 새집 바지 사자 제비 세계'},
+  {tag:'아랫줄',text:'크기 토끼 피리 추석 우유 무지개'},
+  {tag:'아랫줄',text:'쿠키 튜브 치즈 포도 휴지 그네'},
+];
+const WORDS='학교 선생님 친구 교실 연필 공책 지우개 운동장 도서관 무지개 나비 사과 바다 하늘 구름 별빛 다람쥐 고양이 강아지 해바라기 우주 과학 수학 음악 미술 체육 국어 사회 급식 방학 생일 가족 행복 감사 약속 노래 그림 기차 단풍 눈사람 받아쓰기 칠판 실험 지구본 꽃밭 독서 줄넘기'.split(' ');
+const SENTS=[
+'물은 높은 곳에서 낮은 곳으로 흐릅니다.',
+'식물은 햇빛을 받아 양분을 만듭니다.',
+'지구는 하루에 한 바퀴씩 스스로 돕니다.',
+'달은 지구 둘레를 돌고 있습니다.',
+'우리나라의 수도는 서울입니다.',
+'세종대왕은 훈민정음을 만들었습니다.',
+'삼각형의 세 각을 더하면 백팔십 도입니다.',
+'물이 얼면 부피가 늘어납니다.',
+'곤충의 다리는 모두 여섯 개입니다.',
+'바른 자세로 앉아 글씨를 씁니다.',
+'친구의 말을 끝까지 귀 기울여 듣습니다.',
+'독도는 우리나라의 아름다운 섬입니다.',
+'무지개는 일곱 가지 색으로 보입니다.',
+'태양계에서 가장 큰 행성은 목성입니다.',
+'한글은 자음과 모음으로 이루어져 있습니다.',
+'공기는 눈에 보이지 않지만 공간을 차지합니다.',
+'이순신 장군은 거북선으로 나라를 지켰습니다.',
+'자석은 같은 극끼리 서로 밀어냅니다.',
+'소리는 물체가 떨릴 때 생깁니다.',
+'횡단보도는 좌우를 살피고 건넙니다.',
+'손을 깨끗이 씻으면 감기를 예방할 수 있습니다.',
+'정사각형은 네 변의 길이가 모두 같습니다.',
+'씨앗이 싹 트려면 물과 알맞은 온도가 필요합니다.',
+'김치는 조상의 지혜가 담긴 발효 음식입니다.',
+'지도에서 위쪽은 보통 북쪽을 나타냅니다.',
+'동물은 사는 곳에 알맞은 생김새를 가집니다.',
+'책을 읽으면 생각하는 힘이 자랍니다.',
+'우리 몸의 뼈는 몸을 지탱하고 보호합니다.',
+'고마운 마음은 말로 표현하면 더 좋습니다.',
+'분수는 전체를 똑같이 나눈 것 중의 부분입니다.'
+];
+const MODES={
+  home:{tag:'자리 연습',guide:'낱말 사이 띄어쓰기, 줄 끝에서 Enter 또는 스페이스'},
+  word:{tag:'낱말',guide:'줄 끝에서 Enter 또는 스페이스를 누르면 다음 줄'},
+  sent:{tag:'교과 문장',guide:'마침표까지 치면 다음 줄로 넘어가요'},
+  chal:{tag:'60초 도전',guide:'첫 글자를 치는 순간 시계가 돌아가요!'}
+};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+/* ---------- 키보드 ---------- */
+const KJ={q:['ㅂ','ㅃ'],w:['ㅈ','ㅉ'],e:['ㄷ','ㄸ'],r:['ㄱ','ㄲ'],t:['ㅅ','ㅆ'],y:['ㅛ'],u:['ㅕ'],i:['ㅑ'],o:['ㅐ','ㅒ'],p:['ㅔ','ㅖ'],
+  a:['ㅁ'],s:['ㄴ'],d:['ㅇ'],f:['ㄹ'],g:['ㅎ'],h:['ㅗ'],j:['ㅓ'],k:['ㅏ'],l:['ㅣ'],semi:[';'],
+  z:['ㅋ'],x:['ㅌ'],c:['ㅊ'],v:['ㅍ'],b:['ㅠ'],n:['ㅜ'],m:['ㅡ'],comma:[','],period:['.'],slash:['/','?']};
+const ENG={semi:';',comma:',',period:'.',slash:'/'};
+const FING={q:'L5',a:'L5',z:'L5',shiftL:'L5',w:'L4',s:'L4',x:'L4',e:'L3',d:'L3',c:'L3',r:'L2',t:'L2',f:'L2',g:'L2',v:'L2',b:'L2',
+  y:'R2',u:'R2',h:'R2',j:'R2',n:'R2',m:'R2',i:'R3',k:'R3',comma:'R3',o:'R4',l:'R4',period:'R4',p:'R5',semi:'R5',slash:'R5',shiftR:'R5',bs:'R5',space:'T'};
+const FCOL={5:'var(--f5)',4:'var(--f4)',3:'var(--f3)',2:'var(--f2)',T:'var(--ft)'};
+const FNAME={5:'새끼',4:'약지',3:'중지',2:'검지',T:'엄지'};
+const fcol=f=>FCOL[f==='T'?'T':f[1]];
+const fname=f=>f==='T'?'양손 엄지':(f[0]==='L'?'왼손 ':'오른손 ')+FNAME[f[1]];
+const J2K={' ':{k:'space'}};
+for(const k in KJ){J2K[KJ[k][0]]={k,shift:false};if(KJ[k][1])J2K[KJ[k][1]]={k,shift:true};}
+const ROWS=[
+  ['q','w','e','r','t','y','u','i','o','p','bs'],
+  ['pad1','a','s','d','f','g','h','j','k','l','semi','pad1'],
+  ['shiftL','z','x','c','v','b','n','m','comma','period','slash','shiftR'],
+  ['pad2','space','pad2']];
+function buildKb(){
+  $('#kb').innerHTML=ROWS.map(r=>'<div class="kr">'+r.map(k=>{
+    if(k.startsWith('pad'))return `<div class="${k}"></div>`;
+    const st=`style="--fc:${fcol(FING[k])}"`;
+    if(k==='space')return `<div class="k space" id="k-space" data-k=" " ${st}>스페이스</div>`;
+    if(k==='bs')return `<div class="k bs" id="k-bs" data-k="BS" ${st}>⌫ 지우기</div>`;
+    if(k.startsWith('shift'))return `<div class="k w15" id="k-${k}" data-k="SHIFT" ${st}>⇧ Shift</div>`;
+    const j=KJ[k];
+    return `<div class="k" id="k-${k}" data-k="${esc(j[0])}" ${st}>${esc(j[0])}${j[1]?`<span class="s">${esc(j[1])}</span>`:''}<span class="e">${ENG[k]||k}</span></div>`;
+  }).join('')+'</div>').join('');
+}
+function buildHands(){
+  // 왼손: 새끼~검지, 엄지 / 오른손: 엄지, 검지~새끼
+  const F=[['L5',14,38,40],['L4',38,24,52],['L3',62,18,58],['L2',86,26,52],['R2',192,26,52],['R3',216,18,58],['R4',240,24,52],['R5',264,38,40]];
+  let s='<rect x="12" y="66" width="104" height="40" rx="18" fill="#f1ece4"/><rect x="184" y="66" width="104" height="40" rx="18" fill="#f1ece4"/>';
+  for(const [f,x,y,h] of F) s+=`<rect class="f" data-f="${f}" x="${x}" y="${y}" width="20" height="${h}" rx="10" fill="${fcol(f)}" opacity=".45"/>`;
+  s+=`<rect class="f" data-f="T" x="112" y="62" width="44" height="18" rx="9" fill="var(--ft)" opacity=".45" transform="rotate(-25 112 70)"/>`;
+  s+=`<rect class="f" data-f="T" x="144" y="44" width="44" height="18" rx="9" fill="var(--ft)" opacity=".45" transform="rotate(25 188 70)"/>`;
+  s+='<text x="64" y="94" text-anchor="middle" font-size="12" fill="#9b8f7e">왼손</text><text x="236" y="94" text-anchor="middle" font-size="12" fill="#9b8f7e">오른손</text>';
+  $('#hands').innerHTML=s;
+}
+
+/* ---------- 소리 ---------- */
+let muted=localStorage.getItem('ttak-mute')==='1',AC=null;
+function tone(f,d,type='sine',v=.06,when=0){
+  if(muted)return;
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const t=AC.currentTime+when,o=AC.createOscillator(),g=AC.createGain();
+    o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.02);}catch(e){}
+}
+const sTick=()=>tone(1500+Math.random()*300,.03,'triangle',.035);
+const sErr=()=>tone(150,.16,'square',.05);
+const sLine=()=>{tone(880,.12,'sine',.06);tone(1320,.18,'sine',.06,.09);};
+const sDone=()=>[523,659,784,1047].forEach((f,i)=>tone(f,.25,'triangle',.07,i*.11));
+function setMute(){$('#mute').textContent=muted?'🔇 소리 꺼짐':'🔊 소리';}
+
+/* ---------- 상태 ---------- */
+let mode='sent',lines=[],li=0,startAt=0,endAt=0,timer=null,locked=false,composing=false;
+let acc={keys:0,done:0,wrong:0},lastWrong=0,cur=null;
+const CHAL_MS=60000;
+
+function makeLines(m){
+  if(m==='home')return HOME.map(x=>({...x}));
+  if(m==='word'){const w=shuffle(WORDS);const out=[];for(let i=0;i<8;i++)out.push({tag:'낱말',text:w.slice(i*4,i*4+4).join(' ')});return out;}
+  if(m==='sent')return shuffle(SENTS).slice(0,10).map(t=>({tag:'교과 문장',text:t}));
+  return shuffle(SENTS).map(t=>({tag:'60초 도전',text:t}));
+}
+function setMode(m){
+  mode=m;clearInterval(timer);timer=null;locked=false;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  lines=makeLines(m);li=0;startAt=0;endAt=0;acc={keys:0,done:0,wrong:0};lastWrong=0;
+  $('#guide').textContent=MODES[m].guide;
+  $('#sTimeL').textContent=m==='chal'?'남은 시간':'걸린 시간';
+  const inp=$('#inp');inp.value='';inp.disabled=false;
+  render();updateStats();
+  if(matchMedia('(min-width:901px)').matches)inp.focus({preventScroll:true});
+}
+const target=()=>lines[li].text;
+
+function render(){
+  const t=target(),v=$('#inp').value;
+  cur=judge(t,v,false);
+  $('#tag').textContent=lines[li].tag;
+  $('#prog').textContent=mode==='chal'?`${li+1}번째 문장`:`${li+1} / ${lines.length}`;
+  $('#target').innerHTML=[...t].map((ch,i)=>`<span class="${cur.st[i]}${ch===' '?' sp':''}">${ch===' '?'&nbsp;':esc(ch)}</span>`).join('');
+  $('#after').textContent=lines[li+1]?'다음: '+lines[li+1].text:'';
+  if(cur.wrong>lastWrong){sErr();const i=$('#inp');i.classList.remove('err');void i.offsetWidth;i.classList.add('err');}
+  lastWrong=cur.wrong;
+  showNext(cur.nextKey);
+  updateStats();
+}
+function showNext(nk){
+  document.querySelectorAll('.k.hi').forEach(k=>k.classList.remove('hi'));
+  document.querySelectorAll('#hands .f').forEach(f=>{f.setAttribute('opacity','.45');f.removeAttribute('stroke');});
+  let big=nk,f=null,tip='';
+  if(nk==='BS'){f='R5';big='⌫';tip='틀렸어요! 지우고 다시 쳐 볼까요?';$('#k-bs').classList.add('hi');}
+  else if(nk==='END'){big='↵';f='R5';tip=mode==='sent'||mode==='chal'?'다 쳤어요! Enter':'Enter 또는 스페이스로 다음 줄';}
+  else{const m=J2K[nk];
+    if(m){f=FING[m.k];$('#k-'+m.k).classList.add('hi');
+      if(m.shift){const sk=f[0]==='L'?'shiftR':'shiftL';$('#k-'+sk).classList.add('hi');tip=`반대쪽 손 새끼로 Shift를 누른 채로!`;}
+      else tip=nk===' '?'띄어쓰기는 엄지로 톡':'키보드에서 같은 색 손가락으로!';
+    }else tip='';}
+  if(nk===' ')big='␣';
+  const el=$('#nkBig');el.textContent=big;el.classList.toggle('sm',big.length>1);
+  el.style.setProperty('--fc',f?fcol(f):'#ccd');
+  $('#nkFinger').textContent=f?fname(f):'-';
+  $('#nkTip').textContent=tip;
+  if(f)document.querySelectorAll(`#hands .f[data-f="${f}"]`).forEach(x=>{x.setAttribute('opacity','1');x.setAttribute('stroke','#1f2540');x.setAttribute('stroke-width','2');});
+}
+function elapsed(){if(!startAt)return 0;return (endAt||performance.now())-startAt;}
+function updateStats(){
+  const ms=elapsed();
+  const keys=acc.keys+(cur?cur.okKeys:0),done=acc.done+(cur?cur.done:0),wrong=acc.wrong+(cur?cur.wrong:0);
+  $('#sCpm').textContent=ms>2500?cpm(keys,ms):(startAt?'…':0);
+  $('#sAcc').textContent=accuracy(done,wrong)+'%';
+  $('#sErr').textContent=wrong;
+  let show=ms;if(mode==='chal')show=startAt?Math.max(0,CHAL_MS-ms):CHAL_MS;
+  const s=Math.ceil(show/1000-(mode==='chal'?0:.999));
+  $('#sTime').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+function startClock(){
+  if(startAt)return;startAt=performance.now();
+  timer=setInterval(()=>{updateStats();if(mode==='chal'&&elapsed()>=CHAL_MS)finishChal();},200);
+}
+function submitLine(force){
+  if(locked)return;
+  const inp=$('#inp');const v=inp.value.replace(/\s+$/,'');
+  if(!v)return;
+  const t=target();
+  if(!force&&v.length<t.length){toast('아직 남았어요! 끝까지 쳐 볼까요?');return;}
+  const j=judge(t,v,true);
+  acc.keys+=j.okKeys+(li<lines.length-1||mode==='chal'?1:0);acc.done+=j.done;acc.wrong+=j.wrong;
+  sLine();inp.value='';lastWrong=0;cur=null;
+  if(li<lines.length-1){li++;render();}
+  else finishStage();
+}
+function finishStage(){
+  endAt=performance.now();clearInterval(timer);locked=true;$('#inp').disabled=true;
+  const ms=elapsed();sDone();confetti();
+  const next={home:'word',word:'sent',sent:'chal'}[mode];
+  const nextName={word:'낱말',sent:'짧은 문장',chal:'60초 도전'}[next];
+  modal(`<h2>🎉 ${MODES[mode].tag} 완료!</h2><p style="color:var(--sub);margin:0">손가락이 점점 빨라지고 있어요</p>
+    <div class="res"><div><b>${cpm(acc.keys,ms)}</b><small>타수</small></div><div><b>${accuracy(acc.done,acc.wrong)}%</b><small>정확도</small></div><div><b>${acc.wrong}</b><small>오타</small></div></div>
+    <div class="btns"><button class="b" data-a="again">↺ 한 번 더</button><button class="b pri" data-a="go" data-m="${next}">다음: ${nextName} →</button></div>`);
+}
+function finishChal(){
+  if(locked)return;
+  // 지금 줄에서 이미 확정된 글자까지 포함
+  if(cur){acc.keys+=cur.okKeys;acc.done+=cur.done;acc.wrong+=cur.wrong;}
+  endAt=startAt+CHAL_MS;clearInterval(timer);locked=true;const inp=$('#inp');inp.blur();inp.disabled=true;
+  updateStatsFinal();sDone();confetti();
+  const score=cpm(acc.keys,CHAL_MS),a=accuracy(acc.done,acc.wrong);
+  modal(`<h2>⏱ 60초 끝!</h2><p style="color:var(--sub);margin:0">${score>=200?'우와, 타자 고수!':score>=100?'멋져요! 손이 척척':'좋은 출발! 연습하면 쑥쑥 늘어요'}</p>
+    <div class="res"><div><b>${score}</b><small>타수</small></div><div><b>${a}%</b><small>정확도</small></div><div><b>${acc.wrong}</b><small>오타</small></div></div>
+    <input id="nm" maxlength="10" placeholder="이름(별명)을 적어 주세요">
+    <div class="btns"><button class="b" data-a="again">↺ 다시 도전</button><button class="b pri" data-a="save" data-s="${score}" data-acc="${a}">🏆 기록판에 올리기</button></div>`);
+  setTimeout(()=>$('#nm')&&$('#nm').focus(),50);
+}
+function updateStatsFinal(){const c=cur;cur=null;updateStats();cur=c;}
+
+/* ---------- 기록판 ---------- */
+const RKEY='ttak-typing-records-v1';
+const loadRec=()=>{try{return JSON.parse(localStorage.getItem(RKEY))||[];}catch(e){return [];}};
+const SAMPLE=[{name:'하늘반 별이',cpm:186,acc:97},{name:'바다',cpm:142,acc:95},{name:'손가락요정',cpm:118,acc:99},{name:'콩이',cpm:83,acc:92}];
+function renderRec(hl){
+  const r=loadRec();const list=r.length?r:SAMPLE;
+  $('#rec').innerHTML=list.slice(0,7).map((x,i)=>`<li class="${r.length?'':'sample'}"${hl&&hl===x.t?' style="background:#fff6d8"':''}><span class="r">${['🥇','🥈','🥉'][i]||i+1}</span><span class="nm">${esc(x.name)}</span><span class="v">${x.cpm}타</span><span class="a">${x.acc}%</span></li>`).join('');
+}
+function saveRec(name,s,a){
+  const r=loadRec();const t=Date.now();r.push({name:name||'이름 없음',cpm:+s,acc:+a,t});
+  r.sort((x,y)=>y.cpm-x.cpm||y.acc-x.acc);localStorage.setItem(RKEY,JSON.stringify(r.slice(0,20)));renderRec(t);
+}
+
+/* ---------- UI 도우미 ---------- */
+function modal(html){$('#box').innerHTML=html;$('#modal').classList.add('on');}
+function closeModal(){$('#modal').classList.remove('on');}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2200);}
+function confetti(){
+  const fx=$('#fx'),em=['🎉','⭐','✨','🎊','💫'];
+  for(let i=0;i<24;i++){const s=document.createElement('span');s.className='burst';s.textContent=em[i%em.length];
+    s.style.left=innerWidth/2+'px';s.style.top=innerHeight/2.4+'px';
+    const a=Math.random()*Math.PI*2,d=120+Math.random()*260;s.style.setProperty('--dx',Math.cos(a)*d+'px');s.style.setProperty('--dy',Math.sin(a)*d+'px');
+    fx.appendChild(s);setTimeout(()=>s.remove(),1100);}
+}
+
+/* ---------- 입력 처리 ---------- */
+const inp=$('#inp');
+inp.addEventListener('compositionstart',()=>{composing=true;});
+inp.addEventListener('compositionend',()=>{composing=false;setTimeout(onInput,0);});
+inp.addEventListener('input',onInput);
+function onInput(){
+  if(locked)return;
+  // 한/영 키가 영문 상태일 때: 두벌식 자리로 바꿔 한글로 조합 (IME 조합 중에는 손대지 않음)
+  if(!composing&&/[a-zA-Z]/.test(inp.value)){
+    const keys=[...inp.value].flatMap(ch=>{
+      if(/[a-zA-Z]/.test(ch)){const lo=ch.toLowerCase(),j=KJ[lo];if(!j)return [ch];return [ch!==lo&&j[1]?j[1]:j[0]];}
+      return charKeys(ch);});
+    inp.value=compose(keys);toast('영어로 쳐지고 있어요 → 한글로 바꿔 줬어요. 한/영 키를 눌러 보세요!');
+  }
+  if(inp.value)startClock();
+  render();
+  const v=inp.value,t=target();
+  if(!composing){
+    if(/\s$/.test(v)&&v.trimEnd().length>=t.length)submitLine();
+    else if(v.length>=t.length&&!isHangul(v[v.length-1])&&v[v.length-1]===t[t.length-1])submitLine();
+  }
+}
+inp.addEventListener('keydown',e=>{
+  flashCode(e.code);
+  if(!e.repeat&&e.key!=='Enter')sTick();
+  if(e.key==='Enter'){e.preventDefault();setTimeout(()=>submitLine(),30);}
+});
+inp.addEventListener('keyup',e=>{if(e.key==='Enter'&&inp.value.trimEnd().length>=target().length)submitLine();});
+function flashCode(code){
+  let k=null;
+  if(/^Key[A-Z]$/.test(code))k=code[3].toLowerCase();
+  else k={Semicolon:'semi',Comma:'comma',Period:'period',Slash:'slash',ShiftLeft:'shiftL',ShiftRight:'shiftR',Space:'space',Backspace:'bs'}[code];
+  const el=k&&document.getElementById('k-'+k);
+  if(el){el.classList.add('press');setTimeout(()=>el.classList.remove('press'),120);}
+}
+// 화면 키보드 클릭(터치) 입력
+let shiftOn=false;
+$('#kb').addEventListener('pointerdown',e=>{
+  const k=e.target.closest('.k');if(!k||locked)return;e.preventDefault();
+  k.classList.add('press');setTimeout(()=>k.classList.remove('press'),120);sTick();
+  const d=k.dataset.k;
+  if(d==='SHIFT'){shiftOn=!shiftOn;document.querySelectorAll('.k.w15').forEach(x=>x.style.outline=shiftOn?'3px solid var(--pri)':'');return;}
+  let v=inp.value;
+  if(d==='BS'){const ks=toKeys(v);ks.pop();v=compose(ks);}
+  else{let ch=d;if(shiftOn){const key=k.id.slice(2);if(KJ[key]&&KJ[key][1])ch=KJ[key][1];shiftOn=false;document.querySelectorAll('.k.w15').forEach(x=>x.style.outline='');}
+    v=compose([...toKeys(v),ch]);}
+  inp.value=v;onInput();
+});
+
+/* ---------- 버튼 ---------- */
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.m);});
+$('#restart').onclick=()=>setMode(mode);
+$('#mute').onclick=()=>{muted=!muted;localStorage.setItem('ttak-mute',muted?'1':'0');setMute();};
+$('#modal').addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');
+  if(!b){if(e.target.id==='modal'){closeModal();if(locked)setMode(mode);}return;}
+  if(b.dataset.a==='again'){closeModal();setMode(mode);}
+  if(b.dataset.a==='go'){closeModal();setMode(b.dataset.m);}
+  if(b.dataset.a==='save'){saveRec(($('#nm').value||'').trim(),b.dataset.s,b.dataset.acc);toast('기록판에 올렸어요! 🏆');closeModal();setMode('chal');}
+});
+$('#modal').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='nm'&&!e.isComposing){e.preventDefault();$('[data-a="save"]').click();}});
+
+buildKb();buildHands();setMute();renderRec();setMode('sent');
+</script>
+</body>
+</html>

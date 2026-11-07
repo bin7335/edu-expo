@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>한번 서식 - 학교운영위원회 서식 5종 자동 작성</title>
+<meta name="description" content="학교명·회차·일시·장소·안건·위원 명단을 한 번만 입력하면 개최 공고, 학부모 방청 안내, 위원 출석부, 안건처리상황표, 회의록 틀 5종을 A4로 만들어 인쇄·PDF 저장. 입력 내용은 내 브라우저에만 저장됩니다.">
+<style>
+  :root{
+    --bg:#f3f1f8; --panel:#fff; --ink:#232032; --sub:#686378; --line:#e1dcec;
+    --brand:#5b3fb5; --brand2:#8a6ae0; --soft:#efeafc; --ok:#1f8a5b; --warn:#c2410c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.9}
+  .grow{flex:1}
+  .lock{display:inline-flex;align-items:center;gap:6px;background:#fff;color:#14532d;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;box-shadow:0 2px 0 #0002;white-space:nowrap}
+  .btn{border-radius:10px;padding:8px 13px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn:hover{filter:brightness(.96)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.small{font-size:12.5px;padding:6px 10px}
+  main{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:14px 20px 50px;max-width:1400px;margin:0 auto}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .panel h2{font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:6px}
+  .form{display:flex;flex-direction:column;gap:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--sub)}
+  input,select,textarea{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+  textarea{resize:vertical;line-height:1.5;font-size:13px}
+  code{font-family:inherit;background:var(--soft);color:var(--brand);padding:0 4px;border-radius:4px;margin:0 2px}
+  .hint{font-size:11.5px;color:var(--sub);line-height:1.45}
+  .count{font-size:12px;color:var(--brand);font-weight:700;margin-left:auto}
+  .saved{font-size:11.5px;color:var(--ok);font-weight:600}
+  .stage{min-width:0;display:flex;flex-direction:column;gap:10px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .tab{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;cursor:pointer;color:var(--sub)}
+  .tab b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--soft);color:var(--brand);font-size:11px;margin-right:4px}
+  .tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .tab.on b{background:#fff}
+  .acts{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .viewer{background:#d9d4e6;border-radius:14px;padding:16px;overflow:hidden}
+  .zoomer{margin:0 auto}
+  /* A4 서식 */
+  .sheet{width:210mm;min-height:297mm;background:#fff;color:#111;padding:18mm 18mm 16mm;margin:0 auto 16px;box-shadow:0 4px 16px rgba(40,20,80,.18);font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;font-size:11pt;line-height:1.6;display:none;position:relative}
+  .sheet.on{display:block}
+  .sheet h3{text-align:center;font-size:20pt;margin:2mm 0 8mm;letter-spacing:2px}
+  .sheet h4{font-size:12pt;margin:6mm 0 2mm}
+  .sheet .lead{text-indent:1em;margin:0 0 4mm}
+  .sheet ol,.sheet ul{margin:1mm 0 3mm;padding-left:6mm}
+  .sheet table{width:100%;border-collapse:collapse;margin:2mm 0 4mm}
+  .sheet th,.sheet td{border:1px solid #333;padding:2.2mm 2mm;vertical-align:middle;font-size:10.5pt}
+  .sheet th{background:#f1eff6;font-weight:700;white-space:nowrap}
+  .sheet td.c{text-align:center}
+  .sheet .kv th{width:28mm}
+  .sheet .date{text-align:center;margin:10mm 0 4mm;font-size:12pt}
+  .sheet .sign{text-align:center;font-size:15pt;font-weight:800;letter-spacing:3px;margin-top:6mm}
+  .sheet .sign small{font-size:10pt;font-weight:400;letter-spacing:0;color:#555}
+  .sheet .item{display:flex;gap:3mm;margin:1.5mm 0}
+  .sheet .item b{min-width:16mm}
+  .sheet .cut{border-top:1.5px dashed #555;margin:8mm 0 4mm;text-align:center;font-size:9pt;color:#555;line-height:0}
+  .sheet .cut span{background:#fff;padding:0 3mm}
+  .sheet .chk{display:inline-block;width:3.2mm;height:3.2mm;border:1px solid #333;vertical-align:-.4mm;margin:0 1mm 0 2mm}
+  .sheet .line{border-bottom:1px solid #999;height:8mm}
+  .sheet .box{border:1px solid #333;min-height:18mm;padding:2mm 3mm;margin:1mm 0 3mm}
+  .sheet .stamp{display:inline-block;border:1px solid #333;width:18mm;height:10mm;vertical-align:middle;margin-left:2mm}
+  .sheet .doc-no{position:absolute;top:10mm;left:18mm;font-size:9pt;color:#666}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.9);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:30}
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;padding:10px}
+    .stage{order:-1}
+    header{padding:10px 12px}
+    header p{display:none}
+    header h1{font-size:19px}
+    .lock{font-size:11.5px;padding:5px 9px}
+    .viewer{padding:8px}
+    .tab{font-size:12.5px;padding:6px 10px}
+    .acts{margin-left:0}
+  }
+  @media print{
+    @page{size:A4;margin:14mm 16mm 14mm}
+    body{background:#fff}
+    header,.side,.tabs,.back,.no-print{display:none!important}
+    main{display:block;padding:0;max-width:none}
+    .viewer{background:none;padding:0;border-radius:0}
+    .zoomer{zoom:1!important;width:auto!important}
+    .sheet{box-shadow:none;margin:0;min-height:0;width:auto;padding:0;page-break-after:always;break-after:page}
+    .sheet .doc-no{position:static;margin-bottom:3mm}
+    .sheet .blk,.sheet table{break-inside:avoid}
+    body.print-all .sheet{display:block}
+    .sheet:last-child{page-break-after:auto;break-after:auto}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="한번 서식">
+<meta property="og:description" content="학운위 정보 한 번 입력으로 공고·방청안내·출석부·처리표·회의록 5종 인쇄">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/31-committee-forms.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/committee-forms/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🗂️</div>
+  <div>
+    <h1>한번 서식 <span style="font-size:14px;font-weight:600;opacity:.9">· 학교운영위원회</span></h1>
+    <p>한 번 입력하면 공고문부터 회의록 틀까지 5종이 한꺼번에</p>
+  </div>
+  <div class="grow"></div>
+  <span class="lock" title="입력 내용은 이 브라우저(localStorage)에만 저장됩니다">🔒 내 PC에서만 처리 · 외부 전송 없음</span>
+</header>
+
+<main>
+  <section class="side">
+    <div class="panel form" id="form">
+      <h2>✏️ 한 번만 입력 <span class="saved" id="saved"></span></h2>
+      <label class="f">학교명<input id="school"></label>
+      <div class="grid2">
+        <label class="f">회차<input id="round" type="number" min="1" max="99"></label>
+        <label class="f">구분<select id="kind"><option>정기회</option><option>임시회</option></select></label>
+      </div>
+      <div class="grid2">
+        <label class="f">회의 날짜<input id="date" type="date"></label>
+        <label class="f">시작 시각<input id="time" type="time"></label>
+      </div>
+      <div class="grid2">
+        <label class="f">장소<input id="place"></label>
+        <label class="f">공고일<input id="notice" type="date"></label>
+      </div>
+      <label class="f"><span style="display:flex">안건 목록 (한 줄에 하나, <code>안건명 | 제안자</code>)<span class="count" id="agCount"></span></span>
+        <textarea id="agenda" rows="5"></textarea></label>
+      <label class="f"><span style="display:flex">위원 명단 (<code>이름 | 구분 | 직위</code>)<span class="count" id="memCount"></span></span>
+        <textarea id="members" rows="7"></textarea></label>
+      <div class="grid2">
+        <label class="f">간사(담당 교사)<input id="secretary"></label>
+        <label class="f">방청 신청 마감<input id="deadline" type="date"></label>
+      </div>
+      <div class="hint">입력하는 즉시 오른쪽 서식 5종에 반영되고, 이 브라우저에만 자동 저장돼요. 예시 학교명·주소·전화 자료: 나이스 교육정보 개방 포털(2026-11-07 기준), 경북 안계초등학교 · 위원 이름은 모두 가상입니다.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn small" type="button" id="sampleBtn">↺ 예시로 되돌리기</button>
+        <button class="btn small" type="button" id="blankBtn">🧽 새로 쓰기</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage">
+    <div class="tabs" id="tabs" role="tablist">
+      <button class="tab on" data-t="0" role="tab"><b>1</b>개최 공고</button>
+      <button class="tab" data-t="1" role="tab"><b>2</b>방청 안내</button>
+      <button class="tab" data-t="2" role="tab"><b>3</b>위원 출석부</button>
+      <button class="tab" data-t="3" role="tab"><b>4</b>안건처리상황표</button>
+      <button class="tab" data-t="4" role="tab"><b>5</b>회의록 틀</button>
+      <div class="acts">
+        <button class="btn primary small" type="button" id="printOne">🖨 이 서식 인쇄</button>
+        <button class="btn small" type="button" id="printAll">🖨 5종 모두 (PDF 저장)</button>
+      </div>
+    </div>
+    <div class="viewer" id="viewer"><div class="zoomer" id="zoomer"></div></div>
+  </section>
+</main>
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+(function(){
+  var KEY = 'edu-expo.committee-forms.v1';
+  var FIELDS = ['school','round','kind','date','time','place','notice','agenda','members','secretary','deadline'];
+  var SAMPLE = {
+    school:'안계초등학교', round:'7', kind:'정기회', date:'2026-11-18', time:'15:30', place:'본관 2층 회의실', notice:'2026-11-11',
+    agenda:'2027학년도 학교교육과정 운영 계획 심의 | 학교장\n2026학년도 2학기 현장체험학습 결과 보고 | 학교장\n방과후학교 겨울방학 프로그램 운영 심의 | 학교장\n학교 급식 식재료 선정 기준 개정 심의 | 학교장\n졸업 앨범 선정 및 구입 심의 | 학부모위원',
+    members:'한빛나 | 학부모위원 | 위원장\n오세진 | 지역위원 | 부위원장\n김햇살 | 교원위원 | 당연직(교장)\n박도담 | 교원위원 | 위원\n이누리 | 교원위원 | 위원\n최가온 | 학부모위원 | 위원\n정다솜 | 학부모위원 | 위원\n윤마루 | 학부모위원 | 위원\n장하람 | 지역위원 | 위원',
+    secretary:'서온유', deadline:'2026-11-16'
+  };
+  // 학교 대표 연락처: 나이스 교육정보 개방 포털 공개 정보(2026-11-07 기준, 경북 안계초). 위원 이름은 가상
+  var SCHOOL_INFO = {'안계초등학교': {addr:'경상북도 의성군 안계면 안계길 68', tel:'054-861-3391'}};
+  var $ = function(id){ return document.getElementById(id); };
+  var cur = 0;
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  var WD = ['일','월','화','수','목','금','토'];
+  function kdate(iso, withDay){
+    if (!iso) return '____년 __월 __일';
+    var d = new Date(iso + 'T00:00:00'); if (isNaN(d)) return iso;
+    return d.getFullYear() + '. ' + (d.getMonth()+1) + '. ' + d.getDate() + '.' + (withDay === false ? '' : '(' + WD[d.getDay()] + ')');
+  }
+  function kdateLong(iso){
+    if (!iso) return '____년 __월 __일';
+    var d = new Date(iso + 'T00:00:00'); if (isNaN(d)) return iso;
+    return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월 ' + d.getDate() + '일';
+  }
+  function ktime(t){
+    if (!t) return '__:__';
+    var p = t.split(':'), h = +p[0], m = +p[1];
+    return (h < 12 ? '오전 ' : '오후 ') + (h % 12 === 0 ? 12 : h % 12) + '시' + (m ? ' ' + m + '분' : '');
+  }
+  function lines(s){ return String(s || '').split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean); }
+  function parseAgenda(s){ return lines(s).map(function(l){ var p = l.split('|').map(function(x){ return x.trim(); }); return {title:p[0], by:p[1] || ''}; }); }
+  function parseMembers(s){ return lines(s).map(function(l){ var p = l.split('|').map(function(x){ return x.trim(); }); return {name:p[0], group:p[1] || '', role:p[2] || '위원'}; }); }
+
+  function read(){ var o = {}; FIELDS.forEach(function(k){ o[k] = $(k).value; }); return o; }
+  function fill(o){ FIELDS.forEach(function(k){ $(k).value = o[k] == null ? '' : o[k]; }); }
+
+  function build(d){
+    var A = parseAgenda(d.agenda), M = parseMembers(d.members);
+    var school = esc(d.school || '○○학교'), comm = school + '운영위원회';
+    var info = SCHOOL_INFO[(d.school || '').trim()];
+    var contact = info ? '<p style="font-size:9.5pt;color:#555">※ 문의: ' + school + ' 행정실 ' + info.tel + ' · ' + info.addr + '</p>' : '';
+    var title = '제' + esc(d.round || '__') + '차 ' + comm + ' ' + esc(d.kind);
+    var when = kdateLong(d.date) + '(' + (d.date ? WD[new Date(d.date + 'T00:00:00').getDay()] : '_') + ') ' + ktime(d.time);
+    var chair = M.filter(function(m){ return /위원장/.test(m.role) && !/부위원장/.test(m.role); })[0];
+    var agendaOl = A.length ? '<ol>' + A.map(function(a){ return '<li>' + esc(a.title) + '</li>'; }).join('') + '</ol>' : '<p>(안건을 입력하세요)</p>';
+    var S = [];
+
+    // 1. 개최 공고
+    S.push(
+      '<div class="doc-no">' + comm + ' 공고 제2026-' + esc(d.round || '__') + '호</div>' +
+      '<h3>' + title + ' 개최 공고</h3>' +
+      '<p class="lead">' + comm + ' 규정에 따라 ' + title + '를 다음과 같이 개최함을 알려 드립니다.</p>' +
+      '<div class="item"><b>1. 일시</b><span>' + when + '</span></div>' +
+      '<div class="item"><b>2. 장소</b><span>' + school + ' ' + esc(d.place) + '</span></div>' +
+      '<div class="item"><b>3. 안건</b><span></span></div>' + agendaOl +
+      '<div class="item"><b>4. 방청</b><span>학부모 및 지역 주민은 회의를 방청할 수 있으며, 방청을 원하시는 분은 ' + kdateLong(d.deadline) + '까지 학교 행정실 또는 담당자(' + esc(d.secretary) + ')에게 신청해 주시기 바랍니다.</span></div>' +
+      '<div class="item"><b>5. 기타</b><span>회의 결과는 회의록으로 작성하여 학교 누리집에 공개합니다.</span></div>' +
+      '<div class="date">' + kdateLong(d.notice) + '</div>' +
+      '<div class="sign">' + comm + '위원장</div>'
+    );
+
+    // 2. 학부모 방청 안내 (가정통신문 + 신청서)
+    S.push(
+      '<div class="doc-no">가정통신문</div>' +
+      '<h3>학교운영위원회 방청 안내</h3>' +
+      '<p class="lead">학부모님, 안녕하십니까? 우리 학교의 중요한 일을 함께 의논하는 ' + title + '가 열립니다. 회의는 공개를 원칙으로 하고 있으니, 관심 있는 학부모님의 많은 방청을 부탁드립니다.</p>' +
+      '<table class="kv"><tr><th>일시</th><td>' + when + '</td></tr><tr><th>장소</th><td>' + school + ' ' + esc(d.place) + '</td></tr>' +
+      '<tr><th>주요 안건</th><td>' + (A.length ? A.map(function(a, i){ return (i+1) + '. ' + esc(a.title); }).join('<br>') : '-') + '</td></tr>' +
+      '<tr><th>신청 기한</th><td>' + kdateLong(d.deadline) + '까지 아래 신청서를 자녀 편에 제출</td></tr></table>' +
+      '<h4>방청 시 유의사항</h4><ul><li>방청인은 회의 중 발언할 수 없으며, 위원장의 허가를 받은 경우에만 의견을 말할 수 있습니다.</li>' +
+      '<li>회의 진행에 방해가 되는 행동(녹음·촬영 등)은 삼가 주시기 바랍니다.</li><li>방청석이 한정되어 있어 신청 순으로 안내될 수 있습니다.</li></ul>' + contact +
+      '<div class="date">' + kdateLong(d.notice) + '</div><div class="sign">' + school + '장</div>' +
+      '<div class="cut"><span>✂ 자르는 선</span></div>' +
+      '<h4 style="text-align:center;font-size:14pt">' + title + ' 방청 신청서</h4>' +
+      '<table><tr><th>자녀 학년·반</th><td>&nbsp;&nbsp;&nbsp;&nbsp;학년&nbsp;&nbsp;&nbsp;&nbsp;반</td><th>자녀 이름</th><td></td></tr>' +
+      '<tr><th>신청인(보호자)</th><td></td><th>연락처</th><td></td></tr></table>' +
+      '<p style="text-align:right;margin:2mm 0 0">위와 같이 방청을 신청합니다. &nbsp; 보호자 ____________ (서명)</p>'
+    );
+
+    // 3. 위원 출석부
+    var rows = M.map(function(m, i){
+      return '<tr><td class="c">' + (i+1) + '</td><td class="c">' + esc(m.group) + '</td><td class="c">' + esc(m.role) + '</td><td class="c">' + esc(m.name) + '</td><td style="height:11mm"></td><td></td></tr>';
+    }).join('');
+    S.push(
+      '<h3>' + title + '<br><span style="font-size:15pt">위원 출석부</span></h3>' +
+      '<p style="margin:0 0 2mm">■ 일시: ' + when + ' &nbsp; ■ 장소: ' + esc(d.place) + '</p>' +
+      '<table><thead><tr><th style="width:12mm">연번</th><th>구분</th><th>직위</th><th>성명</th><th style="width:38mm">서명</th><th style="width:24mm">비고</th></tr></thead><tbody>' +
+      (rows || '<tr><td colspan="6" class="c">(위원 명단을 입력하세요)</td></tr>') + '</tbody></table>' +
+      '<table><tr><th>재적 위원</th><td class="c">' + M.length + '명</td><th>출석 위원</th><td class="c">&nbsp;&nbsp;&nbsp;&nbsp;명</td><th>성원 여부</th><td class="c"><span class="chk"></span>성원 <span class="chk"></span>미성원</td></tr></table>' +
+      '<p class="hint" style="font-size:9.5pt;color:#555">※ 회의는 재적위원 과반수의 출석으로 개의하고 출석위원 과반수의 찬성으로 의결합니다(학교 규정 확인).</p>' +
+      '<p style="text-align:right;margin-top:8mm">간사 ' + esc(d.secretary || '________') + ' (서명)<span class="stamp"></span></p>'
+    );
+
+    // 4. 안건처리상황표
+    var arows = A.map(function(a, i){
+      return '<tr><td class="c">' + (i+1) + '</td><td>' + esc(a.title) + '</td><td class="c">' + esc(a.by) + '</td>' +
+        '<td style="font-size:9.5pt;white-space:nowrap"><span class="chk"></span>원안가결<br><span class="chk"></span>수정가결<br><span class="chk"></span>부결 <span class="chk"></span>보류</td><td></td></tr>';
+    }).join('');
+    S.push(
+      '<h3>' + title + '<br><span style="font-size:15pt">안건 처리 상황표</span></h3>' +
+      '<p style="margin:0 0 2mm">■ 일시: ' + when + ' &nbsp; ■ 장소: ' + esc(d.place) + '</p>' +
+      '<table><thead><tr><th style="width:12mm">번호</th><th>안건명</th><th style="width:24mm">제안자</th><th style="width:30mm">심의 결과</th><th style="width:34mm">비고(수정 내용)</th></tr></thead><tbody>' +
+      (arows || '<tr><td colspan="5" class="c">(안건을 입력하세요)</td></tr>') + '</tbody></table>' +
+      '<p style="font-size:9.5pt;color:#555">※ 심의 결과는 학교장에게 통보하고, 학교장은 결과에 따른 조치 사항을 다음 회의에 보고합니다.</p>' +
+      '<div class="date">' + kdateLong(d.date) + '</div><div class="sign">' + comm + '위원장 ' + (chair ? esc(chair.name) : '') + ' <small>(인)</small></div>'
+    );
+
+    // 5. 회의록 틀
+    var agendaBlocks = A.map(function(a, i){
+      return '<div class="blk"><h4>안건 ' + (i+1) + '. ' + esc(a.title) + (a.by ? ' <span style="font-weight:400;font-size:10pt">(제안: ' + esc(a.by) + ')</span>' : '') + '</h4>' +
+        '<table><tr><th style="width:24mm">제안 설명</th><td style="height:12mm"></td></tr><tr><th>질의·응답</th><td style="height:16mm"></td></tr>' +
+        '<tr><th>심의 결과</th><td><span class="chk"></span>원안가결 <span class="chk"></span>수정가결 <span class="chk"></span>부결 <span class="chk"></span>보류 &nbsp; (찬성 &nbsp;&nbsp;명 / 반대 &nbsp;&nbsp;명)</td></tr></table></div>';
+    }).join('');
+    S.push(
+      '<h3>' + title + ' 회의록</h3>' +
+      '<table class="kv"><tr><th>일시</th><td>' + when + '</td><th>장소</th><td>' + esc(d.place) + '</td></tr>' +
+      '<tr><th>재적 위원</th><td>' + M.length + '명</td><th>출석 위원</th><td>&nbsp;&nbsp;&nbsp;&nbsp;명</td></tr>' +
+      '<tr><th>결석 위원</th><td colspan="3"></td></tr><tr><th>참석자(배석)</th><td colspan="3">간사 ' + esc(d.secretary) + '</td></tr></table>' +
+      '<h4>1. 개회 선언 및 성원 보고</h4><div class="line"></div>' +
+      '<h4>2. 전차 회의록 승인</h4><div class="line"></div>' +
+      '<h4>3. 안건 심의</h4>' + (agendaBlocks || '<p>(안건을 입력하세요)</p>') +
+      '<h4>4. 기타 토의</h4><div class="box"></div>' +
+      '<h4>5. 폐회 선언</h4><p>' + kdateLong(d.date) + ' &nbsp;&nbsp;&nbsp;시 &nbsp;&nbsp;&nbsp;분</p>' +
+      '<table style="margin-top:6mm"><tr><th>위원장</th><td>' + (chair ? esc(chair.name) : '') + ' <span class="stamp"></span></td><th>간사</th><td>' + esc(d.secretary) + ' <span class="stamp"></span></td></tr>' +
+      '<tr><th>서명 위원</th><td><span class="stamp"></span></td><th>서명 위원</th><td><span class="stamp"></span></td></tr></table>'
+    );
+    return {sheets:S, A:A, M:M};
+  }
+
+  function render(){
+    var d = read(), r = build(d);
+    $('agCount').textContent = r.A.length + '건';
+    $('memCount').textContent = r.M.length + '명';
+    $('zoomer').innerHTML = r.sheets.map(function(h, i){ return '<article class="sheet' + (i === cur ? ' on' : '') + '">' + h + '</article>'; }).join('');
+    fit();
+  }
+  function fit(){
+    var z = $('zoomer'), avail = $('viewer').clientWidth - (window.innerWidth < 860 ? 16 : 32);
+    var px = 210 * 96 / 25.4; // 210mm
+    var s = Math.min(1, avail / px);
+    z.style.zoom = s; z.style.width = px + 'px';
+  }
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(read())); $('saved').textContent = '✓ 자동 저장됨'; } catch(e){}
+  }
+  var t;
+  $('form').addEventListener('input', function(){ render(); clearTimeout(t); t = setTimeout(save, 300); });
+  $('tabs').addEventListener('click', function(e){
+    var b = e.target.closest('.tab'); if (!b) return;
+    cur = +b.dataset.t;
+    document.querySelectorAll('.tab').forEach(function(x){ x.classList.toggle('on', x === b); });
+    document.querySelectorAll('.sheet').forEach(function(s, i){ s.classList.toggle('on', i === cur); });
+    $('viewer').scrollIntoView({block:'nearest'});
+  });
+  $('printOne').onclick = function(){ document.body.classList.remove('print-all'); window.print(); };
+  $('printAll').onclick = function(){ document.body.classList.add('print-all'); window.print(); };
+  window.addEventListener('afterprint', function(){ document.body.classList.remove('print-all'); });
+  $('sampleBtn').onclick = function(){ fill(SAMPLE); render(); save(); };
+  $('blankBtn').onclick = function(){
+    if (!confirm('입력 내용을 모두 지우고 새로 쓸까요?')) return;
+    fill({school:SAMPLE.school, kind:'정기회'}); render(); save();
+  };
+  window.addEventListener('resize', fit);
+
+  var stored = null;
+  try { stored = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch(e){}
+  fill(stored || SAMPLE);
+  render();
+  if (stored) $('saved').textContent = '✓ 저장된 내용 불러옴';
+
+  if (location.hash === '#printall') document.body.classList.add('print-all');
+  // 헤드리스 확인용
+  if (location.hash === '#selftest'){
+    var log = [];
+    var r = build(SAMPLE);
+    log.push('sheets:' + r.sheets.length);
+    var tmp = document.createElement('div'); tmp.innerHTML = r.sheets[2];
+    log.push('attendRows:' + tmp.querySelector('tbody').querySelectorAll('tr').length + '/' + r.M.length);
+    tmp.innerHTML = r.sheets[3];
+    log.push('agendaRows:' + tmp.querySelectorAll('tbody tr').length + '/' + r.A.length);
+    $('members').value += '\n새위원 | 학부모위원 | 위원';
+    $('form').dispatchEvent(new Event('input'));
+    log.push('afterAdd:' + document.querySelectorAll('.sheet')[2].querySelector('tbody').querySelectorAll('tr').length);
+    document.querySelectorAll('.tab')[4].click();
+    log.push('activeTab:' + [].indexOf.call(document.querySelectorAll('.sheet'), document.querySelector('.sheet.on')));
+    document.body.classList.add('print-all'); log.push('heights(px,A4=1123):' + [].map.call(document.querySelectorAll('.sheet'), function(s){ s.style.display='block'; var h = s.scrollHeight; s.style.display=''; return h; }).join(',')); document.body.classList.remove('print-all');
+    var o = document.createElement('pre'); o.id = 'selftest'; o.textContent = log.join(' | '); document.body.appendChild(o);
+    setTimeout(function(){ clearTimeout(t); localStorage.removeItem(KEY); }, 500);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>법령 콕 - 법령 이름을 콕 집어 국가법령정보센터로 여는 크롬 확장 체험</title>
+<meta name="description" content="공문 속 법령 이름을 드래그해 우클릭하면 국가법령정보센터의 그 법령·조문이 바로 열리는 크롬 확장. 약칭(학교폭력예방법, 교원지위법 등)도 정식 법령명으로 찾아 줘요. 설치 없이 이 페이지에서 체험해 보세요.">
+<style>
+  :root{--bg:#eef2fb;--ink:#1e293b;--muted:#64748b;--line:#e2e8f0;--brand:#1e3a8a;--brand2:#3456b8;--hi:#fde68a}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:14px;padding:12px 24px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff}
+  .logo{width:42px;height:42px;border-radius:11px;background:#fff;display:grid;place-items:center;font-size:24px;flex:none}
+  h1{margin:0;font-size:24px;letter-spacing:-.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;gap:4px;background:#0b1a4a;color:#facc15;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px}
+  header p{margin:2px 0 0;font-size:14px;opacity:.92}
+  .dl{margin-left:auto;flex:none;background:#fff;color:var(--brand);font-weight:800;font-size:15px;text-decoration:none;padding:10px 16px;border-radius:12px;box-shadow:0 2px 0 #0002}
+  .dl:hover{filter:brightness(.96)}
+
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;padding:14px 24px;max-width:1400px;margin:0 auto}
+  .how{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;margin-bottom:8px}
+  .how b.st{background:#dbeafe;color:#1e3a8a;border-radius:999px;padding:2px 9px;font-size:13px}
+  .btn{font:inherit;font-weight:700;font-size:13.5px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 12px;cursor:pointer}
+  .btn:hover{filter:brightness(.96)}
+  .btn.main{background:var(--brand);color:#fff;border:0}
+
+  .browser{background:#fff;border:1px solid #cbd5e1;border-radius:12px;overflow:hidden;box-shadow:0 6px 20px #1e3a8a14}
+  .bar{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#e5e7eb}
+  .dots{display:flex;gap:5px}
+  .dots i{width:10px;height:10px;border-radius:50%;background:#cbd5e1}
+  .addr{flex:1;min-width:0;background:#fff;border-radius:999px;padding:4px 12px;font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ext{width:24px;height:24px;border-radius:6px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:900}
+  .page{padding:16px 24px;height:372px;overflow:auto;line-height:1.8;font-size:15px;position:relative}
+  .doc-h{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);border-bottom:2px solid #1e293b;padding-bottom:6px;margin-bottom:8px}
+  .page h2{margin:4px 0 6px;font-size:19px}
+  .page p{margin:0 0 8px}
+  .page ol{margin:0 0 8px;padding-left:20px}
+  mark.law{background:var(--hi);border-radius:4px;padding:0 2px;cursor:pointer;color:inherit;box-shadow:inset 0 -2px 0 #f59e0b}
+  mark.law:hover,mark.law.on{background:#facc15}
+
+  .bubble{position:absolute;z-index:20;background:#0f172a;color:#fff;border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.45;max-width:340px;box-shadow:0 10px 24px #0004}
+  .bubble b{color:#facc15}
+  .bubble a{display:inline-block;margin-top:6px;background:#facc15;color:#422006;font-weight:800;text-decoration:none;border-radius:8px;padding:4px 10px}
+  .bubble small{display:block;color:#94a3b8;word-break:break-all;margin-top:4px;font-size:11px}
+
+  .ctx{position:fixed;z-index:40;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 8px 24px #0003;padding:4px 0;min-width:300px;font-size:13.5px}
+  .ctx div{padding:6px 14px;color:#9ca3af}
+  .ctx button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font:inherit;border:0;background:none;padding:7px 14px;cursor:pointer;color:var(--ink);font-weight:700}
+  .ctx button:hover{background:#e8efff}
+  .ctx img{width:16px;height:16px}
+  .ctx hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+
+  .out{margin-top:12px;background:#fff;border:2px dashed #93c5fd;border-radius:12px;padding:10px 12px}
+  .out-h{font-weight:800;font-size:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .out-h small{font-weight:600;color:var(--muted)}
+  .out .q{font-size:13px;color:var(--muted);margin-top:4px}
+  .out .q b{color:var(--ink)}
+  .out a{display:block;margin-top:4px;font-size:13.5px;font-weight:700;color:var(--brand);word-break:break-all}
+
+  .side{display:grid;gap:12px;align-content:start}
+  .popup{background:#fff;border:1px solid #cbd5e1;border-radius:14px;padding:14px;box-shadow:0 10px 30px #1e3a8a22;position:relative}
+  .popup::before{content:"확장 팝업 · 툴바의 법 아이콘을 누르면 열려요";position:absolute;top:-10px;left:12px;background:#334155;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.55}
+  .card h3{margin:0 0 6px;font-size:14px}
+  .card ol{margin:0;padding-left:20px}
+  .card code{background:#eff6ff;color:#1e3a8a;border-radius:5px;padding:0 4px}
+  .card .safe{margin:8px 0 0;color:#1e3a8a;background:#eff6ff;border-radius:8px;padding:6px 8px}
+  footer{text-align:right;padding:0 24px 18px;font-size:13px}
+  footer a{color:var(--muted);text-decoration:none}
+  footer a:hover{color:var(--brand)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0f172a;color:#fff;font-weight:700;font-size:14px;padding:9px 16px;border-radius:999px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50}
+  .toast.on{opacity:1}
+
+  @media (max-width:900px){
+    header{flex-wrap:wrap;padding:12px 14px}
+    h1{font-size:21px}
+    .dl{margin-left:0}
+    .wrap{grid-template-columns:minmax(0,1fr);padding:12px}
+    .page{height:330px;padding:12px 14px;font-size:14.5px}
+    .popup{margin-top:6px}
+    .ctx{min-width:0;max-width:calc(100vw - 16px)}
+  }
+/* ==css:start== */
+/* ==css:end== */
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">⚖️</div>
+  <div>
+    <h1>법령 콕 <span class="badge">🧩 크롬 확장</span></h1>
+    <p>공문 속 법령 이름을 드래그 → 우클릭 한 번이면 국가법령정보센터의 그 조문으로</p>
+  </div>
+  <a class="dl" href="../extensions/law-link.zip" download>⬇ zip 내려받기</a>
+</header>
+
+<div class="wrap">
+  <main>
+    <div class="how">
+      <b class="st">체험</b> ① 노란 법령명을 <b>클릭</b> ② 아무 글자나 <b>드래그 → 우클릭</b>
+      <button class="btn main" id="findSel" type="button">🔎 고른 글자로 찾기</button>
+    </div>
+    <div class="browser">
+      <div class="bar"><span class="dots"><i></i><i></i><i></i></span><span class="addr">🔒 https://example.org/haessal-es/notice/2026-1107</span><span class="ext" title="법령 콕 확장">법</span></div>
+      <article class="page" id="page">
+        <div class="doc-h"><span>햇살초등학교 교무부</span><span>문서번호 교무-1107 (예시 공문)</span></div>
+        <h2>2026학년도 2학기 학교폭력 예방교육 및 교육활동 보호 안내</h2>
+        <p>1. 관련: 「학교폭력예방 및 대책에 관한 법률」 제15조, 같은 법 시행령 제17조</p>
+        <p>2. 학교폭력예방법 제15조에 따라 학기별 1회 이상 학생·교직원·학부모 대상 학교폭력 예방교육을 실시하고, 그 결과를 학교 누리집에 안내하고자 합니다.</p>
+        <ol>
+          <li>교육활동 침해 행위 발생 시 교원지위법 제19조에 따른 보호 조치를 우선 안내합니다.</li>
+          <li>학생 사진·영상이 포함된 자료는 개인정보 보호법 제15조에 따라 동의를 받은 뒤 게시합니다.</li>
+          <li>외부 강사 사례금은 청탁금지법 기준을 넘지 않도록 확인합니다.</li>
+          <li>체험학습 중 사고는 학교안전법에 따라 보상 절차를 안내합니다.</li>
+        </ol>
+        <p>3. 그 밖의 사항은 초·중등교육법 제18조의4(학생의 인권보장) 및 교육기본법 제12조를 참고하시기 바랍니다. 다양한 방법으로 교수학습방법을 바꾸어 보는 연수도 함께 열립니다.</p>
+        <p style="color:#64748b;font-size:13px">※ 이 공문은 체험용 예시입니다. 법령 이름만 실제이며 학교·문서 내용은 가상입니다.</p>
+      </article>
+    </div>
+    <div class="out" id="out">
+      <div class="out-h">🔗 새 탭으로 열릴 주소 <small id="outNote">(예시)</small></div>
+      <div class="q" id="outQ"></div>
+      <a id="outA" href="#" target="_blank" rel="noopener"></a>
+    </div>
+  </main>
+
+  <aside class="side">
+    <div class="popup" id="popup"></div>
+    <div class="card">
+      <h3>⚙️ 내 크롬에 설치 (3단계)</h3>
+      <ol>
+        <li>위 <b>zip 내려받기</b> → 압축 풀기</li>
+        <li>주소창에 <code>chrome://extensions</code> → 오른쪽 위 <b>개발자 모드</b> 켜기</li>
+        <li><b>압축해제된 확장 프로그램 로드</b> → 푼 폴더 고르기</li>
+      </ol>
+      <p class="safe">🔐 권한은 우클릭 메뉴·누른 탭에서만 읽기(activeTab)뿐. 아무것도 저장하거나 밖으로 보내지 않고, law.go.kr 주소만 만들어 새 탭으로 열어요.</p>
+    </div>
+  </aside>
+</div>
+<footer><a href="../">← 전체 데모 보기</a></footer>
+<div class="toast" id="toast"></div>
+
+<script>
+// ==core:start==
+// ==core:end==
+// ==ui:start==
+// ==ui:end==
+
+// ---- 체험 페이지 전용: 확장이 하는 일을 이 페이지 안에서 그대로 흉내 ----
+(function () {
+  'use strict';
+  var L = LawLink, $ = function (id) { return document.getElementById(id); };
+  var page = $('page');
+  function toast(t) { var el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function () { el.classList.remove('on'); }, 2000); }
+  function openTab(url) { window.open(url, '_blank', 'noopener'); }
+
+  // 1) 본문 속 법령명 노란 표시 (팝업과 같은 L.scan 사용)
+  function highlight(root) {
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function (node) {
+      if (node.parentNode.closest('.doc-h')) return;
+      var hits = L.scan(node.data);
+      if (!hits.length) return;
+      var frag = document.createDocumentFragment(), pos = 0;
+      hits.forEach(function (h) {
+        frag.appendChild(document.createTextNode(node.data.slice(pos, h.index)));
+        var m = document.createElement('mark');
+        m.className = 'law'; m.textContent = node.data.substr(h.index, h.len);
+        m.dataset.url = h.item.url; m.dataset.label = h.item.label; m.dataset.abbr = h.item.abbr || '';
+        m.tabIndex = 0;
+        frag.appendChild(m); pos = h.index + h.len;
+      });
+      frag.appendChild(document.createTextNode(node.data.slice(pos)));
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  highlight(page);
+
+  function showOut(q, r, note) {
+    $('outQ').innerHTML = '고른 글자: <b>' + L.esc(q) + '</b> → ' + (r.mode === 'direct' ? '📘 <b>' + L.esc(r.item.label) + '</b>' + (r.item.abbr ? ' (약칭 풀어 씀)' : '') : '🔍 법령명이 아니라서 <b>검색</b>으로 열어요');
+    $('outA').href = r.url; $('outA').textContent = decodeURI(r.url) + ' ↗';
+    $('outNote').textContent = note;
+  }
+
+  // 2) 노란 법령명 클릭 → 말풍선
+  var bubble = null;
+  function closeBubble() { if (bubble) { bubble.remove(); bubble = null; } page.querySelectorAll('mark.on').forEach(function (m) { m.classList.remove('on'); }); }
+  page.addEventListener('click', function (e) {
+    var m = e.target.closest('mark.law');
+    if (!m || String(window.getSelection()).trim().length > 0 && !m.contains(window.getSelection().anchorNode)) { if (!e.target.closest('.bubble')) closeBubble(); return; }
+    closeBubble(); m.classList.add('on');
+    bubble = document.createElement('div'); bubble.className = 'bubble';
+    bubble.innerHTML = '📘 <b>' + L.esc(m.dataset.label) + '</b>' + (m.dataset.abbr ? '<br>약칭 "' + L.esc(m.dataset.abbr) + '"을 정식 이름으로 바꿨어요' : '') +
+      '<br><a href="' + L.esc(m.dataset.url) + '" target="_blank" rel="noopener">국가법령정보센터에서 열기 ↗</a><small>' + L.esc(decodeURI(m.dataset.url)) + '</small>';
+    page.appendChild(bubble);
+    var pr = page.getBoundingClientRect(), mr = m.getBoundingClientRect();
+    var left = Math.min(mr.left - pr.left + page.scrollLeft, page.clientWidth - bubble.offsetWidth - 8);
+    bubble.style.left = Math.max(8, left) + 'px';
+    bubble.style.top = (mr.bottom - pr.top + page.scrollTop + 6) + 'px';
+    showOut(m.textContent, L.resolveSelection(m.textContent), '(노란 법령명을 누름)');
+  });
+  page.addEventListener('scroll', closeBubble);
+
+  // 3) 드래그 → 우클릭 → 가짜 크롬 우클릭 메뉴 (확장의 contextMenus와 같은 L.resolveSelection)
+  var ctx = null;
+  function closeCtx() { if (ctx) { ctx.remove(); ctx = null; } }
+  function selectedInPage() {
+    var s = window.getSelection();
+    if (!s.rangeCount || !page.contains(s.getRangeAt(0).commonAncestorContainer)) return '';
+    return s.toString().trim();
+  }
+  function run(q, note) {
+    var r = L.resolveSelection(q);
+    if (!r) return;
+    showOut(q, r, note);
+    openTab(r.url);
+    toast(r.mode === 'direct' ? '📘 새 탭: ' + r.item.label : '🔍 새 탭: "' + r.query + '" 검색');
+  }
+  page.addEventListener('contextmenu', function (e) {
+    var q = selectedInPage();
+    if (!q) return;   // 글자를 고르지 않았으면 원래 메뉴
+    e.preventDefault(); closeCtx(); closeBubble();
+    ctx = document.createElement('div'); ctx.className = 'ctx';
+    var short = q.length > 18 ? q.slice(0, 18) + '…' : q;
+    ctx.innerHTML = '<div>복사</div><div>"' + L.esc(short) + '" 검색</div><hr><button type="button"><img src="../extensions/law-link/icon16.png" alt="">' + L.esc(L.MENU_TITLE) + '</button><hr><div>검사</div>';
+    document.body.appendChild(ctx);
+    var x = Math.min(e.clientX, window.innerWidth - ctx.offsetWidth - 8), y = Math.min(e.clientY, window.innerHeight - ctx.offsetHeight - 8);
+    ctx.style.left = Math.max(8, x) + 'px'; ctx.style.top = Math.max(8, y) + 'px';
+    ctx.querySelector('button').addEventListener('click', function () { closeCtx(); run(q, '(우클릭 메뉴로 엶)'); });
+  });
+  document.addEventListener('mousedown', function (e) { if (ctx && !ctx.contains(e.target)) closeCtx(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeCtx(); closeBubble(); } });
+  window.addEventListener('blur', closeCtx);
+
+  // 휴대폰처럼 우클릭이 없을 때: 버튼으로
+  $('findSel').addEventListener('click', function () {
+    var q = selectedInPage();
+    if (!q) { toast('먼저 공문 글자를 드래그해서 골라 주세요 (예: 교육기본법 제12조)'); return; }
+    run(q, '(버튼으로 엶)');
+  });
+
+  // 4) 팝업 (확장 팝업과 같은 LawLinkPopup) — 이 페이지 공문 글을 읽음
+  LawLinkPopup.mount($('popup'), {
+    getPage: function () { return Promise.resolve({ title: document.title, text: page.innerText }); },
+    open: function (url) { openTab(url); toast('↗ 새 탭으로 열었어요'); },
+  });
+
+  // 첫 화면 예시
+  showOut('학교폭력예방법 제15조', L.resolveSelection('학교폭력예방법 제15조'), '(예시 — 법령명을 고르면 이렇게 열려요)');
+  window.__demo = { L: L, run: run };
+})();
+</script>
+</body>
+</html>

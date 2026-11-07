@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "법령 콕",
+  "version": "1.0.0",
+  "description": "법령 이름을 드래그해 우클릭하면 국가법령정보센터의 그 법령·조문이 바로 열려요. 팝업에서는 지금 페이지의 법령명을 모아 보여 줘요.",
+  "permissions": ["contextMenus", "activeTab", "scripting"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "법령 콕",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+}

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>다가온 통신문 - 다문화 가정을 위한 다국어 가정통신문 (콘셉트)</title>
+<meta name="description" content="교사가 일시·준비물·비용·회신 기한 블록으로 가정통신문을 쓰면 여러 언어 버전이 나란히 만들어지고, 날짜·금액·기한은 아이콘과 숫자로 언어와 상관없이 보여 주는 다국어 통신문 콘셉트 페이지">
+<style>
+  :root{--v:#6d28d9;--v2:#f1eafe;--v3:#3b1478;--co:#ff6b5b;--co2:#ffe9e5;--ink:#221735;--mut:#685d7a;--bg:#fcfaff;--line:#e6def3}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic","Microsoft YaHei","PingFang SC",sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;word-break:keep-all}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+  nav{display:flex;align-items:center;gap:12px;height:58px}
+  .logo{font-weight:900;font-size:20px;display:flex;gap:8px;align-items:center;color:var(--v3)}
+  .logo svg{width:34px;height:34px}
+  .badge{background:var(--co);color:#fff;font-weight:800;font-size:13px;padding:4px 12px;border-radius:999px}
+  nav .links{margin-left:auto;display:flex;gap:20px;font-size:14px;color:var(--mut)}
+  nav a{text-decoration:none;color:inherit}
+  .hero{display:grid;grid-template-columns:.82fr 1.35fr;gap:32px;align-items:center;padding:8px 0 40px}
+  .hero h1{font-size:40px;line-height:1.22;letter-spacing:-1.3px;margin:14px 0 12px}
+  .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--v),var(--co));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{font-size:16px;color:var(--mut);margin-bottom:18px}
+  .hello{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+  .hello span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:13px;font-weight:700;color:var(--v3)}
+  .btn{border:0;border-radius:12px;padding:12px 20px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn.p{background:var(--v);color:#fff;box-shadow:0 6px 16px #6d28d940}
+  .btn.s{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .cta{display:flex;gap:10px;flex-wrap:wrap}
+  .warn{margin-top:16px;font-size:12.5px;color:#9a3412;background:#fff4ec;border-radius:10px;padding:7px 11px;font-weight:700}
+  /* mock */
+  .mock{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 22px 50px #22173520;display:grid;grid-template-columns:230px 1fr;overflow:hidden}
+  .ed{background:var(--v3);color:#fff;padding:14px;display:flex;flex-direction:column;gap:7px}
+  .ed h4{font-size:13px;opacity:.8;font-weight:700}
+  .ed .tt{font-weight:800;font-size:14px;background:#ffffff14;border-radius:8px;padding:6px 8px}
+  .blk{background:#fff;color:var(--ink);border-radius:10px;padding:6px 8px;font-size:12.5px;display:flex;align-items:center;gap:6px;border-left:5px solid var(--c)}
+  .blk b{font-size:11px;color:var(--mut);min-width:46px}
+  .blk .val{flex:1;font-weight:700;min-width:0}
+  .stp{display:flex;align-items:center;gap:4px}
+  .stp button{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);background:#fff;font:inherit;font-weight:900;cursor:pointer;line-height:1;color:var(--v3)}
+  .blk select{font:inherit;font-size:12px;border:1.5px solid var(--line);border-radius:6px;padding:1px 2px;background:#fff;color:var(--ink);flex:1;min-width:0}
+  .gen{margin-top:auto;font-size:12px;background:#ffffff1c;border-radius:10px;padding:8px}
+  .gen div{display:flex;justify-content:space-between}
+  .gen .ok{color:#b9f6c9}.gen .wait{color:#ffd2a8}
+  .pv{padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;background:linear-gradient(180deg,#fff,var(--v2))}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap}
+  .tabs button{font:inherit;font-size:12.5px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:4px 11px;cursor:pointer;color:var(--ink);font-weight:700}
+  .tabs button.on{background:var(--v);border-color:var(--v);color:#fff}
+  .tabs button:disabled{opacity:.5;cursor:not-allowed;font-weight:500}
+  .icons{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .ic{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:6px 4px;text-align:center}
+  .ic i{font-style:normal;font-size:20px;display:block;line-height:1.2}
+  .ic b{font-size:15px;color:var(--v3);display:block;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ic.hot{border-color:var(--co);background:var(--co2)}
+  .ic.hot b{color:#c0392b}
+  .ic small{font-size:10.5px;color:var(--mut)}
+  .doc{background:#fff;border-radius:14px;padding:12px 14px;border:1px solid var(--line);transition:opacity .2s}
+  .doc.fade{opacity:0}
+  .doc h3{font-size:16px;color:var(--v3);margin-bottom:4px}
+  .doc p{font-size:13.5px;margin-bottom:6px}
+  .doc dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12.5px}
+  .doc dt{color:var(--mut);font-weight:700}
+  .rep{display:flex;gap:6px;flex-wrap:wrap}
+  .rep button{flex:1;font:inherit;font-weight:800;font-size:13px;border-radius:10px;padding:8px;cursor:pointer;border:1.5px solid var(--v);background:#fff;color:var(--v)}
+  .rep button.yes{background:var(--v);color:#fff}
+  .res{font-size:12.5px;background:#e8f8ee;color:#17643a;border-radius:10px;padding:7px 10px;font-weight:700}
+  .tr{font-size:11px;color:var(--mut);text-align:right}
+  section{padding:56px 0}
+  .tag{color:var(--co);font-weight:900;font-size:13px;letter-spacing:1px}
+  h2{font-size:30px;letter-spacing:-.8px;margin:6px 0 24px}
+  .ps{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .ps>div{border-radius:22px;padding:26px}
+  .ps .a{background:#fff;border:1px solid var(--line)}
+  .ps .b{background:linear-gradient(135deg,var(--v),#9b5cf0);color:#fff}
+  .ps h3{font-size:18px;margin-bottom:10px}.ps ul{padding-left:18px;font-size:15px}.ps li{margin:5px 0}
+  .feat{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .feat div{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px}
+  .feat span{display:inline-grid;place-items:center;width:46px;height:46px;border-radius:14px;background:var(--co2);font-size:23px}
+  .feat h3{font-size:16px;margin:10px 0 6px}.feat p{font-size:14px;color:var(--mut)}
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .flow div{background:#fff;border-radius:20px;padding:20px;border:1px solid var(--line);border-bottom:5px solid var(--v)}
+  .flow em{font-style:normal;color:var(--v);font-weight:900;font-size:13px}
+  .flow h3{font-size:16px;margin:6px 0}.flow p{font-size:14px;color:var(--mut)}
+  .note{font-size:13px;color:var(--mut);margin-top:18px}
+  footer{border-top:1px solid var(--line);padding:26px 0 40px;font-size:13px;color:var(--mut)}
+  footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  footer a{font-weight:800;color:var(--v)}
+  @media (max-width:1000px){.hero{grid-template-columns:1fr}.feat{grid-template-columns:1fr 1fr}nav .links{display:none}}
+  @media (max-width:640px){
+    .wrap{padding:0 12px}.hero h1{font-size:30px}
+    .mock{grid-template-columns:1fr}
+    .icons{grid-template-columns:1fr 1fr}
+    .ps,.feat,.flow{grid-template-columns:1fr}h2{font-size:24px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="다가온 통신문">
+<meta property="og:description" content="블록으로 쓰면 다국어 가정통신문이 나란히, 날짜·금액은 아이콘 숫자로">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/50-multilang-notice.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/multilang-notice/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo"><svg viewBox="0 0 40 40"><rect x="3" y="6" width="24" height="18" rx="6" fill="#6d28d9"/><path d="M8 24v6l6-6" fill="#6d28d9"/><rect x="14" y="15" width="23" height="17" rx="6" fill="#ff6b5b"/><path d="M32 32v5l-6-5" fill="#ff6b5b"/><text x="15" y="19" text-anchor="middle" font-size="10" font-weight="900" fill="#fff" font-family="system-ui">가</text><text x="25.5" y="27.5" text-anchor="middle" font-size="9" font-weight="900" fill="#fff" font-family="system-ui">A</text></svg>다가온 통신문</div>
+    <span class="badge">💡 콘셉트</span>
+    <div class="links"><a href="#problem">왜 필요할까</a><a href="#features">기능</a><a href="#flow">사용 흐름</a></div>
+  </nav>
+  <header class="hero">
+    <div>
+      <span class="badge">💡 콘셉트 · 아이디어 시연</span>
+      <h1>한 번 쓰면<br><em>모든 가정에 닿는</em><br>가정통신문</h1>
+      <p class="lead">일시·준비물·비용·회신 기한을 블록으로 채우면 여러 언어 버전이 나란히 만들어집니다. 날짜와 금액은 아이콘과 숫자로 보여 줘서 어떤 언어로 읽어도 헷갈리지 않아요.</p>
+      <div class="hello"><span>안녕하세요</span><span>Hello</span><span>你好</span><span>Xin chào</span></div>
+      <div class="cta"><a class="btn p" href="#demo">언어 바꿔 보기 →</a><a class="btn s" href="#flow">사용 흐름</a></div>
+      <p class="warn">⚠ 예시 번역입니다. 실제 번역은 전문 검수가 필요합니다.</p>
+    </div>
+    <div class="mock" id="demo">
+      <div class="ed">
+        <h4>✏️ 교사 작성 화면 · 햇살초 3학년</h4>
+        <div class="tt">3학년 가을 현장체험학습 안내</div>
+        <div class="blk" style="--c:#6d28d9"><b>📅 일시</b><span class="val">11/20(금) 09:00-15:00</span></div>
+        <div class="blk" style="--c:#0e8fa8"><b>📍 장소</b><span class="val">햇살숲 생태공원</span></div>
+        <div class="blk" style="--c:#1f9d63"><b>🎒 준비물</b><span class="val">도시락·물·운동화</span></div>
+        <div class="blk" style="--c:#ff6b5b"><b>💰 비용</b><span class="val stp"><button id="minus" aria-label="비용 1000원 내리기">−</button><span id="costK"></span><button id="plus" aria-label="비용 1000원 올리기">+</button></span></div>
+        <div class="blk" style="--c:#e8a33b"><b>✍️ 회신</b><select id="reply" aria-label="회신 기한"><option value="0">11/12(목)까지</option><option value="1" selected>11/13(금)까지</option><option value="2">11/16(월)까지</option></select></div>
+        <div class="gen"><div><span>한국어</span><span class="ok">원문</span></div><div><span>English</span><span class="ok">✓ 생성</span></div><div><span>中文</span><span class="ok">✓ 생성</span></div><div><span>Tiếng Việt</span><span class="ok">✓ 생성</span></div><div><span>Русский · Filipino</span><span class="wait">검수 대기</span></div></div>
+      </div>
+      <div class="pv">
+        <div class="tabs" id="tabs">
+          <button data-l="ko">한국어</button><button data-l="en">English</button><button data-l="zh">中文</button><button data-l="vi" class="on">Tiếng Việt</button><button disabled title="전문 검수 후 제공(시연)">Русский</button><button disabled title="전문 검수 후 제공(시연)">Filipino</button>
+        </div>
+        <div class="icons" id="icons"></div>
+        <div class="doc" id="doc"></div>
+        <div class="tr" id="trn"></div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<section id="problem" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">PROBLEM → SOLUTION</div>
+    <h2>통신문은 갔는데, 내용은 닿지 않았다면</h2>
+    <div class="ps">
+      <div class="a"><h3>📄 지금은</h3><ul><li>한국어 통신문을 번역기에 넣어 따로따로 보내기</li><li>날짜·금액이 번역 과정에서 틀어질까 걱정</li><li>회신이 오지 않아 다시 전화로 확인</li></ul></div>
+      <div class="b"><h3>🌏 다가온 통신문에서는</h3><ul><li>블록으로 한 번 쓰면 언어별 버전이 나란히</li><li>날짜·금액·기한은 아이콘 + 숫자로 언어와 상관없이</li><li>회신은 각자 언어로, 교사에게는 한국어로 도착</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="tag">FEATURES</div>
+    <h2>주요 기능</h2>
+    <div class="feat">
+      <div><span>🧱</span><h3>정해진 블록으로 쓰기</h3><p>일시·장소·준비물·비용·회신을 칸으로 채워 빠뜨림 없이 씁니다.</p></div>
+      <div><span>🌐</span><h3>언어별 버전 나란히</h3><p>가정마다 설정한 언어로 받고, 탭을 눌러 다른 언어와 비교할 수 있습니다.</p></div>
+      <div><span>🔢</span><h3>언어 없는 핵심 정보</h3><p>날짜·금액·기한은 번역하지 않고 아이콘과 숫자로 그대로 보여 줍니다.</p></div>
+      <div><span>↩️</span><h3>회신 자동 모으기</h3><p>보호자가 자기 언어로 누른 동의·미동의가 교사 화면에 한국어로 모입니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="flow" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">HOW IT WORKS</div>
+    <h2>사용 흐름 3단계</h2>
+    <div class="flow">
+      <div><em>STEP 1 · 교사</em><h3>블록으로 통신문 쓰기</h3><p>제목과 블록만 채우면 됩니다. 문장은 짧고 쉽게 쓰도록 안내합니다.</p></div>
+      <div><em>STEP 2 · 검수</em><h3>번역 확인</h3><p>언어별 버전을 다문화 담당·통역 지원 인력이 확인한 뒤 보냅니다.</p></div>
+      <div><em>STEP 3 · 가정</em><h3>내 언어로 읽고 회신</h3><p>보호자는 익숙한 언어로 읽고 버튼 한 번으로 회신합니다.</p></div>
+    </div>
+    <p class="note">※ 미리보기의 번역문은 시연용 예시로, 실제 번역은 전문 검수가 필요합니다. 학교·장소·일정은 모두 가상이며, 화면 안에서만 동작하고 어떤 정보도 전송하거나 저장하지 않습니다.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>다가온 통신문 · 실제 운영 중인 서비스가 아닌 아이디어 시연용 페이지입니다.</span>
+    <a href="../">← 전체 데모 보기</a>
+  </div>
+</footer>
+
+<script>
+const REPLY=[[12,4],[13,5],[16,1]]; // [day, weekday 0=Sun]
+const L={
+ ko:{lang:'ko',wd:['일','월','화','수','목','금','토'],d:(d,w)=>`11월 ${d}일(${w})`,cost:n=>n.toLocaleString('en-US')+'원',
+   title:'3학년 가을 현장체험학습 안내',hi:'학부모님께',
+   body:r=>`3학년 학생들이 햇살숲 생태공원으로 현장체험학습을 갑니다. 도시락과 물을 챙겨 주시고, 편한 운동화를 신겨 보내 주세요. 참가 동의서를 ${r}까지 회신해 주세요.`,
+   lb:['일시','장소','준비물','비용','회신 기한'],place:'햇살숲 생태공원',bring:'도시락, 물, 운동화',time:'09:00-15:00',
+   yes:'참가 동의',no:'미동의',nm:'한국어'},
+ en:{lang:'en',wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],d:(d,w)=>`${w}, Nov ${d}`,cost:n=>'KRW '+n.toLocaleString('en-US'),
+   title:'Grade 3 Autumn Field Trip',hi:'Dear parents,',
+   body:r=>`Grade 3 students will go on a field trip to Haetsal Forest Eco Park. Please pack a lunch box and water, and have your child wear comfortable sneakers. Please return the consent form by ${r}.`,
+   lb:['Date','Place','Bring','Cost','Reply by'],place:'Haetsal Forest Eco Park',bring:'Lunch box, water, sneakers',time:'09:00-15:00',
+   yes:'I agree',no:'I do not agree',nm:'English'},
+ zh:{lang:'zh',wd:['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],d:(d,w)=>`11月${d}日（${w}）`,cost:n=>n.toLocaleString('en-US')+'韩元',
+   title:'三年级秋季校外体验学习通知',hi:'尊敬的家长：',
+   body:r=>`三年级学生将前往阳光森林生态公园进行校外体验学习。请为孩子准备午餐便当和饮用水，并让孩子穿舒适的运动鞋。请在${r}前交回参加同意书。`,
+   lb:['日期','地点','准备物品','费用','回执截止'],place:'阳光森林生态公园',bring:'便当、饮用水、运动鞋',time:'09:00-15:00',
+   yes:'同意参加',no:'不同意',nm:'中文'},
+ vi:{lang:'vi',wd:['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'],d:(d,w)=>`${w}, ${d}/11`,cost:n=>n.toLocaleString('de-DE')+' won',
+   title:'Thông báo trải nghiệm ngoài trường mùa thu – Lớp 3',hi:'Kính gửi quý phụ huynh,',
+   body:r=>`Học sinh lớp 3 sẽ đi trải nghiệm tại Công viên sinh thái Rừng Haetsal. Xin quý phụ huynh chuẩn bị cơm hộp và nước uống, và cho con mang giày thể thao thoải mái. Vui lòng gửi lại giấy đồng ý tham gia trước ${r}.`,
+   lb:['Ngày','Địa điểm','Mang theo','Chi phí','Hạn trả lời'],place:'Công viên sinh thái Rừng Haetsal',bring:'Cơm hộp, nước uống, giày thể thao',time:'09:00-15:00',
+   yes:'Đồng ý',no:'Không đồng ý',nm:'Tiếng Việt'}
+};
+let lang='vi',cost=12000,rep=1,answered=null;
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString('en-US');
+function icons(){
+  const r=REPLY[rep];
+  $('icons').innerHTML=`<div class="ic"><i>📅</i><b>11.20</b><small>09:00-15:00</small></div>
+   <div class="ic"><i>💰</i><b>${fmt(cost)}</b><small>₩ KRW</small></div>
+   <div class="ic hot"><i>✍️</i><b>~11.${r[0]}</b><small>↩ ✔ / ✖</small></div>
+   <div class="ic"><i>🎒</i><b>🍱💧👟</b><small>&nbsp;</small></div>`;
+}
+function doc(){
+  const t=L[lang],r=REPLY[rep],rd=t.d(r[0],t.wd[r[1]]);
+  $('doc').lang=t.lang;
+  $('doc').innerHTML=`<h3>${t.title}</h3><p><b>${t.hi}</b><br>${t.body(rd)}</p>
+   <dl><dt>${t.lb[0]}</dt><dd>${t.d(20,t.wd[5])} ${t.time}</dd><dt>${t.lb[1]}</dt><dd>${t.place}</dd><dt>${t.lb[2]}</dt><dd>${t.bring}</dd><dt>${t.lb[3]}</dt><dd><b>${t.cost(cost)}</b></dd><dt>${t.lb[4]}</dt><dd><b style="color:#c0392b">${rd}</b></dd></dl>
+   <div style="margin-top:10px">${answered?`<div class="res">✓ 회신 완료(시연) · 교사 화면에는 “${answered.yes?'참가 동의':'미동의'} (${answered.nm}로 응답)”으로 도착</div>`:`<div class="rep"><button class="yes" data-a="1">✔ ${t.yes}</button><button data-a="0">✖ ${t.no}</button></div>`}</div>`;
+  $('trn').textContent=lang==='ko'?'원문 · 교사 작성':`${t.nm} · 예시 번역 · 전문 검수 필요`;
+}
+function draw(fade){
+  icons();$('costK').textContent=fmt(cost)+'원';
+  if(!fade){doc();return}
+  $('doc').classList.add('fade');setTimeout(()=>{doc();$('doc').classList.remove('fade')},160);
+}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;lang=b.dataset.l;[...$('tabs').children].forEach(x=>x.classList.toggle('on',x===b));answered=null;draw(true)});
+$('doc').addEventListener('click',e=>{const b=e.target.closest('button[data-a]');if(!b)return;answered={yes:b.dataset.a==='1',nm:L[lang].nm};doc()});
+$('minus').onclick=()=>{cost=Math.max(0,cost-1000);draw()};
+$('plus').onclick=()=>{cost=Math.min(99000,cost+1000);draw()};
+$('reply').onchange=e=>{rep=+e.target.value;draw()};
+draw();
+</script>
+</body>
+</html>

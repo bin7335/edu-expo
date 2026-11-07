@@ -1,0 +1,35 @@
+/* 법령 콕 팝업 모양 (확장과 체험 페이지 공통) */
+.ll{--ll-ink:#1e293b;--ll-muted:#64748b;--ll-line:#e2e8f0;--ll-brand:#1e3a8a;--ll-soft:#eff6ff;--ll-hi:#facc15;
+  font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ll-ink);font-size:14px;line-height:1.45}
+.ll *{box-sizing:border-box}
+.ll-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.ll-logo{width:36px;height:36px;border-radius:10px;background:var(--ll-brand);display:grid;place-items:center;font-size:19px;flex:none}
+.ll-head b{font-size:17px;display:block}
+.ll-head small{color:var(--ll-muted);font-size:12px}
+.ll-search{display:flex;gap:6px}
+.ll-search input{flex:1;min-width:0;font:inherit;font-size:13.5px;border:1px solid #cbd5e1;border-radius:10px;padding:7px 10px}
+.ll-search input:focus{outline:2px solid #93c5fd;border-color:#93c5fd}
+.ll-btn{font:inherit;font-weight:700;font-size:13.5px;border-radius:10px;border:1px solid var(--ll-line);background:#fff;color:var(--ll-ink);padding:7px 12px;cursor:pointer;white-space:nowrap}
+.ll-btn:hover{filter:brightness(.96)}
+.ll-primary{background:var(--ll-brand);color:#fff;border:0}
+.ll-sm{font-size:12px;padding:4px 8px;border-radius:8px}
+.ll-sec-h{display:flex;align-items:center;gap:6px;margin:12px 0 6px}
+.ll-title{font-weight:800;font-size:13.5px}
+.ll-cnt{background:var(--ll-hi);color:#422006;font-weight:800;font-size:11.5px;border-radius:999px;padding:0 7px}
+.ll-sp{flex:1}
+.ll-list{max-height:290px;overflow:auto;border:1px solid var(--ll-line);border-radius:12px;background:#fff}
+.ll-item{padding:8px 10px}
+.ll-item+.ll-item{border-top:1px solid var(--ll-line)}
+.ll-row{display:flex;align-items:baseline;gap:6px}
+.ll-name{font-weight:800;color:var(--ll-brand);text-decoration:none;word-break:keep-all}
+.ll-name:hover{text-decoration:underline}
+.ll-n{font-size:11.5px;color:var(--ll-muted);font-weight:700}
+.ll-meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;align-items:center}
+.ll-abbr{font-size:11.5px;background:#f1f5f9;color:#475569;border-radius:6px;padding:1px 6px}
+.ll-art{font-size:12px;font-weight:700;background:var(--ll-soft);color:var(--ll-brand);border:1px solid #bfdbfe;border-radius:6px;padding:0 6px;text-decoration:none}
+.ll-art:hover{background:#dbeafe}
+.ll-s{font-size:11.5px;color:var(--ll-muted);text-decoration:none;margin-left:auto}
+.ll-s:hover{color:var(--ll-brand)}
+.ll-empty{padding:14px;color:var(--ll-muted);font-size:13px;text-align:center}
+.ll-tip{margin-top:10px;font-size:12px;color:#334155;background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:7px 9px}
+.ll-msg{min-height:18px;margin-top:6px;font-size:12.5px;font-weight:600;color:var(--ll-brand)}

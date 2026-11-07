@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>쪽쪽 PDF - 내 PC에서 PDF 합치기·쪽 정리</title>
+<meta name="description" content="PDF 여러 개를 끌어다 놓고 쪽 카드로 펼쳐 순서 바꾸기, 쪽 삭제·회전, 합쳐 저장, 쪽번호 넣기, 범위 추출까지. 파일은 내 PC 브라우저 안에서만 처리되고 외부로 전송되지 않습니다.">
+<style>
+  :root{
+    --bg:#eef2f7; --panel:#fff; --ink:#1f2a37; --sub:#5f6b7a; --line:#d9e1ea;
+    --brand:#3056d3; --brand2:#5b7cf0; --ok:#1f9d6b; --warn:#d1495b; --soft:#eaf0ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.9}
+  .grow{flex:1}
+  .lock{display:inline-flex;align-items:center;gap:6px;background:#fff;color:#14532d;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;box-shadow:0 2px 0 #0002;white-space:nowrap}
+  .btn{border-radius:10px;padding:9px 14px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn:hover{filter:brightness(.96)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.big{width:100%;font-size:16px;padding:12px}
+  .btn.ok{background:var(--ok);color:#fff;border-color:transparent}
+  main{display:grid;grid-template-columns:1fr 310px;gap:16px;padding:14px 20px 50px;max-width:1400px;margin:0 auto}
+  .stage{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .drop{display:flex;align-items:center;gap:14px;background:#fff;border:2px dashed #a9b8d6;border-radius:14px;padding:12px 16px;cursor:pointer;transition:.15s}
+  .drop.over{background:var(--soft);border-color:var(--brand);transform:scale(1.01)}
+  .drop .ic{font-size:30px}
+  .drop b{font-size:15px}
+  .drop small{display:block;color:var(--sub);font-size:12.5px;margin-top:2px}
+  .files{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 10px;font-size:12.5px}
+  .chip i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .chip button{border:0;background:#f1f3f6;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;line-height:20px;padding:0;color:var(--sub)}
+  .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--sub)}
+  .bar b{color:var(--ink)}
+  .pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;min-height:200px;align-content:start}
+  .empty{grid-column:1/-1;text-align:center;color:var(--sub);padding:40px 10px}
+  .card{position:relative;background:#f8fafc;border:2px solid var(--line);border-radius:12px;padding:10px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:grab;user-select:none;transition:transform .15s, box-shadow .15s}
+  .card:hover{box-shadow:0 4px 14px rgba(30,50,90,.12)}
+  .card.dragging{opacity:.35}
+  .card.ins-before::before,.card.ins-after::after{content:"";position:absolute;top:6px;bottom:6px;width:4px;border-radius:2px;background:var(--brand)}
+  .card.ins-before::before{left:-10px}
+  .card.ins-after::after{right:-10px}
+  .card .ord{position:absolute;top:6px;left:8px;font-size:12px;font-weight:800;color:var(--brand);background:#fff;border-radius:6px;padding:0 5px;border:1px solid var(--line);z-index:2}
+  .card .handle{position:absolute;top:4px;right:6px;font-size:16px;color:#9aa6b6;cursor:grab;touch-action:none;padding:2px 4px;z-index:2}
+  .thumbwrap{width:96px;height:118px;display:grid;place-items:center}
+  .paper{width:78px;height:110px;background:#fff;border:1px solid #c7d0dc;border-radius:3px;box-shadow:0 2px 4px rgba(0,0,0,.08);position:relative;overflow:hidden;transition:transform .25s}
+  .paper .hd{height:16px}
+  .paper .ln{height:4px;background:#e3e8ef;margin:5px 8px 0;border-radius:2px}
+  .paper .ln.s{width:50%}
+  .paper .pn{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:20px;font-weight:800;color:#c3ccd8}
+  .paper .bx{height:20px;margin:6px 8px 0;border-radius:3px;opacity:.25}
+  .card .nm{font-size:11.5px;color:var(--ink);max-width:118px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+  .card .meta{font-size:11px;color:var(--sub)}
+  .card .tools{display:flex;gap:4px}
+  .card .tools button{border:1px solid var(--line);background:#fff;border-radius:8px;width:30px;height:28px;cursor:pointer;font-size:14px;padding:0}
+  .card .tools button:hover{background:var(--soft)}
+  .card .tools button.del:hover{background:#fde8eb}
+  .card.pop{animation:pop .35s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
+  .ghost{position:fixed;pointer-events:none;z-index:60;transform:translate(-50%,-50%) rotate(-5deg);box-shadow:0 10px 24px rgba(0,0,0,.25);border-radius:12px;background:#fff;border:2px solid var(--brand);padding:8px 12px;font-weight:700;font-size:13px}
+  .side{display:flex;flex-direction:column;gap:12px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .panel h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:6px}
+  .field{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13.5px;flex-wrap:wrap}
+  .field label{color:var(--sub);min-width:58px}
+  select,input[type=text],input[type=number]{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  input[type=number]{width:70px}
+  input[type=text]{flex:1;min-width:0}
+  .switch{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;cursor:pointer}
+  .switch input{width:18px;height:18px;accent-color:var(--brand)}
+  .pos{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:100%}
+  .pos button{font:inherit;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 0;cursor:pointer}
+  .pos button.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
+  .hint{font-size:12px;color:var(--sub);line-height:1.5;margin-top:6px}
+  .msg{font-size:13px;min-height:18px;margin-top:8px;color:var(--ok);font-weight:600}
+  .msg.bad{color:var(--warn)}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.9);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:30}
+  #fileIn{display:none}
+  @media (max-width:820px){
+    main{grid-template-columns:1fr;padding:10px}
+    header{padding:10px 12px}
+    header p{display:none}
+    header h1{font-size:19px}
+    .lock{font-size:11.5px;padding:5px 9px}
+    .pages{grid-template-columns:repeat(2,1fr);padding:10px;gap:12px}
+    .drop small{font-size:11.5px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">📑</div>
+  <div>
+    <h1>쪽쪽 PDF</h1>
+    <p>PDF를 쪽 카드로 펼쳐서 끌고, 돌리고, 지우고, 합치기</p>
+  </div>
+  <div class="grow"></div>
+  <span class="lock" title="파일은 이 브라우저 안에서만 처리됩니다">🔒 내 PC에서만 처리 · 외부 전송 없음</span>
+</header>
+
+<main>
+  <section class="stage">
+    <label class="drop" id="drop" for="fileIn">
+      <span class="ic" aria-hidden="true">📥</span>
+      <span><b>PDF 파일을 여기에 끌어다 놓거나 눌러서 고르기</b>
+      <small>여러 개 한꺼번에 가능 · 쪽마다 카드로 펼쳐져요 · 카드를 끌어 순서를 바꾸세요</small></span>
+    </label>
+    <input type="file" id="fileIn" accept="application/pdf,.pdf" multiple>
+    <div class="files" id="files"></div>
+    <div class="bar">
+      <span>현재 <b id="pageCount">0</b>쪽</span>
+      <span class="grow"></span>
+      <button class="btn" id="sortBtn" type="button">↩ 원래 순서</button>
+      <button class="btn" id="clearBtn" type="button">🧹 모두 비우기</button>
+    </div>
+    <div class="pages" id="pages" aria-label="쪽 카드 목록"></div>
+  </section>
+
+  <aside class="side">
+    <div class="panel">
+      <h2>🔢 쪽번호 넣기</h2>
+      <label class="switch"><input type="checkbox" id="numOn" checked> 저장할 때 쪽번호 찍기</label>
+      <div class="field"><label>위치</label>
+        <div class="pos" id="pos">
+          <button type="button" data-p="tl">↖ 위 왼쪽</button><button type="button" data-p="tc">↑ 위 가운데</button><button type="button" data-p="tr">↗ 위 오른쪽</button>
+          <button type="button" data-p="bl">↙ 아래 왼쪽</button><button type="button" data-p="bc" class="on">↓ 아래 가운데</button><button type="button" data-p="br">↘ 아래 오른쪽</button>
+        </div>
+      </div>
+      <div class="field"><label>모양</label>
+        <select id="numFmt">
+          <option value="dash">- 1 -</option>
+          <option value="slash">1 / 전체</option>
+          <option value="plain">1</option>
+        </select>
+        <label for="numStart" style="min-width:auto">시작</label><input type="number" id="numStart" value="1" min="1" max="9999">
+      </div>
+    </div>
+    <div class="panel">
+      <h2>💾 저장하기</h2>
+      <div class="field"><label>파일명</label><input type="text" id="outName" value="합친문서"></div>
+      <button class="btn primary big" id="mergeBtn" type="button">📎 전체 합쳐 저장</button>
+      <div class="field" style="margin-top:14px"><label>범위</label><input type="text" id="range" value="1-2, 4" aria-label="추출할 쪽 범위"></div>
+      <button class="btn ok big" id="extractBtn" type="button">✂ 범위만 뽑아 저장</button>
+      <div class="hint">범위는 지금 화면의 <b>카드 순서 번호</b> 기준이에요. 예: <code>1-3, 5</code></div>
+      <div class="msg" id="msg" role="status"></div>
+    </div>
+    <div class="panel hint" style="margin:0">
+      💡 첫 화면의 두 파일은 체험용 <b>샘플 PDF</b>(즉석 생성)예요. 내 파일을 넣어도 서버로 올라가지 않고 이 브라우저 안에서만 처리돼요.
+    </div>
+  </aside>
+</main>
+<a class="back" href="../">← 전체 데모 보기</a>
+
+<script>
+/*!
+ * pdf-lib v__PDFLIB_VERSION__ — https://github.com/Hopding/pdf-lib
+ * MIT License, Copyright (c) 2019 Andrew Dillon
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files, to deal in the Software without restriction, subject to the
+ * MIT License conditions (the above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software). THE SOFTWARE IS PROVIDED "AS IS".
+ * (pdf-lib 번들에 포함된 pako(MIT/Zlib) 등 하위 라이브러리의 라이선스 주석은 아래 원문에 그대로 남아 있음)
+ */
+__PDFLIB__
+</script>
+
+<script>
+/*CORE-START*/
+// 화면과 무관한 PDF 처리 핵심 로직 (node 테스트에서도 그대로 사용)
+var TidyCore = (function(){
+  function core(PDFLib){
+    var PDFDocument = PDFLib.PDFDocument, StandardFonts = PDFLib.StandardFonts, rgb = PDFLib.rgb, degrees = PDFLib.degrees;
+
+    // 체험용 샘플 PDF (한글 폰트 없이 영문·숫자·도형만)
+    async function makeSample(kind){
+      var doc = await PDFDocument.create();
+      var bold = await doc.embedFont(StandardFonts.HelveticaBold);
+      var reg = await doc.embedFont(StandardFonts.Helvetica);
+      var A4 = [595.28, 841.89];
+      var spec = kind === 'letter' ? {
+        n: 3, color: rgb(0.19,0.34,0.83), title: 'HAESSAL ELEMENTARY SCHOOL', sub: 'Family Newsletter  |  2026. 11',
+        heads: ['November Schedule', 'Health & Safety', 'Reply Slip']
+      } : {
+        n: 2, color: rgb(0.12,0.62,0.42), title: 'FIELD TRIP GUIDE', sub: 'Grade 4  |  2026. 11. 20 (Fri)',
+        heads: ['Timetable', 'Checklist']
+      };
+      for (var i = 0; i < spec.n; i++){
+        var p = doc.addPage(A4), W = A4[0], H = A4[1];
+        p.drawRectangle({x:0, y:H-110, width:W, height:110, color:spec.color});
+        p.drawCircle({x:W-70, y:H-55, size:30, color:rgb(1,1,1), opacity:0.25});
+        p.drawText(spec.title, {x:48, y:H-60, size:24, font:bold, color:rgb(1,1,1)});
+        p.drawText(spec.sub, {x:48, y:H-88, size:13, font:reg, color:rgb(1,1,1)});
+        p.drawText((i+1) + '. ' + spec.heads[i], {x:48, y:H-170, size:22, font:bold, color:rgb(0.12,0.16,0.22)});
+        for (var r = 0; r < 9; r++){
+          var y = H - 220 - r*44;
+          p.drawRectangle({x:48, y:y, width:14, height:14, borderColor:spec.color, borderWidth:1.5});
+          p.drawRectangle({x:76, y:y+3, width:(W-150) * (0.55 + ((r*37+i*13)%40)/100), height:8, color:rgb(0.88,0.9,0.93)});
+        }
+        p.drawRectangle({x:48, y:120, width:W-96, height:120, borderColor:spec.color, borderWidth:2, color:rgb(0.97,0.98,1)});
+        p.drawText('SAMPLE PAGE ' + (i+1) + ' / ' + spec.n, {x:64, y:200, size:16, font:bold, color:spec.color});
+        p.drawText('Made in your browser with pdf-lib. No upload.', {x:64, y:170, size:12, font:reg, color:rgb(0.35,0.4,0.48)});
+      }
+      return await doc.save();
+    }
+
+    // 쪽번호 문자열
+    function label(fmt, n, total){
+      if (fmt === 'slash') return n + ' / ' + total;
+      if (fmt === 'plain') return String(n);
+      return '- ' + n + ' -';
+    }
+
+    // 보이는(회전 적용된) 좌표 → 원래 쪽 좌표
+    function mapPoint(rot, w, h, vx, vy){
+      if (rot === 90) return {x: w - vy, y: vx};
+      if (rot === 180) return {x: w - vx, y: h - vy};
+      if (rot === 270) return {x: vy, y: h - vx};
+      return {x: vx, y: vy};
+    }
+
+    // files: {id: Uint8Array}, pages: [{fid, idx, rot}], opt: {num, pos, fmt, start}
+    async function build(files, pages, opt){
+      opt = opt || {};
+      var out = await PDFDocument.create();
+      var cache = {};
+      var font = await out.embedFont(StandardFonts.Helvetica);
+      var total = pages.length;
+      for (var i = 0; i < pages.length; i++){
+        var pg = pages[i];
+        if (!cache[pg.fid]) cache[pg.fid] = await PDFDocument.load(files[pg.fid], {ignoreEncryption:true});
+        var copied = (await out.copyPages(cache[pg.fid], [pg.idx]))[0];
+        var base = copied.getRotation().angle || 0;
+        var rot = (((base + (pg.rot||0)) % 360) + 360) % 360;
+        copied.setRotation(degrees(rot));
+        out.addPage(copied);
+        if (opt.num){
+          var box = copied.getCropBox ? copied.getCropBox() : copied.getMediaBox();
+          var w = box.width, h = box.height;
+          var vw = (rot % 180) ? h : w, vh = (rot % 180) ? w : h;
+          var txt = label(opt.fmt, (opt.start||1) + i, (opt.start||1) + total - 1);
+          var size = Math.max(9, Math.min(12, vw / 50));
+          var tw = font.widthOfTextAtSize(txt, size);
+          var m = 28, pos = opt.pos || 'bc';
+          var vx = pos[1] === 'l' ? m : pos[1] === 'r' ? vw - m - tw : (vw - tw) / 2;
+          var vy = pos[0] === 't' ? vh - m - size : m;
+          var pt = mapPoint(rot, w, h, vx, vy);
+          copied.drawText(txt, {x: box.x + pt.x, y: box.y + pt.y, size: size, font: font, color: rgb(0.2,0.2,0.2), rotate: degrees(rot)});
+        }
+      }
+      return await out.save();
+    }
+
+    // "1-3, 5" → [0,1,2,4] (중복 제거·순서 유지), 잘못되면 오류
+    function parseRange(str, max){
+      var res = [], seen = {};
+      var parts = String(str).replace(/[~〜]/g, '-').replace(/\s*-\s*/g, '-').split(/[,\s]+/).filter(Boolean);
+      if (!parts.length) throw new Error('범위를 입력해 주세요.');
+      parts.forEach(function(p){
+        var m = p.match(/^(\d+)(?:-(\d+))?$/);
+        if (!m) throw new Error('"' + p + '" 를 이해하지 못했어요. 예: 1-3, 5');
+        var a = +m[1], b = m[2] ? +m[2] : a;
+        if (a < 1 || b < 1 || a > max || b > max) throw new Error(p + ' 는 1-' + max + ' 쪽 밖이에요.');
+        var step = a <= b ? 1 : -1;
+        for (var k = a; k !== b + step; k += step){ if (!seen[k]){ seen[k] = 1; res.push(k - 1); } }
+      });
+      return res;
+    }
+
+    return {makeSample: makeSample, build: build, parseRange: parseRange, label: label};
+  }
+  return core;
+})();
+if (typeof module !== 'undefined') module.exports = TidyCore;
+/*CORE-END*/
+</script>
+
+<script>
+(function(){
+  var Core = TidyCore(PDFLib);
+  var COLORS = ['#3056d3','#1f9d6b','#e07a1f','#a23fd1','#d1495b','#0f8fa8','#7a6a12'];
+  var files = {};      // id -> {name, bytes, color, n}
+  var fileOrder = [];
+  var pages = [];      // {key, fid, idx, rot}
+  var seq = 0, pos = 'bc';
+  var $ = function(id){ return document.getElementById(id); };
+
+  function msg(t, bad){ var m = $('msg'); m.textContent = t; m.className = 'msg' + (bad ? ' bad' : ''); }
+
+  async function addFile(name, bytes, opts){
+    var doc = await PDFLib.PDFDocument.load(bytes, {ignoreEncryption:true});
+    var id = 'f' + (++seq);
+    var n = doc.getPageCount();
+    var origRot = doc.getPages().map(function(p){ return p.getRotation().angle || 0; });
+    files[id] = {name:name, bytes:bytes, color:COLORS[(fileOrder.length) % COLORS.length], n:n, origRot:origRot, sample:!!(opts && opts.sample)};
+    fileOrder.push(id);
+    for (var i = 0; i < n; i++) pages.push({key: id + '-' + i, fid:id, idx:i, rot:0, fresh:true});
+    return id;
+  }
+
+  function renderFiles(){
+    var el = $('files'); el.innerHTML = '';
+    fileOrder.forEach(function(id){
+      var f = files[id];
+      var c = document.createElement('span'); c.className = 'chip';
+      var left = pages.filter(function(p){ return p.fid === id; }).length;
+      c.innerHTML = '<i></i><span></span><button type="button" title="이 파일의 쪽 모두 빼기" aria-label="파일 빼기">✕</button>';
+      c.querySelector('i').style.background = f.color;
+      c.querySelector('span').textContent = f.name + ' · ' + left + '/' + f.n + '쪽' + (f.sample ? ' (샘플)' : '');
+      c.querySelector('button').onclick = function(){
+        pages = pages.filter(function(p){ return p.fid !== id; });
+        fileOrder = fileOrder.filter(function(x){ return x !== id; });
+        delete files[id];
+        render();
+      };
+      el.appendChild(c);
+    });
+  }
+
+  function paperHtml(f, p){
+    var hd = '<div class="hd" style="background:' + f.color + '"></div>';
+    var body = '<div class="ln"></div><div class="ln s"></div><div class="bx" style="background:' + f.color + '"></div><div class="ln"></div><div class="ln"></div><div class="ln s"></div>';
+    return hd + body + '<div class="pn">' + (p.idx + 1) + '</div>';
+  }
+
+  function render(){
+    var el = $('pages'); el.innerHTML = '';
+    $('pageCount').textContent = pages.length;
+    if (!pages.length){
+      el.innerHTML = '<div class="empty">📂 아직 쪽이 없어요. 위에 PDF를 끌어다 놓아 보세요.</div>';
+    }
+    pages.forEach(function(p, i){
+      var f = files[p.fid];
+      var c = document.createElement('div');
+      c.className = 'card' + (p.fresh ? ' pop' : '');
+      if (p.fresh){ c.style.animationDelay = Math.min(i, 12) * 30 + 'ms'; p.fresh = false; }
+      c.dataset.i = i;
+      c.style.borderColor = f.color + '55';
+      var vis = ((f.origRot[p.idx] || 0) + p.rot) % 360;
+      c.innerHTML =
+        '<span class="ord">' + (i + 1) + '</span><span class="handle" title="끌어서 옮기기" aria-hidden="true">⠿</span>' +
+        '<div class="thumbwrap"><div class="paper" style="transform:rotate(' + vis + 'deg)">' + paperHtml(f, p) + '</div></div>' +
+        '<div class="nm"></div><div class="meta"></div>' +
+        '<div class="tools"><button type="button" data-a="l" title="왼쪽으로 돌리기" aria-label="왼쪽으로 90도 회전">↺</button>' +
+        '<button type="button" data-a="r" title="오른쪽으로 돌리기" aria-label="오른쪽으로 90도 회전">↻</button>' +
+        '<button type="button" data-a="d" class="del" title="이 쪽 지우기" aria-label="이 쪽 삭제">🗑</button></div>';
+      c.querySelector('.nm').textContent = f.name;
+      c.querySelector('.nm').title = f.name;
+      c.querySelector('.meta').textContent = (p.idx + 1) + ' / ' + f.n + '쪽' + (p.rot ? ' · ' + (p.rot > 0 ? '+' : '') + p.rot + '°' : '');
+      el.appendChild(c);
+    });
+    renderFiles();
+  }
+
+  $('pages').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-a]'); if (!b) return;
+    var i = +b.closest('.card').dataset.i, p = pages[i];
+    if (b.dataset.a === 'l') p.rot = (p.rot - 90) % 360;
+    if (b.dataset.a === 'r') p.rot = (p.rot + 90) % 360;
+    if (b.dataset.a === 'd'){ pages.splice(i, 1); msg((i + 1) + '번째 쪽을 뺐어요.'); }
+    render();
+  });
+
+  // 끌어서 순서 바꾸기 (마우스: 카드 아무 곳, 터치: ⠿ 손잡이)
+  var drag = null;
+  $('pages').addEventListener('pointerdown', function(e){
+    var card = e.target.closest('.card'); if (!card || e.target.closest('button')) return;
+    if (e.pointerType !== 'mouse' && !e.target.closest('.handle')) return;
+    drag = {i: +card.dataset.i, card: card, x: e.clientX, y: e.clientY, on: false, target: null, after: false};
+    card.setPointerCapture && card.setPointerCapture(e.pointerId);
+  });
+  document.addEventListener('pointermove', function(e){
+    if (!drag) return;
+    if (!drag.on){
+      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 6) return;
+      drag.on = true; drag.card.classList.add('dragging');
+      var p = pages[drag.i];
+      drag.ghost = document.createElement('div'); drag.ghost.className = 'ghost';
+      drag.ghost.textContent = '📄 ' + (drag.i + 1) + '번째 쪽 (' + files[p.fid].name + ' ' + (p.idx + 1) + '쪽)';
+      document.body.appendChild(drag.ghost);
+    }
+    e.preventDefault();
+    drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+    var under = document.elementFromPoint(e.clientX, e.clientY);
+    var t = under && under.closest && under.closest('.card');
+    document.querySelectorAll('.ins-before,.ins-after').forEach(function(x){ x.classList.remove('ins-before','ins-after'); });
+    if (t && t !== drag.card){
+      var r = t.getBoundingClientRect();
+      drag.target = +t.dataset.i; drag.after = e.clientX > r.left + r.width / 2;
+      t.classList.add(drag.after ? 'ins-after' : 'ins-before');
+    } else drag.target = null;
+  });
+  function endDrag(){
+    if (!drag) return;
+    var d = drag; drag = null;
+    if (d.ghost) d.ghost.remove();
+    if (d.on && d.target !== null){
+      var item = pages.splice(d.i, 1)[0];
+      var to = d.target + (d.after ? 1 : 0);
+      if (d.i < to) to--;
+      pages.splice(to, 0, item);
+      msg((d.i + 1) + '번째 쪽을 ' + (to + 1) + '번째로 옮겼어요.');
+    }
+    render();
+  }
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
+
+  // 파일 넣기
+  async function handleFiles(list){
+    var arr = Array.prototype.slice.call(list || []);
+    var ok = 0;
+    for (var i = 0; i < arr.length; i++){
+      var f = arr[i];
+      if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf'){ msg(f.name + ' 은(는) PDF가 아니에요.', true); continue; }
+      try { await addFile(f.name, new Uint8Array(await f.arrayBuffer())); ok++; }
+      catch(err){ msg(f.name + ' 을(를) 열지 못했어요. (암호·손상 파일일 수 있어요)', true); }
+    }
+    if (ok) msg('📥 ' + ok + '개 파일을 펼쳤어요.');
+    render();
+  }
+  $('fileIn').addEventListener('change', function(e){ handleFiles(e.target.files); e.target.value = ''; });
+  var drop = $('drop');
+  ['dragenter','dragover'].forEach(function(t){ document.addEventListener(t, function(e){ e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave','drop'].forEach(function(t){ document.addEventListener(t, function(e){ if (t === 'dragleave' && e.relatedTarget) return; drop.classList.remove('over'); }); });
+  document.addEventListener('drop', function(e){ e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+
+  // 옵션
+  $('pos').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    pos = b.dataset.p;
+    this.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  });
+  function opts(){ return {num: $('numOn').checked, pos: pos, fmt: $('numFmt').value, start: Math.max(1, parseInt($('numStart').value, 10) || 1)}; }
+  function bytesMap(){ var m = {}; fileOrder.forEach(function(id){ m[id] = files[id].bytes; }); return m; }
+  function fname(suffix){
+    var n = ($('outName').value || '합친문서').replace(/[\\/:*?"<>|]/g, '').trim() || '합친문서';
+    return n.replace(/\.pdf$/i, '') + (suffix || '') + '.pdf';
+  }
+  function download(bytes, name){
+    var url = URL.createObjectURL(new Blob([bytes], {type:'application/pdf'}));
+    var a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+  async function save(list, suffix){
+    if (!list.length){ msg('저장할 쪽이 없어요.', true); return null; }
+    msg('⏳ 만드는 중...');
+    var out = await Core.build(bytesMap(), list, opts());
+    var kb = Math.max(1, Math.round(out.length / 1024));
+    download(out, fname(suffix));
+    msg('✅ ' + list.length + '쪽 · ' + kb + 'KB 저장했어요. (' + fname(suffix) + ')');
+    return out;
+  }
+  $('mergeBtn').onclick = function(){ save(pages, '').catch(function(e){ msg('저장 실패: ' + e.message, true); }); };
+  $('extractBtn').onclick = function(){
+    try {
+      var idx = Core.parseRange($('range').value, pages.length);
+      save(idx.map(function(i){ return pages[i]; }), '_' + $('range').value.replace(/\s/g, '').replace(/,/g, '_')).catch(function(e){ msg('저장 실패: ' + e.message, true); });
+    } catch(e){ msg(e.message, true); }
+  };
+  $('clearBtn').onclick = function(){ pages = []; fileOrder = []; files = {}; msg('모두 비웠어요.'); render(); };
+  $('sortBtn').onclick = function(){
+    pages.sort(function(a, b){ return fileOrder.indexOf(a.fid) - fileOrder.indexOf(b.fid) || a.idx - b.idx; });
+    pages.forEach(function(p){ p.rot = 0; });
+    msg('파일 순서·쪽 순서대로 되돌렸어요. (지운 쪽은 그대로)'); render();
+  };
+
+  // 첫 화면: 샘플 2개를 펼치고 살짝 정리해 둔 상태
+  (async function init(){
+    try {
+      await addFile('가정통신문_11월.pdf', await Core.makeSample('letter'), {sample:true});
+      await addFile('현장체험학습_안내문.pdf', await Core.makeSample('trip'), {sample:true});
+      // 안내문 1쪽을 앞쪽으로 끌어 놓은 예시
+      var moved = pages.splice(3, 1)[0]; pages.splice(1, 0, moved);
+      render();
+      msg('샘플 2개(5쪽)를 펼쳐 두었어요. 카드를 끌어 보세요!');
+      window.__tidyReady = true;
+      if (location.hash === '#selftest') selftest();
+    } catch(e){ msg('샘플을 만들지 못했어요: ' + e.message, true); render(); }
+  })();
+
+  // 헤드리스 확인용 (#selftest)
+  async function selftest(){
+    var log = [];
+    try {
+      var merged = await Core.build(bytesMap(), pages, opts());
+      var d1 = await PDFLib.PDFDocument.load(merged);
+      log.push('merge:' + d1.getPageCount());
+      $('pages').querySelector('[data-a="r"]').click();
+      $('pages').querySelectorAll('[data-a="d"]')[1].click();
+      log.push('afterDelete:' + pages.length + ' rot0:' + pages[0].rot);
+      var idx = Core.parseRange('1-2, 4', pages.length);
+      var ex = await Core.build(bytesMap(), idx.map(function(i){ return pages[i]; }), opts());
+      log.push('extract:' + (await PDFLib.PDFDocument.load(ex)).getPageCount());
+    } catch(e){ log.push('ERR ' + e.message); }
+    var o = document.createElement('pre'); o.id = 'selftest'; o.textContent = log.join(' | ');
+    document.body.appendChild(o);
+  }
+})();
+</script>
+</body>
+</html>

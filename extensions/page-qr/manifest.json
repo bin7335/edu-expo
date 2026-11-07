@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "딸깍 QR",
+  "version": "1.0.0",
+  "description": "툴바 아이콘을 한 번 누르면 지금 보는 페이지 주소가 큰 QR로! 교실 TV 전체 화면, PNG 저장, 추적 꼬리표 지우기. 외부 전송 없음.",
+  "permissions": ["activeTab"],
+  "action": {
+    "default_title": "딸깍 QR - 이 페이지 QR 보기 (Alt+Q)",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+  },
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Q", "mac": "Alt+Q" },
+      "description": "지금 페이지 QR 팝업 열기"
+    }
+  }
+}

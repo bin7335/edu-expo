@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>자리척척 - 우리 반 자리 배치 생성기</title>
 <meta name="description" content="행·열을 정하고 이름을 붙여 넣으면 짝 고정·분리·앞자리 조건을 지켜 자리를 섞어 주는 자리 배치 생성기. 드래그로 자리 바꾸기, 인쇄 지원.">
@@ -85,6 +86,14 @@
     .teacher-desk{background:#fff;color:#000;border:2px solid #000;box-shadow:none}
   }
 </style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="자리척척">
+<meta property="og:description" content="짝 고정·떨어뜨리기·앞자리 조건을 지키며 자리를 섞고, 끌어서 바꾸고 바로 인쇄">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/11-seat-maker.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/seat-maker/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
 </head>
 <body>
 <header>
@@ -282,7 +291,7 @@
       var cls='seat'+(n?'':' empty')+(n&&fr[n]?' front-pri':'')+(c2>0&&c2%2===0?' gap-l':'')+(i===selected?' sel':'');
       var style=popIdx?' style="animation-delay:'+(popIdx[i]||0)+'ms"':'';
       if(popIdx) cls+=' pop';
-      html+='<div class="'+cls+'" data-i="'+i+'"'+style+' role="button" tabindex="0" aria-label="'+(i+1)+'번 자리 '+(n||'빈자리')+'"><span class="no">'+(i+1)+'</span>'+(n?esc(n):'빈자리')+(n&&tagsFor(n)?'<span class="tag">'+tagsFor(n)+'</span>':'')+'</div>';
+      html+='<div class="'+cls+'" data-i="'+i+'"'+style+' role="button" tabindex="0" aria-label="'+(i+1)+'번 자리 '+esc(n||'빈자리')+'"><span class="no">'+(i+1)+'</span>'+(n?esc(n):'빈자리')+(n&&tagsFor(n)?'<span class="tag">'+tagsFor(n)+'</span>':'')+'</div>';
     }
     el.grid.innerHTML=html;
     el.count.textContent=parseNames().length+'명 / '+(rows*cols)+'자리';

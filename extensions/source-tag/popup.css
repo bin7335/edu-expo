@@ -42,4 +42,6 @@
 .st-x:hover{color:#b91c1c}
 .st-empty{color:var(--st-muted)}
 .st-msg{min-height:20px;margin-top:8px;font-size:13px;font-weight:600;color:var(--st-brand)}
+.st-opt{display:flex;align-items:center;gap:6px;margin:-2px 0 10px;font-size:12px;color:var(--st-muted);cursor:pointer}
+.st-opt input{accent-color:var(--st-brand);margin:0}
 /* ==css:end== */

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>업무 물어봄 - 매뉴얼 근거로 답하는 학교 업무 Q&amp;A (콘셉트)</title>
+<meta name="description" content="체험학습 일수, 출결 처리, 복무 신청, 방과후 정산, 학교폭력 초기 대응 같은 학교 업무 질문에 매뉴얼 근거와 관련 서식을 함께 보여 주는 업무 도우미 콘셉트 페이지">
+<style>
+  :root{--g:#146c43;--g2:#e3f2ea;--g3:#0c4029;--cr:#fbf8f1;--lime:#c8f169;--ink:#16261d;--mut:#5d6d63;--line:#e2e4d8;--warn:#b85c00}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--cr);line-height:1.55;word-break:keep-all}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+  nav{display:flex;align-items:center;gap:12px;height:58px}
+  .logo{font-weight:900;font-size:20px;display:flex;gap:8px;align-items:center;color:var(--g3)}
+  .logo svg{width:32px;height:32px}
+  .badge{background:var(--lime);color:#1e3300;font-weight:800;font-size:13px;padding:4px 12px;border-radius:999px;border:2px solid var(--g3)}
+  nav .links{margin-left:auto;display:flex;gap:20px;font-size:14px;color:var(--mut)}
+  nav a{text-decoration:none;color:inherit}
+  .hero{display:grid;grid-template-columns:1.2fr .9fr;gap:40px;align-items:center;padding:6px 0 40px}
+  .hero .txt{order:2}
+  .hero h1{font-size:40px;line-height:1.22;letter-spacing:-1.3px;margin:14px 0 12px}
+  .hero h1 em{font-style:normal;color:var(--g)}
+  .lead{font-size:16px;color:var(--mut);margin-bottom:20px}
+  .btn{border:0;border-radius:999px;padding:12px 22px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn.p{background:var(--g);color:#fff}
+  .btn.s{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .cta{display:flex;gap:10px;flex-wrap:wrap}
+  .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:20px;font-size:12.5px}
+  .pills span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--mut)}
+  .notai{margin-top:14px;font-size:13px;background:#fff3e0;color:var(--warn);border-radius:10px;padding:8px 12px;font-weight:700}
+  /* chat mock */
+  .mock{background:#fff;border-radius:22px;border:1px solid var(--line);box-shadow:0 22px 50px #16261d1c;display:flex;flex-direction:column;height:604px;overflow:hidden}
+  .mh{background:var(--g3);color:#fff;padding:11px 16px;display:flex;align-items:center;gap:10px}
+  .mh .av{width:34px;height:34px;border-radius:11px;background:var(--lime);display:grid;place-items:center;font-size:18px}
+  .mh b{font-size:15px;display:block}.mh small{font-size:11.5px;opacity:.8}
+  .mh .tagx{margin-left:auto;font-size:11px;background:#ffffff22;border-radius:6px;padding:3px 8px}
+  .log{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(#fbfcf8,#f4f7f1)}
+  .msg{max-width:88%;font-size:13.5px;border-radius:16px;padding:9px 12px}
+  .me{align-self:flex-end;background:var(--g);color:#fff;border-bottom-right-radius:4px}
+  .bot{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+  .bot h5{font-size:13.5px;margin-bottom:4px;color:var(--g3)}
+  .bot ol,.bot ul{padding-left:18px}.bot li{margin:2px 0}
+  .src{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;align-items:center}
+  .cite{font-size:11.5px;background:var(--g2);color:var(--g3);border-radius:6px;padding:2px 8px;font-weight:700}
+  .chk{font-size:11.5px;background:#fff3e0;color:var(--warn);border-radius:6px;padding:2px 8px;font-weight:700}
+  .forms{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+  .fb{font:inherit;font-size:12px;border:1.5px solid var(--g);color:var(--g);background:#fff;border-radius:8px;padding:3px 9px;cursor:pointer;font-weight:700}
+  .fb:hover{background:var(--g2)}
+  .sug{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;border-top:1px solid var(--line);scrollbar-width:none}
+  .sug button{flex:none;font:inherit;font-size:12px;border:1px solid var(--line);background:var(--cr);border-radius:999px;padding:4px 10px;cursor:pointer;color:var(--ink)}
+  .sug button:hover{border-color:var(--g)}
+  form.in{display:flex;gap:8px;padding:10px 12px 12px}
+  form.in input{flex:1;min-width:0;font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:12px;padding:9px 12px}
+  form.in input:focus{outline:2px solid var(--g);border-color:transparent}
+  form.in button{font:inherit;font-weight:800;border:0;background:var(--g);color:#fff;border-radius:12px;padding:0 16px;cursor:pointer}
+  .typing{align-self:flex-start;color:var(--mut);font-size:12.5px}
+  .modal{position:fixed;inset:0;background:#0007;display:none;place-items:center;padding:16px;z-index:9}
+  .modal.show{display:grid}
+  .paper{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:20px;font-size:13.5px}
+  .paper h4{text-align:center;font-size:17px;margin-bottom:10px;letter-spacing:2px}
+  .paper table{width:100%;border-collapse:collapse;margin:8px 0}
+  .paper td{border:1px solid #999;padding:6px 8px}.paper td:first-child{background:#f2f2f2;width:34%;font-weight:700}
+  .paper .wm{color:var(--warn);font-size:12px;text-align:center;margin-top:6px}
+  .paper button{margin-top:10px;width:100%}
+  section{padding:56px 0}
+  .tag{color:var(--g);font-weight:900;font-size:13px;letter-spacing:1px}
+  h2{font-size:30px;letter-spacing:-.8px;margin:6px 0 24px}
+  .ps{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:22px;overflow:hidden;border:1px solid var(--line)}
+  .ps>div{padding:26px}
+  .ps .a{background:#fff}
+  .ps .b{background:var(--g2)}
+  .ps h3{font-size:18px;margin-bottom:10px}.ps ul{padding-left:18px;font-size:15px}.ps li{margin:5px 0}
+  .feat{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .feat div{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px}
+  .feat span{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--lime);font-size:22px}
+  .feat h3{font-size:16px;margin:10px 0 6px}.feat p{font-size:14px;color:var(--mut)}
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .flow div{background:var(--g3);color:#fff;border-radius:18px;padding:20px}
+  .flow em{font-style:normal;color:var(--lime);font-weight:900;font-size:13px}
+  .flow h3{font-size:16px;margin:6px 0}.flow p{font-size:14px;opacity:.85}
+  .note{font-size:13px;color:var(--mut);margin-top:18px}
+  footer{border-top:1px solid var(--line);padding:26px 0 40px;font-size:13px;color:var(--mut)}
+  footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  footer a{font-weight:800;color:var(--g)}
+  @media (max-width:1000px){.hero{grid-template-columns:1fr}.hero .txt{order:0}.feat{grid-template-columns:1fr 1fr}nav .links{display:none}}
+  @media (max-width:600px){
+    .wrap{padding:0 12px}.hero h1{font-size:30px}
+    .mock{height:560px}.msg{max-width:94%}
+    .ps,.feat,.flow{grid-template-columns:1fr}h2{font-size:24px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="업무 물어봄">
+<meta property="og:description" content="업무 질문에 매뉴얼 근거 쪽수와 관련 서식까지 함께 답하는 Q&amp;A">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/39-manual-bot.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/manual-bot/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo"><svg viewBox="0 0 40 40"><path d="M6 10a6 6 0 0 1 6-6h16a6 6 0 0 1 6 6v12a6 6 0 0 1-6 6H17l-8 7v-7a6 6 0 0 1-3-5z" fill="#146c43"/><text x="20" y="23" text-anchor="middle" font-size="15" font-weight="900" fill="#c8f169" font-family="system-ui">?</text></svg>업무 물어봄</div>
+    <span class="badge">💡 콘셉트</span>
+    <div class="links"><a href="#problem">왜 필요할까</a><a href="#features">기능</a><a href="#flow">사용 흐름</a></div>
+  </nav>
+  <header class="hero">
+    <div class="txt">
+      <span class="badge">💡 콘셉트 · 아이디어 시연</span>
+      <h1>“이거 어떻게 해요?”<br><em>매뉴얼 근거</em>와 함께<br>바로 답해 드려요</h1>
+      <p class="lead">두꺼운 업무 매뉴얼 대신 채팅창에 물어보세요. 처리 순서와 근거 쪽수, 필요한 서식까지 한 번에 보여 줍니다.</p>
+      <div class="cta"><a class="btn p" href="#demo">질문해 보기 →</a><a class="btn s" href="#flow">사용 흐름</a></div>
+      <div class="pills"><span>체험학습</span><span>출결</span><span>복무</span><span>방과후 정산</span><span>학교폭력 초기 대응</span><span>+15개 주제</span></div>
+      <p class="notai">⚠ 이 미리보기는 실제 AI가 아닙니다. 미리 넣어 둔 질문 20개에서 키워드로 찾아 답합니다.</p>
+    </div>
+    <div class="mock" id="demo">
+      <div class="mh"><div class="av">📘</div><div><b>업무 물어봄</b><small>햇살초등학교 · 교직원용 (예시)</small></div><span class="tagx">키워드 매칭 시연</span></div>
+      <div class="log" id="log" aria-live="polite"></div>
+      <div class="sug" id="sug"></div>
+      <form class="in" id="f"><input id="q" placeholder="예: 질병결석 증빙은 뭐가 필요해요?" autocomplete="off" aria-label="질문 입력"><button>보내기</button></form>
+    </div>
+  </header>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="paper" id="paper"></div></div>
+
+<section id="problem" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">PROBLEM → SOLUTION</div>
+    <h2>매번 찾고, 묻고, 또 찾는 업무 규정</h2>
+    <div class="ps">
+      <div class="a"><h3>📚 지금은</h3><ul><li>매뉴얼 PDF 수백 쪽에서 검색어를 바꿔 가며 찾기</li><li>옆 반·교무실에 물어보면 사람마다 다른 답</li><li>서식은 또 다른 폴더에서 따로 찾아야 함</li></ul></div>
+      <div class="b"><h3>💬 업무 물어봄에서는</h3><ul><li>평소 말투로 물으면 처리 순서를 단계별로</li><li>답마다 “근거: 어느 매뉴얼 몇 쪽” 출처 칩</li><li>관련 서식 버튼으로 바로 열기</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="tag">FEATURES</div>
+    <h2>주요 기능</h2>
+    <div class="feat">
+      <div><span>🔎</span><h3>매뉴얼 기반 답변</h3><p>학교가 등록한 공식 매뉴얼 안에서만 답을 찾아, 근거 없는 답을 줄입니다.</p></div>
+      <div><span>📌</span><h3>출처 칩</h3><p>답 아래에 매뉴얼 이름과 쪽수를 붙여 원문을 바로 확인할 수 있습니다.</p></div>
+      <div><span>📝</span><h3>서식 바로 열기</h3><p>신청서·보고서·확인서 같은 관련 서식을 버튼 하나로 엽니다.</p></div>
+      <div><span>🔄</span><h3>지침 변경 알림</h3><p>매뉴얼이 새 판으로 바뀌면 바뀐 쪽을 표시하고 “실제 지침 확인”을 띄웁니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="flow" style="background:#fff">
+  <div class="wrap">
+    <div class="tag">HOW IT WORKS</div>
+    <h2>사용 흐름 3단계</h2>
+    <div class="flow">
+      <div><em>STEP 1 · 업무 담당</em><h3>매뉴얼 등록</h3><p>학교·교육청 공식 매뉴얼과 서식 파일을 올리면 쪽 단위로 정리됩니다.</p></div>
+      <div><em>STEP 2 · 교직원</em><h3>채팅으로 질문</h3><p>“체험학습 며칠까지 돼요?”처럼 평소 말투로 물어봅니다.</p></div>
+      <div><em>STEP 3 · 확인</em><h3>근거 보고 처리</h3><p>출처 쪽수를 열어 원문을 확인하고, 서식을 받아 바로 처리합니다.</p></div>
+    </div>
+    <p class="note">※ 미리보기의 답변은 일반적인 원칙 수준의 예시이며 실제 지침이 아닙니다. 매뉴얼 이름·쪽수도 가상입니다. 실제 업무는 반드시 최신 공식 지침과 학교 규정을 확인하세요. 입력한 질문은 전송·저장되지 않습니다.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>업무 물어봄 · 실제 운영 중인 서비스가 아닌 아이디어 시연용 페이지입니다.</span>
+    <a href="../">← 전체 데모 보기</a>
+  </div>
+</footer>
+
+<script>
+// [제목, 키워드[], 답(HTML), 근거, 서식[]]
+const FAQ=[
+['교외체험학습 허용 일수',['체험학습','교외','가정학습','여행','일수','며칠'],'<ol><li>연간 허용 일수는 <b>학교 학칙(학교생활규정)</b>에서 정한 범위 안에서 운영합니다.</li><li>보호자가 <b>사전에 신청서</b>를 내고 학교장 승인을 받습니다.</li><li>다녀온 뒤 정해진 기한 안에 <b>보고서</b>를 내면 출석으로 인정됩니다.</li></ol>','학업성적관리 매뉴얼 p.42(예시)',['교외체험학습 신청서','교외체험학습 보고서']],
+['질병결석 증빙',['질병','결석','병결','진단서','증빙','아파'],'<ul><li>짧은 기간은 보통 <b>보호자 확인서</b>나 처방전 등으로 처리합니다.</li><li>일정 기간 이상 연속 결석이면 <b>진단서·의견서</b>를 요구하는 경우가 많습니다.</li><li>기준 일수는 학교 규정마다 달라 꼭 확인하세요.</li></ul>','출결 관리 매뉴얼 p.15(예시)',['결석계','질병결석 확인서']],
+['지각·조퇴·결과 구분',['지각','조퇴','결과','외출','출결'],'<ul><li><b>지각</b>: 정해진 등교 시각 이후 등교</li><li><b>조퇴</b>: 수업 중간에 하교</li><li><b>결과</b>: 일부 수업 시간에 참여하지 않음</li></ul>사유(질병·미인정·기타)에 따라 구분해 기록합니다.','출결 관리 매뉴얼 p.9(예시)',['조퇴·외출 확인서']],
+['감염병 결석 처리',['감염병','독감','코로나','수두','전염','등교중지'],'<ol><li>의사 소견으로 <b>등교 중지</b>가 필요한 감염병이면 출석인정 결석으로 처리할 수 있습니다.</li><li>진료확인서 등 증빙을 받고 보건 담당과 공유합니다.</li><li>학급 내 추가 발생 여부를 살핍니다.</li></ol>','학교 보건 업무 매뉴얼 p.27(예시)',['등교중지 안내문']],
+['연가 신청',['연가','휴가','쉬','개인'],'<ol><li>전자 복무 시스템에서 <b>연가를 신청</b>하고 결재를 받습니다.</li><li>수업일이면 <b>보결·수업 교체 계획</b>을 함께 협의합니다.</li><li>학기 중 연가는 학교 사정을 고려해 승인됩니다.</li></ol>','교원 복무 매뉴얼 p.31(예시)',['수업 교체 계획서']],
+['출장 신청과 여비',['출장','여비','교육청','협의회','회의'],'<ol><li>공문 등 출장 근거를 확인합니다.</li><li>복무 시스템에서 <b>출장 신청</b> 후 결재를 받습니다.</li><li>다녀온 뒤 여비를 정산합니다. 관내·관외 기준은 지침을 확인하세요.</li></ol>','교원 복무 매뉴얼 p.38(예시)',['출장 복명서']],
+['육아시간',['육아시간','육아','자녀','아이','어린이집'],'<ul><li>대상 자녀가 있는 공무원이 근무시간 중 일부를 쓰는 <b>특별휴가</b>입니다.</li><li>대상 자녀 나이·사용 기간·하루 사용 시간은 <b>복무 규정 개정에 따라 바뀌어 왔으니</b> 최신 규정을 꼭 확인하세요.</li><li>수업 시간과 겹치지 않게 계획합니다.</li></ul>','교원 복무 매뉴얼 p.47(예시)',[]],
+['병가',['병가','입원','치료','몸'],'<ul><li>질병·부상으로 근무가 어려울 때 신청합니다.</li><li>일정 일수를 넘으면 <b>진단서</b>가 필요합니다.</li><li>장기 병가는 기간제 교원 채용 등 대체 인력 협의가 필요합니다.</li></ul>','교원 복무 매뉴얼 p.44(예시)',['진단서 제출 안내']],
+['방과후학교 정산',['방과후','정산','수강료','강사료','잔액','환불'],'<ol><li>프로그램별 <b>수강료 수입</b>과 <b>강사료·재료비 지출</b>을 맞춥니다.</li><li>중도 포기자는 규정에 따라 <b>환불</b>합니다.</li><li>남은 금액은 반환하거나 규정대로 처리하고 결산 결과를 공개합니다.</li></ol>','방과후학교 운영 매뉴얼 p.63(예시)',['수강료 환불 신청서','프로그램별 정산서']],
+['학교폭력 초기 대응',['학교폭력','학폭','폭력','괴롭힘','따돌림','싸움'],'<ol><li>인지하면 <b>즉시 학교장에게 보고</b>합니다.</li><li>피해 학생 <b>보호와 분리</b>를 우선합니다.</li><li>양쪽 <b>보호자에게 알리고</b>, 전담기구가 사안을 조사합니다.</li><li>정해진 기한 안에 교육청 보고 등 후속 절차를 밟습니다.</li></ol>','학교폭력 사안처리 가이드북 p.12(예시)',['사안 인지 보고서','학생 확인서']],
+['아동학대 의심',['아동학대','학대','방임','멍','신고'],'<ol><li>교원은 <b>신고 의무자</b>입니다. 의심만으로도 신고할 수 있습니다.</li><li>112 등 지정된 경로로 신고합니다.</li><li>보호자에게 먼저 알리거나 직접 조사하지 않습니다.</li></ol>','아동학대 예방 매뉴얼 p.8(예시)',['신고 접수 기록지']],
+['학생 안전사고',['안전사고','다쳤','부상','사고','공제','골절'],'<ol><li>응급처치·보건실 연계, 필요 시 119</li><li><b>보호자에게 즉시 연락</b></li><li>사고 경위를 기록하고 학교안전공제 청구를 안내합니다.</li></ol>','학교 안전사고 대응 매뉴얼 p.20(예시)',['사고 경위서','공제급여 청구 안내문']],
+['학교생활기록부 정정',['생활기록부','생기부','정정','오기','수정','기재'],'<ul><li>학년이 끝난 뒤 정정은 <b>근거 자료</b>가 있어야 합니다.</li><li>학업성적관리위원회 심의 등 학교 절차를 거칩니다.</li><li>정정 대장에 기록을 남깁니다.</li></ul>','학교생활기록부 기재요령 p.24(예시)',['정정 대장']],
+['전학 처리',['전학','전입','전출','이사'],'<ol><li>전입: 서류 확인 → 학급 배정 → 교과서·급식 안내</li><li>전출: 학적 서류 이관과 출결·성적 마감</li><li>시스템 처리 날짜를 실제 등교일과 맞춥니다.</li></ol>','학적 관리 매뉴얼 p.18(예시)',['전입학 안내문']],
+['학부모 공개수업',['공개수업','학부모','참관'],'<ol><li>날짜·학년별 시간표를 정해 가정통신문으로 안내합니다.</li><li>참관 수칙(사진 촬영 등)을 미리 알립니다.</li><li>협의록·만족도 조사로 마무리합니다.</li></ol>','학교 행사 운영 안내 p.6(예시)',['공개수업 안내 가정통신문']],
+['교육과정 시수 변경',['시수','교육과정','시간표','변경','증감'],'<ul><li>학년 교육과정 운영 계획의 <b>교과별 시수 범위</b>를 확인합니다.</li><li>변경 사유와 대체 계획을 학년협의록에 남깁니다.</li><li>교무 담당과 공유해 나이스 시간표에 반영합니다.</li></ul>','교육과정 운영 길잡이 p.33(예시)',['학년 협의록']],
+['개인정보 동의서',['개인정보','동의서','초상권','사진'],'<ul><li>수집 목적·항목·보유 기간을 분명히 적습니다.</li><li>필수와 선택 동의를 나눕니다.</li><li>사진·영상은 초상권 활용 동의를 따로 받습니다.</li></ul>','개인정보 보호 업무 매뉴얼 p.14(예시)',['개인정보 수집·이용 동의서']],
+['현장체험학습(학교 단위)',['현장체험','소풍','견학','답사','버스','수학여행'],'<ol><li>장소 <b>사전 답사</b>와 안전 점검</li><li>학교운영위원회 심의, 보호자 동의</li><li>인솔 교사·안전 요원 배치, 차량 안전 확인</li></ol>','현장체험학습 운영 매뉴얼 p.10(예시)',['사전 답사 점검표','보호자 동의서']],
+['연수 이수 시간',['연수','이수','직무연수','시간','학점'],'<ul><li>직무연수·자율연수 등 종류별로 인정 기준이 다릅니다.</li><li>법정 의무연수는 매년 이수 여부를 확인합니다.</li><li>이수증은 한곳에 모아 두면 연말 정리가 쉽습니다.</li></ul>','교원 연수 안내 p.5(예시)',['연수 이수 현황표']],
+['물품 구매 품의',['물품','구매','품의','예산','카드','학습준비물'],'<ol><li>예산 과목과 잔액을 확인합니다.</li><li>품의(지출 요청)를 올려 결재를 받습니다.</li><li>구매 후 검수하고 증빙을 붙여 지출을 마칩니다.</li></ol>','학교회계 실무 매뉴얼 p.52(예시)',['물품 검수 조서']]
+];
+const START=['체험학습 며칠까지 돼요?','질병결석 증빙','학폭 초기 대응 순서','방과후 정산','육아시간 신청','연가 신청'];
+const log=document.getElementById('log'),q=document.getElementById('q');
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function add(cls,html){const d=document.createElement('div');d.className='msg '+cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
+function find(text){
+  const t=text.replace(/\s/g,'');let best=null,bs=0;
+  FAQ.forEach((f,i)=>{let s=0;f[1].forEach(k=>{if(t.includes(k))s+=k.length});if(t.includes(f[0].replace(/\s/g,'')))s+=5;if(s>bs){bs=s;best=i}});
+  return best;
+}
+function answer(i){
+  const f=FAQ[i];
+  return `<h5>📘 ${f[0]}</h5>${f[2]}<div class="src"><span class="cite">근거: ${f[3]}</span><span class="chk">⚠ 실제 지침 확인</span></div>`+
+   (f[4].length?`<div class="forms">${f[4].map(n=>`<button class="fb" data-form="${esc(n)}">📝 ${esc(n)}</button>`).join('')}</div>`:'');
+}
+function ask(text){
+  text=text.trim();if(!text)return;
+  add('me',esc(text));
+  const ty=document.createElement('div');ty.className='typing';ty.textContent='매뉴얼에서 찾는 중…';log.appendChild(ty);log.scrollTop=log.scrollHeight;
+  setTimeout(()=>{ty.remove();const i=find(text);
+    if(i===null){const pick=[...FAQ.keys()].sort(()=>.5-Math.random()).slice(0,3);
+      add('bot',`등록된 매뉴얼에서 맞는 내용을 찾지 못했어요. 이렇게 물어보시겠어요?<div class="forms">${pick.map(k=>`<button class="fb" data-q="${esc(FAQ[k][0])}">${esc(FAQ[k][0])}</button>`).join('')}</div><div class="src"><span class="chk">근거 없는 답은 하지 않아요</span></div>`)}
+    else add('bot',answer(i));
+  },450);
+}
+document.getElementById('sug').innerHTML=START.map(s=>`<button>${s}</button>`).join('')+FAQ.map(f=>`<button>${f[0]}</button>`).join('');
+document.getElementById('sug').addEventListener('click',e=>{if(e.target.tagName==='BUTTON')ask(e.target.textContent)});
+document.getElementById('f').addEventListener('submit',e=>{e.preventDefault();ask(q.value);q.value=''});
+const modal=document.getElementById('modal'),paper=document.getElementById('paper');
+log.addEventListener('click',e=>{
+  const b=e.target.closest('.fb');if(!b)return;
+  if(b.dataset.q){ask(b.dataset.q);return}
+  const n=b.dataset.form;
+  paper.innerHTML=`<h4>${esc(n)}</h4><table><tr><td>학교</td><td>햇살초등학교</td></tr><tr><td>학년/반</td><td>3학년 2반</td></tr><tr><td>성명</td><td>(자동 입력 칸)</td></tr><tr><td>기간·일시</td><td>(자동 입력 칸)</td></tr><tr><td>내용</td><td>(작성 칸)</td></tr></table><p class="wm">서식 미리보기(예시) · 실제 학교 서식을 사용하세요</p><button class="btn p" id="cl">닫기</button>`;
+  modal.classList.add('show');document.getElementById('cl').focus();
+});
+modal.addEventListener('click',e=>{if(e.target===modal||e.target.id==='cl')modal.classList.remove('show')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')modal.classList.remove('show')});
+// 첫 화면 예시 대화
+add('bot','안녕하세요! 학교 업무 매뉴얼에서 찾아 근거와 함께 알려 드려요. 아래 예시를 누르거나 직접 물어보세요.');
+add('me','체험학습 며칠까지 쓸 수 있어요?');
+add('bot',answer(0));
+</script>
+</body>
+</html>

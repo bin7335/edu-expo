@@ -5,18 +5,19 @@
   if (window.__sourceTagLoaded) return;
   window.__sourceTagLoaded = true;
 
-  let settings = { enabled: true, format: 'easy' };
-  chrome.storage.local.get({ enabled: true, format: 'easy' }, s => { settings = s; });
+  let settings = { enabled: true, format: 'easy', fullUrl: false };
+  chrome.storage.local.get({ enabled: true, format: 'easy', fullUrl: false }, s => { settings = s; });
   chrome.storage.onChanged.addListener((ch, area) => {
     if (area !== 'local') return;
     if (ch.enabled) settings.enabled = ch.enabled.newValue;
     if (ch.format) settings.format = ch.format.newValue;
+    if (ch.fullUrl) settings.fullUrl = ch.fullUrl.newValue;
   });
 
   document.addEventListener('copy', e => {
     const r = SourceTag.handleCopy(e, {
       enabled: settings.enabled, format: settings.format,
-      getMeta: () => SourceTag.readMeta(document, location),
+      getMeta: () => SourceTag.readMeta(document, location, { fullUrl: settings.fullUrl }),
     });
     if (!r) return;
     const entry = SourceTag.makeEntry(r.meta, r.now);
@@ -28,6 +29,6 @@
 
   // 팝업의 "이 페이지 출처 복사" 버튼이 제목·사이트 이름을 물어볼 때만 대답
   chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
-    if (msg && msg.type === 'source-tag:meta') reply(SourceTag.readMeta(document, location));
+    if (msg && msg.type === 'source-tag:meta') reply(SourceTag.readMeta(document, location, { fullUrl: 'fullUrl' in msg ? !!msg.fullUrl : settings.fullUrl }));
   });
 })();
