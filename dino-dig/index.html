@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>화석 발굴단 - 붓으로 흙을 털어 공룡 뼈를 찾는 발굴 체험</title>
+<meta name="description" content="붓으로 흙을 문질러 털어 공룡 뼈 화석을 드러내고, 뼈를 맞춰 어떤 공룡인지 알아내는 발굴 체험. 세 발굴지에서 트리케라톱스·스테고사우루스·티라노사우루스의 시대·먹이·크기를 발굴 노트에 모아요.">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#3a2615;color:#2d1e10;-webkit-user-select:none;user-select:none}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.hud{position:fixed;left:0;right:0;top:0;display:flex;align-items:flex-start;gap:8px;padding:10px 12px;pointer-events:none;z-index:3}
+.hud>*{pointer-events:auto}
+.ttl{background:rgba(255,248,232,.9);border-radius:16px;padding:7px 14px;box-shadow:0 4px 14px rgba(0,0,0,.18);min-width:0}
+.ttl h1{margin:0;font-size:21px;letter-spacing:-.5px}
+.ttl small{display:block;font-size:12px;color:#7b5a37}
+.sp{flex:1}
+.ib{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,248,232,.92);font-size:20px;box-shadow:0 4px 14px rgba(0,0,0,.18);flex-shrink:0}
+.ib[aria-pressed=true]{background:#ffd27a}
+.bar{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;display:flex;gap:8px;align-items:center;z-index:3;max-width:calc(100vw - 16px);flex-wrap:wrap;justify-content:center}
+#status{background:rgba(255,248,232,.92);border-radius:99px;padding:8px 14px;font-weight:800;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.pill{border:0;border-radius:99px;padding:8px 14px;font-weight:800;font-size:15px;background:#ffd27a;color:#3a2600;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.pill.alt{background:rgba(255,248,232,.92)}
+#toast{position:fixed;left:50%;top:76px;transform:translateX(-50%);background:#2d1e10;color:#ffe9b8;padding:8px 16px;border-radius:99px;font-weight:800;font-size:15px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:4;max-width:calc(100vw - 24px);text-align:center}
+#toast.on{opacity:1}
+.back{position:fixed;right:10px;bottom:6px;font-size:12px;color:#fff;background:rgba(0,0,0,.4);padding:4px 10px;border-radius:99px;text-decoration:none;z-index:6}
+.ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:70px 14px 40px;z-index:5;pointer-events:none}
+.ov.on{display:flex}
+.ov.dim{background:rgba(30,18,8,.45)}
+.ov.low{align-items:flex-end;padding-bottom:40px}
+#intro .card{max-width:440px}
+@media (min-width:900px){#intro{justify-content:flex-start;padding-left:4vw}}
+.card{pointer-events:auto;background:#fffaf0;border-radius:22px;padding:18px 20px;width:100%;max-width:520px;box-shadow:0 18px 50px rgba(0,0,0,.35);max-height:100%;overflow:auto;border:3px solid #e9c98d}
+.card h2{margin:0 0 6px;font-size:24px}
+.card p{margin:6px 0;line-height:1.5}
+.big{border:0;border-radius:14px;padding:11px 18px;font-weight:900;font-size:17px;background:#e8792b;color:#fff;margin:8px 6px 0 0}
+.big.alt{background:#efe2c8;color:#4a3216}
+.steps{display:grid;gap:6px;margin:10px 0;padding:0;list-style:none}
+.steps li{background:#f6ead2;border-radius:12px;padding:7px 10px;font-size:15px}
+#choices{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+#choices button{flex:1;min-width:130px;border:2px solid #e2c48c;background:#fff;border-radius:14px;padding:10px;font-weight:900;font-size:16px}
+#choices button:hover{background:#fff1d3}
+#qfb{min-height:22px;color:#b4471b;font-weight:700;font-size:14px;margin-top:6px}
+.clue{font-size:14px;color:#6a4b2a}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;margin:10px 0;font-size:15px}
+.facts b{color:#9a4a12;white-space:nowrap}
+.saved{background:#e8f5df;color:#2d6a1f;border-radius:10px;padding:6px 10px;font-weight:800;font-size:14px}
+#noteList{display:grid;gap:8px;margin-top:8px}
+.note{background:#f6ead2;border-radius:12px;padding:8px 12px;font-size:14px;line-height:1.45}
+.note b{font-size:16px}
+.empty{color:#8a6a48;font-size:14px}
+@media (max-width:520px){.ttl h1{font-size:18px}.ttl small{font-size:11px}.card{padding:14px}.card h2{font-size:20px}.big{font-size:15px;padding:9px 13px}.bar{bottom:30px}#status,.pill{font-size:13px;padding:7px 11px}}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="화석 발굴단">
+<meta property="og:description" content="붓으로 흙을 털어 공룡 뼈를 드러내고 맞춰 어떤 공룡인지 알아내는 발굴 체험">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/79-dino-dig.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/dino-dig/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<canvas id="cv" aria-label="발굴 현장. 끌어서 흙을 털어 내세요"></canvas>
+<div class="hud">
+  <div class="ttl"><h1>🦴 화석 발굴단</h1><small id="siteName">1번 발굴지 · 붉은 사암 언덕</small></div>
+  <div class="sp"></div>
+  <button class="ib" id="snd" aria-pressed="false" title="소리 켜기/끄기" aria-label="소리">🔈</button>
+  <button class="ib" id="fs" title="전체화면" aria-label="전체화면">⛶</button>
+</div>
+<div class="bar">
+  <span id="status">뼈 0/5 발견</span>
+  <button class="pill" id="radar">🔍 탐지기</button>
+  <button class="pill alt" id="notesBtn">📒 발굴 노트</button>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div class="ov" id="intro"><div class="card">
+  <h2>🦴 화석 발굴단</h2>
+  <p>흙 속에 공룡 뼈가 잠들어 있어요. 발굴단이 되어 세 곳의 발굴지를 조사해 볼까요?</p>
+  <ol class="steps">
+    <li>🖌️ <b>문질러 털기</b> — 끌거나 문질러 흙을 털어요. 여러 번 털어야 뼈가 드러나요.</li>
+    <li>🧩 <b>뼈 맞추기</b> — 찾은 뼈 5개를 점선 자리로 끌어다 놓아요.</li>
+    <li>🔎 <b>정체 밝히기</b> — 어떤 공룡인지 맞히고 발굴 노트에 적어요.</li>
+  </ol>
+  <p class="clue">키보드: 방향키로 붓 움직이기 · 숫자 1-5로 뼈 집기 · Enter로 놓기</p>
+  <button class="big" id="start">🖌️ 발굴 시작</button>
+</div></div>
+
+<div class="ov low" id="quiz"><div class="card">
+  <h2>🔎 이 공룡은 누구일까?</h2>
+  <div class="clue" id="clues"></div>
+  <div id="choices"></div>
+  <div id="qfb" aria-live="polite"></div>
+</div></div>
+
+<div class="ov low" id="fact"><div class="card">
+  <h2 id="fName"></h2>
+  <div class="clue" id="fMean"></div>
+  <div class="facts" id="fFacts"></div>
+  <div class="saved">📒 발굴 노트에 적었어요</div>
+  <button class="big" id="next">다음 발굴지로 →</button>
+</div></div>
+
+<div class="ov dim" id="end"><div class="card">
+  <h2>🎖️ 발굴단 수료!</h2>
+  <p id="endMsg"></p>
+  <div id="endList" class="facts"></div>
+  <p class="clue">우리나라에서도 경남 고성의 공룡 발자국, 경기 화성 시화호의 공룡알처럼 공룡이 살았던 흔적이 많이 발견돼요.</p>
+  <button class="big" id="again">🔁 다시 발굴하기</button>
+  <button class="big alt" id="endNotes">📒 노트 보기</button>
+</div></div>
+
+<div class="ov dim" id="notes"><div class="card">
+  <h2>📒 발굴 노트</h2>
+  <div id="noteList"></div>
+  <button class="big alt" id="notesClose">닫기</button>
+</div></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const KEY = 'edu-expo-dino-dig-v1';
+let store = null;
+try { store = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+if (!store || typeof store !== 'object') store = {};
+if (!Array.isArray(store.notes)) store.notes = [];
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} };
+
+// ---- 공룡 자료 (뼈 모양은 옆에서 본 골격, 오른쪽이 머리) ----
+const plate = (x, y, h, w) => ['p', [x - w, y, x, y - h, x + w, y, x, y + h * 0.15]];
+const DINOS = [
+  { id: 'tri', name: '트리케라톱스', site: '1번 발굴지 · 붉은 사암 언덕', pal: ['#f6c58e', '#e9a066', '#b7653a', '#8f4a2a', '#a8673f'],
+    meaning: '이름은 ‘뿔이 세 개 달린 얼굴’이라는 뜻이에요.',
+    facts: [['시대', '중생대 백악기 후기 (약 6800만-6600만 년 전)'], ['먹이', '초식 — 부리와 촘촘한 이빨로 질긴 식물을 잘라 먹었어요'], ['크기', '몸길이 약 8-9m, 몸무게 약 6-12톤'], ['특징', '머리 뒤의 넓은 목 방패(프릴)와 뿔 3개, 네 발 걷기'], ['발견지', '북아메리카 (미국·캐나다)']],
+    clues: ['머리 뒤에 넓은 방패 같은 뼈가 있어요', '눈 위에 긴 뿔 2개, 코 위에 짧은 뿔 1개', '네 다리로 걸었어요'],
+    pieces: [
+      ['머리뼈', [['p', [430, 95, 455, 45, 500, 30, 535, 55, 560, 100, 595, 135, 590, 160, 555, 172, 505, 165, 465, 150, 440, 125]], ['l', 505, 95, 555, 45, 7], ['l', 488, 100, 535, 52, 7], ['l', 585, 138, 598, 112, 6], ['h', 530, 122, 9], ['h', 472, 82, 10]]],
+      ['등뼈·갈비뼈', [['l', 140, 130, 260, 105, 9], ['l', 260, 105, 430, 118, 9], ['l', 200, 114, 192, 190, 5], ['l', 240, 108, 233, 200, 5], ['l', 280, 106, 276, 205, 5], ['l', 320, 109, 318, 205, 5], ['l', 360, 112, 360, 195, 5], ['l', 400, 116, 402, 182, 5]]],
+      ['앞다리', [['l', 410, 140, 418, 212, 10], ['l', 418, 212, 405, 278, 9], ['l', 405, 278, 432, 286, 6]]],
+      ['뒷다리', [['e', 205, 128, 42, 20, -0.1], ['l', 210, 140, 190, 212, 12], ['l', 190, 212, 205, 278, 10], ['l', 205, 278, 235, 286, 7]]],
+      ['꼬리뼈', [['l', 140, 130, 70, 168, 8], ['l', 70, 168, 14, 212, 5]]]
+    ] },
+  { id: 'stego', name: '스테고사우루스', site: '2번 발굴지 · 잿빛 협곡', pal: ['#cfd9e6', '#a9b5c4', '#7d8794', '#5c6470', '#8b8172'],
+    meaning: '이름은 ‘지붕 도마뱀’이라는 뜻이에요. 골판이 지붕 기와처럼 덮었다고 생각했거든요.',
+    facts: [['시대', '중생대 쥐라기 후기 (약 1억 5500만-1억 5000만 년 전)'], ['먹이', '초식 — 키 낮은 풀과 양치식물을 뜯어 먹었어요'], ['크기', '몸길이 약 9m, 몸무게 약 5-7톤'], ['특징', '등에 솟은 커다란 골판과 꼬리 끝 뾰족한 가시 4개, 몸에 비해 아주 작은 머리'], ['발견지', '북아메리카 (미국 서부)']],
+    clues: ['등을 따라 커다란 판 모양 뼈가 두 줄로 솟아 있어요', '꼬리 끝에 뾰족한 가시가 있어요', '몸에 비해 머리가 아주 작아요'],
+    pieces: [
+      ['머리뼈', [['l', 450, 172, 505, 184, 7], ['p', [500, 176, 540, 166, 580, 180, 576, 196, 532, 200, 502, 192]], ['h', 545, 181, 5]]],
+      ['등뼈·골판', [['l', 150, 140, 300, 90, 9], ['l', 300, 90, 450, 172, 9], plate(195, 122, 40, 18), plate(245, 102, 52, 22), plate(295, 87, 58, 24), plate(345, 100, 50, 22), plate(395, 127, 40, 18), plate(435, 160, 28, 13), ['l', 260, 104, 255, 180, 5], ['l', 300, 96, 300, 185, 5], ['l', 340, 106, 342, 185, 5], ['l', 380, 128, 382, 180, 5]]],
+      ['앞다리', [['l', 418, 165, 422, 228, 10], ['l', 422, 228, 414, 282, 9], ['l', 414, 282, 436, 288, 6]]],
+      ['뒷다리', [['e', 240, 108, 40, 20, -0.15], ['l', 245, 118, 228, 200, 13], ['l', 228, 200, 240, 280, 11], ['l', 240, 280, 268, 288, 7]]],
+      ['꼬리·가시', [['l', 150, 140, 75, 178, 8], ['l', 75, 178, 18, 195, 6], ['l', 58, 185, 38, 148, 5], ['l', 42, 189, 16, 158, 5], ['l', 48, 190, 34, 226, 4], ['l', 30, 194, 10, 222, 4]]]
+    ] },
+  { id: 'trex', name: '티라노사우루스', site: '3번 발굴지 · 노을 진 황무지', pal: ['#ffb38a', '#f08a6a', '#a65445', '#6e3434', '#9a5a45'],
+    meaning: '이름은 ‘폭군 도마뱀’이라는 뜻이에요.',
+    facts: [['시대', '중생대 백악기 후기 (약 6800만-6600만 년 전)'], ['먹이', '육식 — 바나나만 한 이빨과 강한 턱으로 큰 공룡도 사냥했어요'], ['크기', '몸길이 약 12m, 몸무게 약 8톤 이상'], ['특징', '거대한 머리, 두 발 걷기, 손가락이 2개뿐인 짧은 앞다리'], ['발견지', '북아메리카 (미국·캐나다)']],
+    clues: ['머리뼈가 아주 크고 뾰족한 이빨이 줄지어 있어요', '앞다리가 아주 짧고 손가락이 2개예요', '튼튼한 뒷다리 두 개로 걸었어요'],
+    pieces: [
+      ['머리뼈', [['p', [440, 62, 520, 50, 585, 72, 595, 98, 560, 108, 588, 122, 565, 136, 500, 132, 455, 116, 432, 90]], ['h', 505, 80, 10], ['h', 470, 86, 8], ['t', 515, 108, 6], ['t', 530, 108, 7], ['t', 548, 108, 7], ['t', 566, 110, 6]]],
+      ['등뼈·갈비뼈', [['l', 395, 110, 445, 92, 9], ['l', 170, 122, 395, 110, 10], ['l', 250, 120, 245, 200, 5], ['l', 290, 119, 288, 210, 5], ['l', 330, 117, 330, 212, 5], ['l', 370, 114, 372, 195, 5]]],
+      ['짧은 앞다리', [['l', 392, 140, 418, 168, 6], ['l', 418, 168, 440, 160, 4], ['l', 418, 168, 438, 176, 4]]],
+      ['뒷다리', [['e', 255, 122, 46, 22, 0], ['l', 258, 135, 285, 205, 14], ['l', 285, 205, 268, 276, 11], ['l', 268, 276, 305, 286, 8]]],
+      ['꼬리뼈', [['l', 170, 122, 85, 142, 9], ['l', 85, 142, 8, 168, 6]]]
+    ] }
+];
+const WRONG = { '브라키오사우루스': '브라키오사우루스는 목이 아주 길고 앞다리가 긴 공룡이에요. 다시 살펴볼까요?', '벨로키랍토르': '벨로키랍토르는 몸길이 2m쯤의 작고 날쌘 공룡이에요. 다시 살펴볼까요?', '안킬로사우루스': '안킬로사우루스는 등이 갑옷처럼 덮이고 꼬리 끝이 곤봉 모양이에요. 다시 살펴볼까요?', '트리케라톱스': '트리케라톱스라면 머리 뒤에 넓은 목 방패와 뿔이 있어야 해요.', '스테고사우루스': '스테고사우루스라면 등에 커다란 골판이 있어야 해요.', '티라노사우루스': '티라노사우루스라면 머리가 크고 앞다리가 아주 짧아야 해요.' };
+const POOL = Object.keys(WRONG);
+
+// ---- 뼈 조각 준비 ----
+function prepPiece(name, prims) {
+  const key = [];
+  for (const p of prims) {
+    if (p[0] === 'l') key.push([p[1], p[2]], [p[3], p[4]]);
+    else if (p[0] === 'e') key.push([p[1], p[2]]);
+    else if (p[0] === 'p') for (let i = 0; i < p[1].length; i += 2) key.push([p[1][i], p[1][i + 1]]);
+  }
+  let cx = 0, cy = 0; for (const k of key) { cx += k[0]; cy += k[1]; } cx /= key.length; cy /= key.length;
+  const loc = prims.map(p => {
+    if (p[0] === 'l') return ['l', p[1] - cx, p[2] - cy, p[3] - cx, p[4] - cy, p[5]];
+    if (p[0] === 'p') return ['p', p[1].map((v, i) => v - (i % 2 ? cy : cx))];
+    return [p[0], p[1] - cx, p[2] - cy, ...p.slice(3)];
+  });
+  const samples = [];
+  for (const p of loc) {
+    if (p[0] === 'l') { const L = Math.hypot(p[3] - p[1], p[4] - p[2]), k = Math.max(1, Math.round(L / 9)); for (let i = 0; i <= k; i++) samples.push([p[1] + (p[3] - p[1]) * i / k, p[2] + (p[4] - p[2]) * i / k]); }
+    else if (p[0] === 'e') { samples.push([p[1], p[2]]); for (let a = 0; a < 6; a++) samples.push([p[1] + Math.cos(a) * p[3] * .6, p[2] + Math.sin(a) * p[4] * .6]); }
+    else if (p[0] === 'p') { const v = p[1]; let mx = 0, my = 0; for (let i = 0; i < v.length; i += 2) { mx += v[i]; my += v[i + 1]; } mx /= v.length / 2; my /= v.length / 2; samples.push([mx, my]); for (let i = 0; i < v.length; i += 2) samples.push([v[i] + (mx - v[i]) * .35, v[i + 1] + (my - v[i + 1]) * .35]); }
+  }
+  let rad = 0; for (const s of samples) rad = Math.max(rad, Math.hypot(s[0], s[1]));
+  return { name, cx, cy, loc, samples, rad };
+}
+
+// ---- 기본 ----
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const FW = 900, FH = 600, CELL = 10, GW = FW / CELL, GH = FH / CELL, DS = 0.8, AS = 1.2, AOX = 90, AOY = 0, R = 26, A = 0.075;
+let W = 0, H = 0, dpr = 1, fs = 1, fx0 = 0, fy0 = 0;
+let rnd = mulberry(Date.now() % 100000), manual = false;
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const dirtC = document.createElement('canvas'); dirtC.width = FW; dirtC.height = FH; const dctx = dirtC.getContext('2d');
+const bedC = document.createElement('canvas'); bedC.width = FW; bedC.height = FH; const bctx = bedC.getContext('2d');
+let grid = new Float32Array(GW * GH);
+const g = { phase: 'intro', site: 0, t: 0, pieces: [], dust: [], toastT: 0, wait: 0, ping: null, tries: 0, startT: 0, mouse: { x: 0, y: 0 }, par: { x: 0, y: 0 }, kb: { x: FW / 2, y: FH / 2 }, drag: null, sel: null, choices: [] };
+
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const top = W < 520 ? 120 : 70, bot = W < 520 ? 120 : 84;
+  fs = Math.min((W - 20) / FW, (H - top - bot) / FH); fs = Math.max(fs, 0.2);
+  fx0 = (W - FW * fs) / 2; fy0 = top + (H - top - bot - FH * fs) / 2;
+}
+
+function buildSite(i) {
+  const D = DINOS[i];
+  g.site = i; g.dino = D; g.tries = 0; g.ping = null; g.drag = null; g.sel = null;
+  $('#siteName').textContent = D.site;
+  // 흙 층
+  const p = D.pal;
+  const gr = dctx.createLinearGradient(0, 0, 0, FH); gr.addColorStop(0, p[2]); gr.addColorStop(1, p[3]);
+  dctx.globalCompositeOperation = 'source-over'; dctx.clearRect(0, 0, FW, FH); dctx.fillStyle = gr; dctx.fillRect(0, 0, FW, FH);
+  for (let k = 0; k < 7; k++) { dctx.fillStyle = k % 2 ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.06)'; const y = k * 90 + rnd() * 30; dctx.beginPath(); dctx.moveTo(0, y); for (let x = 0; x <= FW; x += 60) dctx.lineTo(x, y + Math.sin(x / 140 + k) * 12); dctx.lineTo(FW, y + 40); dctx.lineTo(0, y + 40); dctx.fill(); }
+  for (let k = 0; k < 2600; k++) { dctx.fillStyle = rnd() < .5 ? 'rgba(0,0,0,.18)' : 'rgba(255,240,220,.16)'; dctx.fillRect(rnd() * FW, rnd() * FH, 1 + rnd() * 2.5, 1 + rnd() * 2.5); }
+  for (let k = 0; k < 40; k++) { dctx.fillStyle = `rgba(${90 + rnd() * 60 | 0},${70 + rnd() * 40 | 0},${50 + rnd() * 30 | 0},.9)`; dctx.beginPath(); dctx.ellipse(rnd() * FW, rnd() * FH, 4 + rnd() * 9, 3 + rnd() * 6, rnd() * 3, 0, 7); dctx.fill(); }
+  // 드러난 바닥
+  bctx.fillStyle = p[0]; bctx.fillRect(0, 0, FW, FH);
+  for (let k = 0; k < 1800; k++) { bctx.fillStyle = rnd() < .5 ? 'rgba(120,80,40,.12)' : 'rgba(255,255,255,.18)'; bctx.fillRect(rnd() * FW, rnd() * FH, 1 + rnd() * 2, 1 + rnd() * 2); }
+  bctx.strokeStyle = 'rgba(120,80,40,.15)'; bctx.lineWidth = 3; for (let k = 0; k < 6; k++) { bctx.beginPath(); const y = 50 + k * 100; bctx.moveTo(0, y); for (let x = 0; x <= FW; x += 50) bctx.lineTo(x, y + Math.sin(x / 90 + k * 2) * 8); bctx.stroke(); }
+  grid = new Float32Array(GW * GH).fill(1);
+  const zones = [[180, 165], [470, 135], [735, 175], [250, 440], [640, 445]];
+  for (let k = zones.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [zones[k], zones[j]] = [zones[j], zones[k]]; }
+  // 긴 등뼈는 가로로 넓은 자리에
+  const spineZ = zones.findIndex(z => z[0] > 300 && z[0] < 600); if (spineZ > -1) [zones[1], zones[spineZ]] = [zones[spineZ], zones[1]];
+  if (i === 0) { const hz = zones.findIndex(z => z[0] === 735); if (hz > -1 && hz !== 1) [zones[0], zones[hz]] = [zones[hz], zones[0]]; }
+  const tray = [110, 280, 450, 620, 790];
+  g.pieces = D.pieces.map((pc, k) => {
+    const P = prepPiece(pc[0], pc[1]);
+    const z = zones[k];
+    P.dig = { x: z[0] + (rnd() - .5) * 30, y: z[1] + (rnd() - .5) * 30, r: (rnd() - .5) * (k === 1 ? .5 : 1.2) };
+    P.slot = { x: AOX + P.cx * AS, y: AOY + P.cy * AS };
+    P.tray = { x: tray[k], y: 520, r: (rnd() - .5) * .5 };
+    P.found = false; P.placed = false; P.reveal = 0; P.glow = 0; P.shake = 0;
+    P.pos = { x: P.dig.x, y: P.dig.y, r: P.dig.r, s: DS };
+    return P;
+  });
+  // 순서 섞인 쟁반 자리
+  const order = [0, 1, 2, 3, 4]; for (let k = 4; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
+  g.pieces.forEach((P, k) => { P.tray.x = tray[order[k]]; });
+  // 첫 화면에서 뼈 끝이 살짝 보이게
+  const t0 = g.pieces[0], half = t0.samples.slice(0, Math.ceil(t0.samples.length * .55));
+  for (const sm of half) { const w = worldSample(t0, sm); stamp(w[0], w[1], 0.22, true); }
+  updateReveal();
+  hud();
+}
+
+function worldSample(P, s, pos) {
+  const q = pos || P.dig, sc = pos ? pos.s : DS, c = Math.cos(q.r), sn = Math.sin(q.r);
+  return [q.x + (s[0] * c - s[1] * sn) * sc, q.y + (s[0] * sn + s[1] * c) * sc];
+}
+
+// ---- 붓질 ----
+function stamp(x, y, a, quiet) {
+  a = a || A;
+  const c0 = Math.max(0, Math.floor((x - R) / CELL)), c1 = Math.min(GW - 1, Math.floor((x + R) / CELL));
+  const r0 = Math.max(0, Math.floor((y - R) / CELL)), r1 = Math.min(GH - 1, Math.floor((y + R) / CELL));
+  let removed = 0;
+  for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+    const dx = (c + .5) * CELL - x, dy = (r + .5) * CELL - y, d2 = (dx * dx + dy * dy) / (R * R);
+    if (d2 >= 1) continue;
+    const f = 1 - d2, i = r * GW + c, old = grid[i]; grid[i] = old * (1 - a * f); removed += old - grid[i];
+  }
+  dctx.globalCompositeOperation = 'destination-out';
+  const rg = dctx.createRadialGradient(x, y, 0, x, y, R);
+  rg.addColorStop(0, `rgba(0,0,0,${a})`); rg.addColorStop(.7, `rgba(0,0,0,${a * .5})`); rg.addColorStop(1, 'rgba(0,0,0,0)');
+  dctx.fillStyle = rg; dctx.beginPath(); dctx.arc(x, y, R, 0, 7); dctx.fill();
+  dctx.globalCompositeOperation = 'source-over';
+  if (!quiet && removed > 0.02 && g.dust.length < 400) {
+    for (let k = 0; k < 2; k++) g.dust.push({ x: x + (rnd() - .5) * R, y: y + (rnd() - .5) * R, vx: (rnd() - .5) * 120, vy: -30 - rnd() * 90, life: .6 + rnd() * .6, s: 1.5 + rnd() * 2.5 });
+  }
+  return removed;
+}
+function stroke(a, b) {
+  const d = Math.hypot(b.x - a.x, b.y - a.y), k = Math.max(1, Math.round(d / 5));
+  let rem = 0;
+  for (let i = 1; i <= k; i++) rem += stamp(a.x + (b.x - a.x) * i / k, a.y + (b.y - a.y) * i / k);
+  if (rem > 0) brushNoise(Math.min(1, d / 30));
+  updateReveal();
+}
+function updateReveal() {
+  if (g.phase !== 'dig' && g.phase !== 'intro') return;
+  let nf = 0;
+  for (const P of g.pieces) {
+    let sum = 0;
+    for (const s of P.samples) {
+      const w = worldSample(P, s), c = Math.min(GW - 1, Math.max(0, Math.floor(w[0] / CELL))), r = Math.min(GH - 1, Math.max(0, Math.floor(w[1] / CELL)));
+      sum += Math.min(1, Math.max(0, (1 - grid[r * GW + c]) / 0.7));
+    }
+    P.reveal = sum / P.samples.length;
+    if (!P.found && P.reveal >= 0.92 && g.phase === 'dig') {
+      P.found = true; P.glow = 1; nf++;
+      toast(`🦴 ${P.name} 발견! (${g.pieces.filter(q => q.found).length}/5)`);
+      chime([660, 880, 1320]);
+    }
+  }
+  if (nf) {
+    hud();
+    if (g.pieces.every(P => P.found)) { g.wait = 1.4; toast('🎉 뼈를 모두 찾았어요! 이제 맞춰 볼까요?'); }
+  }
+}
+function dirtLeft() { let s = 0; for (let i = 0; i < grid.length; i++) s += grid[i]; return s / grid.length; }
+
+// ---- 맞추기 ----
+function toAssemble() {
+  g.phase = 'assemble';
+  for (const P of g.pieces) P.pos = { x: P.tray.x, y: P.tray.y, r: P.tray.r, s: 0.65 };
+  toast('🧩 뼈를 점선 자리로 끌어다 놓아요');
+  hud();
+}
+function drop(P) {
+  if (P.placed) return true;
+  let best = null, bd = 1e9;
+  for (const Q of g.pieces) { const d = Math.hypot(Q.slot.x - P.pos.x, Q.slot.y - P.pos.y); if (d < bd) { bd = d; best = Q; } }
+  if (best === P && bd < 95) {
+    P.placed = true; P.pos = { x: P.slot.x, y: P.slot.y, r: 0, s: AS }; P.glow = 1; clack();
+    const left = g.pieces.filter(q => !q.placed).length;
+    toast(left ? `딱! ${P.name} 자리 맞음 (${5 - left}/5)` : '🦕 뼈대 완성!');
+    if (!left) { g.wait = 1.1; chime([523, 659, 784, 1047]); }
+    hud(); return true;
+  }
+  if (best && best !== P && bd < 95 && !best.placed) toast(`그 자리는 ${best.name} 자리예요`);
+  else if (best && bd < 95 && best.placed) toast('그 자리는 이미 채워졌어요');
+  else toast('점선으로 된 뼈 자리에 놓아 보세요');
+  P.shake = 0.4; P.pos = { x: P.tray.x, y: P.tray.y, r: P.tray.r, s: 0.65 }; thud();
+  return false;
+}
+
+// ---- 정체 맞히기 ----
+function toIdentify() {
+  g.phase = 'identify'; g.tries = 0;
+  const D = g.dino;
+  const others = POOL.filter(n => n !== D.name);
+  const pick = []; while (pick.length < 2) { const n = others[Math.floor(rnd() * others.length)]; if (!pick.includes(n)) pick.push(n); }
+  const all = [D.name, ...pick]; for (let k = 2; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [all[k], all[j]] = [all[j], all[k]]; }
+  g.choices = all;
+  $('#clues').innerHTML = D.clues.map(c => '🔹 ' + c).join('<br>');
+  const box = $('#choices'); box.textContent = '';
+  for (const nm of all) { const b = document.createElement('button'); b.textContent = nm; b.dataset.name = nm; b.onclick = () => answer(nm); box.appendChild(b); }
+  $('#qfb').textContent = '';
+  show('quiz');
+}
+function answer(nm) {
+  if (g.phase !== 'identify') return;
+  const D = g.dino;
+  if (nm !== D.name) { g.tries++; $('#qfb').textContent = '🤔 ' + (WRONG[nm] || '다시 살펴볼까요?'); thud(); return; }
+  g.phase = 'fact'; show(null);
+  $('#fName').textContent = '🦖 ' + D.name + '!';
+  $('#fMean').textContent = D.meaning;
+  const ff = $('#fFacts'); ff.textContent = '';
+  for (const [k, v] of D.facts) { const b = document.createElement('b'); b.textContent = k; const s = document.createElement('span'); s.textContent = v; ff.append(b, s); }
+  if (!store.notes.includes(D.id)) store.notes.push(D.id);
+  save();
+  $('#next').textContent = g.site < DINOS.length - 1 ? '다음 발굴지로 →' : '🎖️ 수료하기';
+  show('fact'); chime([784, 988, 1175, 1568]);
+}
+function next() {
+  if (g.phase !== 'fact') return;
+  if (g.site < DINOS.length - 1) { g.phase = 'dig'; buildSite(g.site + 1); show(null); toast('🖌️ ' + g.dino.site + ' 도착!'); return; }
+  g.phase = 'end';
+  const sec = Math.round(g.t - g.startT);
+  store.done = (store.done || 0) + 1;
+  if (!store.best || sec < store.best) store.best = sec;
+  save();
+  $('#endMsg').textContent = `세 발굴지에서 공룡 3마리를 찾아냈어요. 걸린 시간 ${Math.floor(sec / 60)}분 ${sec % 60}초 · 수료 ${store.done}회`;
+  const el = $('#endList'); el.textContent = '';
+  for (const D of DINOS) { const b = document.createElement('b'); b.textContent = D.name; const s = document.createElement('span'); s.textContent = D.facts[0][1].replace('중생대 ', '') + ' · ' + D.facts[1][1].split(' — ')[0]; el.append(b, s); }
+  show('end'); chime([523, 659, 784, 1047, 1319]);
+}
+function begin() {
+  ensureAudio();
+  g.phase = 'dig'; g.startT = g.t; buildSite(0); show(null);
+  toast('🖌️ 흙을 문질러 털어 보세요');
+}
+function notes() {
+  const el = $('#noteList'); el.textContent = '';
+  const ids = store.notes.filter(id => DINOS.some(D => D.id === id));
+  if (!ids.length) { const p = document.createElement('div'); p.className = 'empty'; p.textContent = '아직 적은 공룡이 없어요. 발굴을 끝내면 여기에 모여요.'; el.appendChild(p); }
+  for (const id of ids) {
+    const D = DINOS.find(x => x.id === id), d = document.createElement('div'); d.className = 'note';
+    const b = document.createElement('b'); b.textContent = '🦴 ' + D.name; d.appendChild(b);
+    for (const [k, v] of D.facts.slice(0, 3)) { d.appendChild(document.createElement('br')); d.appendChild(document.createTextNode(k + ': ' + v)); }
+    el.appendChild(d);
+  }
+  show('notes', true);
+}
+
+// ---- 화면 ----
+let ovStack = null;
+function show(id, keep) {
+  for (const o of ['intro', 'quiz', 'fact', 'end', 'notes']) if (!(keep && o === ovStack)) $('#' + o).classList.toggle('on', o === id);
+  if (keep) { if (ovStack) $('#' + ovStack).classList.add('on'); } else ovStack = id;
+}
+function hud() {
+  const f = g.pieces.filter(p => p.found).length, pl = g.pieces.filter(p => p.placed).length;
+  $('#status').textContent = g.phase === 'assemble' ? `🧩 맞춘 뼈 ${pl}/5` : `🦴 뼈 ${f}/5 발견 · 흙 ${Math.round((1 - dirtLeft()) * 100)}% 털었음`;
+  $('#radar').hidden = g.phase !== 'dig';
+}
+function toast(s) { const t = $('#toast'); t.textContent = s; t.classList.add('on'); g.toastT = 2.2; }
+
+function tick(dt) {
+  g.t += dt;
+  g.par.x += (g.mouse.x - g.par.x) * Math.min(1, dt * 3); g.par.y += (g.mouse.y - g.par.y) * Math.min(1, dt * 3);
+  for (const d of g.dust) { d.x += d.vx * dt; d.y += d.vy * dt; d.vy += 220 * dt; d.vx *= .97; d.life -= dt; }
+  g.dust = g.dust.filter(d => d.life > 0);
+  for (const P of g.pieces) { P.glow = Math.max(0, P.glow - dt * .8); P.shake = Math.max(0, P.shake - dt); }
+  if (g.ping) { g.ping.t += dt; if (g.ping.t > 2.4) g.ping = null; }
+  if (g.toastT > 0) { g.toastT -= dt; if (g.toastT <= 0) $('#toast').classList.remove('on'); }
+  if (g.wait > 0) { g.wait -= dt; if (g.wait <= 0) { if (g.phase === 'dig') toAssemble(); else if (g.phase === 'assemble') toIdentify(); } }
+  if (g.drag && g.drag.P.pos.s < AS) g.drag.P.pos.s = Math.min(AS, g.drag.P.pos.s + dt * 3);
+  if (g.phase === 'intro' && Math.floor(g.t * 6) !== Math.floor((g.t - dt) * 6) && g.dust.length < 60) {
+    const x = 420 + Math.sin(g.t * 1.3) * 300; g.dust.push({ x, y: 300 + Math.cos(g.t) * 120, vx: (rnd() - .5) * 60, vy: -40 - rnd() * 40, life: .9, s: 2 + rnd() * 2 });
+  }
+}
+
+function drawPiece(P, pos, alpha, ghost) {
+  ctx.save(); ctx.translate(pos.x + (P.shake ? Math.sin(P.shake * 60) * 6 : 0), pos.y); ctx.rotate(pos.r); ctx.scale(pos.s, pos.s);
+  ctx.globalAlpha = alpha;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (ghost) {
+    ctx.setLineDash([7, 6]); ctx.strokeStyle = 'rgba(255,250,235,.85)'; ctx.lineWidth = 2.2 / pos.s;
+    for (const p of P.loc) { ctx.beginPath(); shape(p, 0); if (p[0] === 'l') ctx.stroke(); else if (p[0] !== 'h' && p[0] !== 't') { ctx.stroke(); } }
+    ctx.setLineDash([]); ctx.restore(); return;
+  }
+  if (P.glow > 0) { ctx.shadowColor = `rgba(255,230,120,${P.glow})`; ctx.shadowBlur = 30 * P.glow; }
+  // 윤곽
+  ctx.strokeStyle = '#7a6040'; ctx.fillStyle = '#7a6040';
+  for (const p of P.loc) { if (p[0] === 'l') { ctx.lineWidth = p[5] + 4; ctx.beginPath(); shape(p, 0); ctx.stroke(); knob(p, 2); } else if (p[0] === 'e' || p[0] === 'p') { ctx.lineWidth = 4; ctx.beginPath(); shape(p, 0); ctx.fill(); ctx.stroke(); } }
+  ctx.shadowBlur = 0;
+  // 뼈 색
+  ctx.strokeStyle = '#f1e7cf'; ctx.fillStyle = '#efe3c6';
+  for (const p of P.loc) { if (p[0] === 'l') { ctx.lineWidth = p[5]; ctx.beginPath(); shape(p, 0); ctx.stroke(); knob(p, 0); } else if (p[0] === 'e' || p[0] === 'p') { ctx.beginPath(); shape(p, 0); ctx.fill(); } }
+  for (const p of P.loc) {
+    if (p[0] === 'h') { ctx.fillStyle = '#5b4429'; ctx.beginPath(); ctx.arc(p[1], p[2], p[3], 0, 7); ctx.fill(); }
+    if (p[0] === 't') { ctx.fillStyle = '#fffaf0'; ctx.strokeStyle = '#7a6040'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p[1] - p[3] / 2, p[2]); ctx.lineTo(p[1] + p[3] / 2, p[2]); ctx.lineTo(p[1], p[2] + p[3] * 1.6); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+function shape(p) {
+  if (p[0] === 'l') { ctx.moveTo(p[1], p[2]); ctx.lineTo(p[3], p[4]); }
+  else if (p[0] === 'e') ctx.ellipse(p[1], p[2], p[3], p[4], p[5], 0, Math.PI * 2);
+  else if (p[0] === 'p') { const v = p[1]; ctx.moveTo(v[0], v[1]); for (let i = 2; i < v.length; i += 2) ctx.lineTo(v[i], v[i + 1]); ctx.closePath(); }
+}
+function knob(p, extra) {
+  const r = p[5] * .78 + extra;
+  for (const [x, y] of [[p[1], p[2]], [p[3], p[4]]]) { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
+}
+
+function drawBack() {
+  const D = g.dino, p = D.pal, px = g.par.x, py = g.par.y;
+  const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, D.id === 'trex' ? '#ff9f7a' : D.id === 'stego' ? '#9ec3e6' : '#8fd0f0'); sky.addColorStop(.55, p[0]); sky.addColorStop(1, p[1]);
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  // 해
+  ctx.fillStyle = 'rgba(255,245,210,.9)'; ctx.beginPath(); ctx.arc(W * .82 - px * 6, H * .18 - py * 4, Math.min(W, H) * .07, 0, 7); ctx.fill();
+  // 먼 언덕(시차 작게) · 가까운 언덕(시차 크게)
+  const layer = (base, amp, col, k, seed) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-60, H); for (let x = -60; x <= W + 60; x += 30) { const xx = x + px * k; ctx.lineTo(x, base - Math.abs(Math.sin(xx / 170 + seed)) * amp - Math.sin(xx / 61 + seed * 3) * amp * .2 + py * k * .4); } ctx.lineTo(W + 60, H); ctx.fill(); };
+  layer(H * .42, H * .16, p[1], -10, 1);
+  layer(H * .52, H * .1, p[4], -22, 4);
+  ctx.fillStyle = p[1]; ctx.fillRect(0, H * .55, W, H);
+  // 구름
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  for (let k = 0; k < 4; k++) { const x = ((k * 330 + g.t * (8 + k * 3)) % (W + 300)) - 150 - px * 4; const y = H * (.08 + k * .05); ctx.beginPath(); ctx.ellipse(x, y, 70, 16, 0, 0, 7); ctx.ellipse(x + 40, y - 8, 46, 14, 0, 0, 7); ctx.fill(); }
+}
+function drawField() {
+  ctx.save(); ctx.translate(fx0 - g.par.x * 3, fy0 - g.par.y * 2); ctx.scale(fs, fs);
+  // 발굴 구덩이 테두리(나무 판)
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(-14, -6, FW + 28, FH + 26);
+  ctx.fillStyle = '#8b5a2b'; ctx.fillRect(-18, -18, FW + 36, 18); ctx.fillRect(-18, FH, FW + 36, 18); ctx.fillRect(-18, 0, 18, FH); ctx.fillRect(FW, 0, 18, FH);
+  ctx.fillStyle = 'rgba(255,255,255,.12)'; for (let x = -18; x < FW + 18; x += 60) ctx.fillRect(x, -18, 2, 18);
+  ctx.drawImage(bedC, 0, 0);
+  const asm = g.phase === 'assemble' || g.phase === 'identify' || g.phase === 'fact' || g.phase === 'end';
+  if (asm) {
+    ctx.fillStyle = 'rgba(60,35,15,.25)'; ctx.fillRect(0, 440, FW, FH - 440);
+    ctx.fillStyle = 'rgba(255,250,235,.8)'; ctx.font = '700 20px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('찾은 뼈 (끌어서 위의 점선 자리에 놓기)', FW / 2, 466);
+    for (const P of g.pieces) if (!P.placed) drawPiece(P, { x: P.slot.x, y: P.slot.y, r: 0, s: AS }, 1, true);
+    for (const P of g.pieces) if (P.placed) drawPiece(P, P.pos, 1);
+    for (const P of g.pieces) if (!P.placed && (!g.drag || g.drag.P !== P)) { drawPiece(P, P.pos, 1); if (g.sel === P) { ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(P.pos.x, P.pos.y, 70, 0, 7); ctx.stroke(); } }
+    if (g.drag) drawPiece(g.drag.P, g.drag.P.pos, 1);
+    // 번호
+    ctx.font = '800 18px system-ui,sans-serif';
+    g.pieces.forEach((P, k) => { if (P.placed) return; ctx.fillStyle = '#2d1e10'; ctx.beginPath(); ctx.arc(P.pos.x - 60, P.pos.y - 50, 13, 0, 7); ctx.fill(); ctx.fillStyle = '#ffd27a'; ctx.fillText(k + 1, P.pos.x - 60, P.pos.y - 44); });
+  } else {
+    for (const P of g.pieces) drawPiece(P, P.dig ? { x: P.dig.x, y: P.dig.y, r: P.dig.r, s: DS } : P.pos, 1);
+    ctx.drawImage(dirtC, 0, 0);
+    for (const P of g.pieces) if (P.found && P.glow > 0) drawPiece(P, { x: P.dig.x, y: P.dig.y, r: P.dig.r, s: DS }, P.glow);
+    // 줄 격자
+    ctx.strokeStyle = 'rgba(255,240,200,.35)'; ctx.lineWidth = 1.5;
+    for (let x = 150; x < FW; x += 150) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, FH); ctx.stroke(); }
+    for (let y = 150; y < FH; y += 150) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(FW, y); ctx.stroke(); }
+    if (g.ping) { const P = g.ping.P, a = 1 - g.ping.t / 2.4; for (let k = 0; k < 3; k++) { const rr = ((g.ping.t * 70 + k * 30) % 90) + 10; ctx.strokeStyle = `rgba(255,220,90,${a * (1 - rr / 100)})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(P.dig.x, P.dig.y, rr, 0, 7); ctx.stroke(); } }
+    // 붓 (키보드 커서 / 첫 화면 데모)
+    const bx = g.phase === 'intro' ? 420 + Math.sin(g.t * 1.3) * 300 : g.kb.x, by = g.phase === 'intro' ? 300 + Math.cos(g.t) * 120 : g.kb.y;
+    if (g.phase === 'intro' || g.kbOn) brush(bx, by, Math.sin(g.t * 9) * .3);
+  }
+  for (const d of g.dust) { ctx.fillStyle = `rgba(${g.dino.id === 'stego' ? '150,150,155' : '170,110,70'},${Math.min(1, d.life)})`; ctx.fillRect(d.x, d.y, d.s, d.s); }
+  ctx.restore();
+}
+function brush(x, y, r) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(-.6 + r);
+  ctx.fillStyle = '#c98b3c'; ctx.fillRect(-5, -90, 10, 60);
+  ctx.fillStyle = '#9aa0a6'; ctx.fillRect(-8, -34, 16, 12);
+  ctx.fillStyle = '#e8d7a8'; ctx.beginPath(); ctx.moveTo(-9, -22); ctx.lineTo(9, -22); ctx.lineTo(12, 4); ctx.lineTo(-12, 4); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawFront() {
+  const px = g.par.x;
+  ctx.fillStyle = 'rgba(70,40,20,.55)';
+  for (const [x, y, r] of [[30, H - 20, 44], [W - 40, H - 10, 60], [W * .25, H + 10, 36]]) { ctx.beginPath(); ctx.ellipse(x - px * 30, y, r * 1.4, r * .7, 0, 0, 7); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(80,110,40,.7)'; ctx.lineWidth = 3;
+  for (let k = 0; k < 7; k++) { const x = 20 + k * 16 - px * 34, y = H - 40; ctx.beginPath(); ctx.moveTo(x, y + 30); ctx.quadraticCurveTo(x + 4, y, x + 10 + Math.sin(g.t * 2 + k) * 6, y - 18); ctx.stroke(); }
+}
+function render() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawBack(); drawField(); drawFront();
+}
+
+// ---- 입력 ----
+const toField = (cx, cy) => ({ x: (cx - fx0 + g.par.x * 3) / fs, y: (cy - fy0 + g.par.y * 2) / fs });
+let down = null;
+cv.addEventListener('pointerdown', e => {
+  ensureAudio();
+  const p = toField(e.clientX, e.clientY);
+  try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+  g.kbOn = false;
+  if (g.phase === 'dig') { down = { p, moved: 0 }; return; }
+  if (g.phase === 'assemble') {
+    let hit = null, hd = 1e9;
+    for (const P of g.pieces) if (!P.placed) { const d = Math.hypot(P.pos.x - p.x, P.pos.y - p.y); if (d < Math.max(60, P.rad * P.pos.s * .8) && d < hd) { hd = d; hit = P; } }
+    if (hit) { g.drag = { P: hit, ox: hit.pos.x - p.x, oy: hit.pos.y - p.y, sx: p.x, sy: p.y, moved: 0 }; hit.pos.r = 0; return; }
+    if (g.sel) { const P = g.sel; g.sel = null; P.pos = { x: p.x, y: p.y, r: 0, s: AS }; drop(P); }
+  }
+});
+cv.addEventListener('pointermove', e => {
+  g.mouse.x = (e.clientX / (W || 1) - .5) * 2; g.mouse.y = (e.clientY / (H || 1) - .5) * 2;
+  const p = toField(e.clientX, e.clientY);
+  if (down && g.phase === 'dig') { stroke(down.p, p); down.moved += Math.hypot(p.x - down.p.x, p.y - down.p.y); down.p = p; hud(); }
+  if (g.drag) { const P = g.drag.P; P.pos.x = p.x + g.drag.ox; P.pos.y = p.y + g.drag.oy; g.drag.moved = Math.max(g.drag.moved, Math.hypot(p.x - g.drag.sx, p.y - g.drag.sy)); }
+});
+const up = () => {
+  down = null;
+  if (g.drag) { const d = g.drag; g.drag = null; if (d.moved < 8) { g.sel = d.P; d.P.pos = { x: d.P.tray.x, y: d.P.tray.y, r: d.P.tray.r, s: .65 }; toast(`${d.P.name}를 골랐어요. 놓을 자리를 누르세요`); } else drop(d.P); }
+};
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+addEventListener('keydown', e => {
+  if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  const k = e.key, mv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[k];
+  if (g.phase === 'dig' && mv) { e.preventDefault(); g.kbOn = true; const a = { x: g.kb.x, y: g.kb.y }; g.kb.x = Math.max(0, Math.min(FW, g.kb.x + mv[0] * 14)); g.kb.y = Math.max(0, Math.min(FH, g.kb.y + mv[1] * 14)); stroke(a, g.kb); hud(); }
+  if (g.phase === 'assemble') {
+    if (/^[1-5]$/.test(k)) { const P = g.pieces[+k - 1]; if (!P.placed) { g.sel = P; P.pos = { x: P.slot.x, y: Math.min(P.slot.y + 220, 400), r: 0, s: AS }; g.kbP = P; } }
+    if (mv && g.kbP && !g.kbP.placed) { e.preventDefault(); g.kbP.pos.x += mv[0] * 12; g.kbP.pos.y += mv[1] * 12; }
+    if ((k === 'Enter' || k === ' ') && g.kbP && !g.kbP.placed) { e.preventDefault(); const P = g.kbP; g.kbP = null; g.sel = null; drop(P); }
+  }
+});
+
+// ---- 소리 ----
+let ac = null, master = null, soundOn = false, windG = null, brushG = null, nbuf = null;
+function ensureAudio() {
+  if (!soundOn) return;
+  if (!ac) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      ac = new AC(); master = ac.createGain(); master.gain.value = .7; master.connect(ac.destination);
+      const len = ac.sampleRate * 2; nbuf = ac.createBuffer(1, len, ac.sampleRate); const d = nbuf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const loop = (f, q, type) => { const s = ac.createBufferSource(); s.buffer = nbuf; s.loop = true; const fl = ac.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; const gn = ac.createGain(); gn.gain.value = 0; s.connect(fl); fl.connect(gn); gn.connect(master); s.start(); return gn; };
+      windG = loop(400, .6, 'lowpass'); brushG = loop(3200, 1.2, 'bandpass');
+      windG.gain.value = .12;
+    } catch (e) { ac = null; return; }
+  }
+  if (ac.state === 'suspended') { try { ac.resume().catch(() => {}); } catch (e) {} }
+}
+function brushNoise(v) { if (!soundOn || !ac || !brushG) return; try { const t = ac.currentTime; brushG.gain.cancelScheduledValues(t); brushG.gain.setTargetAtTime(.25 * v + .05, t, .02); brushG.gain.setTargetAtTime(0, t + .08, .06); } catch (e) {} }
+function tone(f, d, type, vol, delay) {
+  if (!soundOn || !ac) return;
+  try { const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), gn = ac.createGain(); o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); gn.gain.setValueAtTime(vol || .08, t); gn.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(gn); gn.connect(master); o.start(t); o.stop(t + d + .05); } catch (e) {}
+}
+const chime = fs2 => fs2.forEach((f, i) => tone(f, .5, 'triangle', .07, i * .09));
+const clack = () => { tone(180, .09, 'square', .06); tone(90, .12, 'triangle', .08, .02); };
+const thud = () => tone(110, .18, 'sine', .1);
+function setSnd() {
+  const b = $('#snd'); b.setAttribute('aria-pressed', String(soundOn)); b.textContent = soundOn ? '🔊' : '🔈';
+  if (master && ac) { try { master.gain.setTargetAtTime(soundOn ? .7 : 0, ac.currentTime, .05); } catch (e) {} }
+}
+
+// ---- 버튼 ----
+$('#start').onclick = begin;
+$('#next').onclick = next;
+$('#again').onclick = () => { g.phase = 'dig'; g.startT = g.t; buildSite(0); show(null); };
+$('#radar').onclick = () => { const P = g.pieces.find(q => !q.found); if (P && g.phase === 'dig') { g.ping = { P, t: 0 }; tone(880, .15, 'sine', .06); tone(880, .15, 'sine', .06, .3); toast('🔍 삐빅! 반짝이는 곳 아래를 털어 보세요'); } };
+$('#notesBtn').onclick = notes; $('#endNotes').onclick = notes;
+$('#notesClose').onclick = () => { $('#notes').classList.remove('on'); };
+$('#snd').onclick = () => { soundOn = !soundOn; ensureAudio(); setSnd(); };
+const fsEl = document.documentElement, fsBtn = $('#fs');
+if (!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen)) fsBtn.hidden = true;
+fsBtn.onclick = () => {
+  try {
+    const d = document, on = d.fullscreenElement || d.webkitFullscreenElement;
+    const f = on ? (d.exitFullscreen || d.webkitExitFullscreen) : (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+    if (f) { const p = f.call(on ? d : fsEl); if (p && p.catch) p.catch(() => {}); }
+  } catch (e) {}
+};
+
+// ---- 시작 ----
+addEventListener('resize', resize);
+resize(); g.dino = DINOS[0]; buildSite(0); show('intro'); setSnd(); hud();
+let last = performance.now();
+function frame(now) {
+  const dt = Math.max(0, Math.min(.05, (now - last) / 1000)); last = now;
+  if (!manual) tick(dt);
+  render(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+window.__test = {
+  step(n) { manual = true; for (let i = 0; i < (n || 1); i++) tick(1 / 60); render(); },
+  seed(n) { rnd = mulberry(n); },
+  pieceCenter(i) { const P = g.pieces[i]; return { x: P.dig.x, y: P.dig.y }; },
+  toScreen(p) { return { x: fx0 - g.par.x * 3 + p.x * fs, y: fy0 - g.par.y * 2 + p.y * fs }; },
+  brushPiece(i, passes) {
+    const P = g.pieces[i];
+    for (let k = 0; k < (passes || 1); k++) {
+      // 뼈 선을 따라 한 번 훑기
+      for (const p of P.loc) {
+        let pts = [];
+        if (p[0] === 'l') pts = [[p[1], p[2]], [p[3], p[4]]];
+        else if (p[0] === 'e') pts = [[p[1] - p[3] * .6, p[2]], [p[1] + p[3] * .6, p[2]]];
+        else if (p[0] === 'p') { const v = p[1]; for (let j = 0; j < v.length; j += 2) pts.push([v[j], v[j + 1]]); let mx = 0, my = 0; pts.forEach(q => { mx += q[0]; my += q[1]; }); mx /= pts.length; my /= pts.length; pts = pts.map(q => [q[0] + (mx - q[0]) * .35, q[1] + (my - q[1]) * .35]); pts.push(pts[0]); }
+        if (pts.length < 2) continue;
+        const w = pts.map(q => worldSample(P, q));
+        for (let j = 1; j < w.length; j++) stroke({ x: w[j - 1][0], y: w[j - 1][1] }, { x: w[j][0], y: w[j][1] });
+      }
+    }
+    hud();
+  },
+  drop(i, slot) { const P = g.pieces[i], Q = g.pieces[slot]; P.pos = { x: Q.slot.x, y: Q.slot.y, r: 0, s: AS }; return drop(P); },
+  state() { return { phase: g.phase, site: g.site, t: g.t, pieces: g.pieces.length, dino: g.dino.name, found: g.pieces.map(p => p.found), placed: g.pieces.map(p => p.placed), reveal: g.pieces.map(p => p.reveal), dirt: dirtLeft(), dust: g.dust.length, tries: g.tries, sound: soundOn }; }
+};
+})();
+</script>
+</body>
+</html>

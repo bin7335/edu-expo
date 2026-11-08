@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>특별실 예약판 - 과학실·컴퓨터실 주간 예약표</title>
+<meta name="description" content="과학실·컴퓨터실·음악실·강당 같은 특별실을 주간(월-금) × 교시 표에서 눌러 예약합니다. 겹침 방지, 매주 반복 예약, 주 이동, 내 반 예약만 보기, 특별실별 주간표 인쇄. 교무실 공용 PC 한 대로 쓰는 예약판입니다.">
+<style>
+  :root{--bg:#eef6f1;--panel:#fff;--ink:#1e2a24;--sub:#5c6d64;--line:#d6e5dc;--brand:#1f8a5b;--brand2:#3dbb84;--soft:#e6f6ee;--bad:#c53030}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.92}
+  .grow{flex:1}
+  .lock{display:inline-flex;align-items:center;gap:6px;background:#fff;color:#14532d;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .wrap{max-width:1400px;margin:0 auto;padding:10px 20px 50px}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 10px}
+  .btn{border-radius:10px;padding:7px 12px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--ink);border:1px solid var(--line);white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.on{background:#fff4d6;border-color:#e8b93b}
+  input,select{font:inherit;font-size:14px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:0}
+  #weekLabel{font-weight:900;font-size:17px;letter-spacing:-.3px;min-width:0}
+  #myCls{width:80px}
+  .rtabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+  .rt{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 12px;cursor:pointer;color:var(--ink)}
+  .rt .c{display:inline-block;font-size:11.5px;background:var(--soft);color:var(--brand);border-radius:999px;padding:0 7px;margin-left:5px}
+  .rt.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .rt.on .c{background:#fff}
+  .main{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:12px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+  .panel h2{font-size:15px;margin:0 0 8px}
+  .tw{overflow-x:auto}
+  table.grid{width:100%;border-collapse:separate;border-spacing:4px;table-layout:fixed;min-width:560px}
+  .grid th{font-size:13px;color:var(--sub);font-weight:800;padding:4px}
+  .grid th.today{color:var(--brand)}
+  .grid td.pn{width:58px;text-align:center;font-weight:800;color:var(--sub);font-size:13px}
+  .cell{height:62px;border:1px dashed #c9dccf;border-radius:10px;cursor:pointer;vertical-align:middle;text-align:center;padding:3px;background:#fbfdfc;transition:background .15s}
+  .cell:hover{background:var(--soft)}
+  .cell .free{font-size:12px;color:#9ab3a5}
+  .cell.today{background:#f6fbf8}
+  .bk{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;border-radius:8px;background:#d9f2e5;color:#0f5132;padding:2px}
+  .bk b{font-size:15px}
+  .bk small{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .bk.rep{background:#dbeafe;color:#1e3a8a}
+  .bk.mine{outline:3px solid #e8b93b;background:#fff4d6;color:#7a4b00}
+  .bk.other{opacity:.3}
+  tr.lunch td{text-align:center;font-size:12px;color:var(--sub);background:repeating-linear-gradient(45deg,#f1f5f3,#f1f5f3 6px,#fff 6px,#fff 12px);border-radius:8px;padding:3px}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin-top:6px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+  .side .item{font-size:13px;padding:6px 8px;border-radius:8px;background:#f6faf8;margin-bottom:5px}
+  .hint{font-size:12px;color:var(--sub);line-height:1.5}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:60;padding:12px}
+  .modal.on{display:flex}
+  .box{background:#fff;border-radius:16px;padding:16px;width:min(380px,100%);box-shadow:0 10px 40px #0003;max-height:90vh;overflow:auto}
+  .box h3{margin:0 0 10px;font-size:17px}
+  .box label{display:block;font-size:12.5px;font-weight:700;color:var(--sub);margin:8px 0 3px}
+  .box input:not([type=checkbox]){width:100%}
+  .box .chk{display:flex;gap:6px;align-items:center;font-size:13.5px;color:var(--ink)}
+  .box .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .info{background:var(--soft);border-radius:10px;padding:10px;font-size:14px;line-height:1.6}
+  .rl{display:flex;gap:6px;margin-bottom:6px}
+  .rl input{flex:1}
+  #printArea{display:none}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.92);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:30}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1e2a24;color:#fff;padding:9px 16px;border-radius:999px;font-size:13.5px;opacity:0;transition:.25s;pointer-events:none;z-index:80;max-width:90vw}
+  .toast.on{opacity:1}
+  @media (max-width:900px){
+    .main{grid-template-columns:1fr}
+    .wrap{padding:10px}
+    header{padding:10px 12px} header p{display:none} header h1{font-size:19px}
+    .lock{font-size:11.5px;padding:5px 9px}
+    #weekLabel{font-size:15px;width:100%;order:-1}
+  }
+  @media print{
+    body>*:not(#printArea){display:none!important}
+    body{background:#fff}
+    #printArea{display:block!important}
+    #printArea .pg{break-after:page;page-break-after:always}
+    #printArea .pg:last-child{break-after:auto;page-break-after:auto}
+    #printArea h2{font-size:18pt;margin:0 0 4px}
+    #printArea p{margin:0 0 10px;font-size:11pt}
+    #printArea table{width:100%;border-collapse:collapse;table-layout:fixed}
+    #printArea th,#printArea td{border:1px solid #333;height:62px;text-align:center;font-size:11pt;padding:3px}
+    #printArea th{height:auto;background:#eee}
+    #printArea tr.l td{height:auto;font-size:9pt;background:#f3f3f3}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="특별실 예약판">
+<meta property="og:description" content="과학실·컴퓨터실 주간 시간표에서 눌러 예약, 겹침 막고 주간표 인쇄">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/98-room-booking.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/room-booking/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🏫</div>
+  <div>
+    <h1>특별실 예약판</h1>
+    <p>교무실 PC 한 대로 · 칸을 눌러 예약 · 겹치면 막아 주고 매주 반복도 한 번에</p>
+  </div>
+  <div class="grow"></div>
+  <span class="lock" title="예약 기록은 이 브라우저에만 저장됩니다">🔒 이 PC에만 저장 · 외부 전송 없음</span>
+</header>
+<div class="wrap">
+  <div class="bar">
+    <button type="button" class="btn" id="prevWeek">◀ 이전 주</button>
+    <button type="button" class="btn" id="thisWeek">이번 주</button>
+    <button type="button" class="btn" id="nextWeek">다음 주 ▶</button>
+    <span id="weekLabel"></span>
+    <input type="date" id="weekPick" aria-label="날짜로 주 이동" title="날짜를 고르면 그 주로 이동">
+    <span class="grow"></span>
+    <label class="hint" for="myCls">내 반</label><input id="myCls" placeholder="예: 5-1" aria-label="내 반">
+    <button type="button" class="btn" id="mineBtn">⭐ 내 반만 보기</button>
+    <button type="button" class="btn" id="printBtn">🖨 주간표 인쇄</button>
+    <button type="button" class="btn" id="roomsBtn">⚙ 특별실 편집</button>
+  </div>
+  <div class="rtabs" id="roomTabs"></div>
+  <div class="main">
+    <section class="panel">
+      <h2 id="roomTitle"></h2>
+      <div class="tw"><table class="grid" id="grid"></table></div>
+      <div class="legend"><span><i style="background:#d9f2e5"></i>한 번 예약</span><span><i style="background:#dbeafe"></i>🔁 매주 반복</span><span><i style="background:#fff4d6;outline:2px solid #e8b93b"></i>내 반</span><span>빈 칸을 누르면 예약 · 예약된 칸을 누르면 취소</span></div>
+    </section>
+    <aside class="panel side">
+      <h2>⭐ 내 반 이번 주 예약</h2>
+      <div id="myList"></div>
+      <h2 style="margin-top:14px">📌 사용 안내</h2>
+      <div class="hint">1. 위에서 특별실을 고르고<br>2. 빈 칸을 눌러 학년반·과목을 적어요<br>3. 매주 쓰는 시간은 "매주 반복"<br>4. 금요일에 다음 주 표를 인쇄해 문에 붙여요</div>
+    </aside>
+  </div>
+</div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="box">
+    <h3 id="mTitle"></h3>
+    <div id="mFree">
+      <label for="mCls">학년반</label><input id="mCls" placeholder="예: 5-1" autocomplete="off">
+      <label for="mSubj">과목·용도</label><input id="mSubj" placeholder="예: 과학 실험" autocomplete="off">
+      <label for="mWho">선생님 (선택)</label><input id="mWho" placeholder="예: 김선생" autocomplete="off">
+      <label class="chk"><input type="checkbox" id="mRepeat"> 🔁 매주 이 시간 반복</label>
+      <div class="row"><button type="button" class="btn primary" id="mSave">예약하기</button></div>
+    </div>
+    <div id="mTaken">
+      <div class="info" id="mInfo"></div>
+      <div class="row">
+        <button type="button" class="btn" id="mCancelOne">예약 취소</button>
+        <button type="button" class="btn" id="mCancelAll">이 날부터 반복 모두 취소</button>
+      </div>
+    </div>
+    <div class="row"><button type="button" class="btn" id="mClose">닫기</button></div>
+  </div>
+</div>
+<div class="modal" id="roomsModal" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+  <div class="box">
+    <h3 id="rTitle">⚙ 특별실 편집</h3>
+    <div id="roomList"></div>
+    <div class="rl" style="margin-top:10px"><input id="newRoom" placeholder="새 특별실 이름 (예: 미술실)"><button type="button" class="btn primary" id="addRoom">추가</button></div>
+    <p class="hint">이름은 바로 바뀌어요. 특별실을 빼면 그 방의 예약도 함께 사라져요.</p>
+    <div class="row"><button type="button" class="btn" id="roomsClose">닫기</button></div>
+  </div>
+</div>
+<div id="printArea"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(function(){
+  'use strict';
+  var KEY = 'edu-expo.room-booking.v1';
+  var $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var WD = ['일', '월', '화', '수', '목', '금', '토'], PERIODS = [1, 2, 3, 4, 5, 6];
+  var pad = function(n){ return String(n).padStart(2, '0'); };
+  var ymd = function(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  var parse = function(s){ return new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10), 12); };
+  var validDate = function(s){ return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && ymd(parse(s)) === s; };
+  var addDays = function(s, n){ var d = parse(s); d.setDate(d.getDate() + n); return ymd(d); };
+  var monday = function(s){ var d = parse(s); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return ymd(d); };
+  var md = function(s){ var d = parse(s); return (d.getMonth() + 1) + '/' + d.getDate() + '(' + WD[d.getDay()] + ')'; };
+  var uid = function(){ return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); };
+  function defaultWeek(){ var t = new Date(); var s = ymd(t); if (t.getDay() === 6) s = addDays(s, 2); else if (t.getDay() === 0) s = addDays(s, 1); return monday(s); }
+  var str = function(v, n){ return typeof v === 'string' ? v.trim().slice(0, n) : ''; };
+
+  function sample(){
+    var M = defaultWeek(), from = addDays(M, -28);
+    var rooms = [['science', '과학실'], ['computer', '컴퓨터실'], ['music', '음악실'], ['art', '미술실'], ['hall', '강당']].map(function(r){ return {id: r[0], name: r[1]}; });
+    var rule = function(room, wd, p, cls, subj, who){ return {id: uid(), room: room, wd: wd, p: p, cls: cls, subj: subj, who: who || '', from: from, until: '', skip: []}; };
+    var one = function(room, day, p, cls, subj, who){ return {id: uid(), room: room, date: addDays(M, day), p: p, cls: cls, subj: subj, who: who || ''}; };
+    return {
+      rooms: rooms,
+      rules: [rule('science', 1, 3, '5-1', '과학', '박선생'), rule('science', 2, 5, '6-2', '과학', '이선생'), rule('science', 5, 1, '4-2', '과학'), rule('computer', 1, 1, '6-1', '실과(코딩)'), rule('computer', 3, 4, '5-2', '정보'), rule('music', 2, 2, '3-1', '음악'), rule('music', 4, 3, '4-1', '음악'), rule('hall', 1, 5, '전교', '체육(우천)'), rule('art', 3, 2, '2-1', '미술')],
+      singles: [one('science', 2, 2, '5-3', '과학 실험', '최선생'), one('science', 3, 3, '6-1', '과학 실험'), one('science', 3, 4, '6-1', '과학 실험'), one('science', 4, 5, '3-2', '탐구 활동'), one('computer', 1, 3, '4-3', '타자 연습'), one('hall', 4, 3, '5학년', '학년 체육대회 연습'), one('hall', 4, 4, '5학년', '학년 체육대회 연습')]
+    };
+  }
+  var state = Object.assign(sample(), {cur: 'science', myCls: '5-1', mine: false});
+  try {
+    var st = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (st && Array.isArray(st.rooms)) {
+      var rooms = st.rooms.filter(function(r){ return r && typeof r.id === 'string' && str(r.name, 30); }).map(function(r){ return {id: r.id.slice(0, 40), name: str(r.name, 30)}; });
+      var ids = {}; rooms.forEach(function(r){ ids[r.id] = 1; });
+      var okP = function(p){ return PERIODS.indexOf(p) >= 0; };
+      state.rooms = rooms;
+      state.singles = (Array.isArray(st.singles) ? st.singles : []).filter(function(b){ return b && ids[b.room] && validDate(b.date) && okP(b.p) && str(b.cls, 20); })
+        .map(function(b){ return {id: str(b.id, 40) || uid(), room: b.room, date: b.date, p: b.p, cls: str(b.cls, 20), subj: str(b.subj, 30), who: str(b.who, 20)}; });
+      state.rules = (Array.isArray(st.rules) ? st.rules : []).filter(function(b){ return b && ids[b.room] && validDate(b.from) && okP(b.p) && b.wd >= 1 && b.wd <= 5 && str(b.cls, 20); })
+        .map(function(b){ return {id: str(b.id, 40) || uid(), room: b.room, wd: b.wd, p: b.p, cls: str(b.cls, 20), subj: str(b.subj, 30), who: str(b.who, 20), from: b.from, until: validDate(b.until) ? b.until : '', skip: Array.isArray(b.skip) ? b.skip.filter(validDate) : []}; });
+      state.cur = typeof st.cur === 'string' && ids[st.cur] ? st.cur : (rooms[0] ? rooms[0].id : '');
+      state.myCls = str(st.myCls, 20); state.mine = st.mine === true;
+    }
+  } catch(e){}
+  var week = defaultWeek();
+  var pick = null; // 모달에서 고른 칸
+
+  var toastT;
+  function toast(m){ var t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 2600); }
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+  function ruleOn(r, date){ return r.wd === parse(date).getDay() && date >= r.from && (!r.until || date <= r.until) && r.skip.indexOf(date) < 0; }
+  function bookingAt(room, date, p){
+    for (var i = 0; i < state.singles.length; i++) { var s = state.singles[i]; if (s.room === room && s.date === date && s.p === p) return {kind: 'one', b: s}; }
+    for (var j = 0; j < state.rules.length; j++) { var r = state.rules[j]; if (r.room === room && r.p === p && ruleOn(r, date)) return {kind: 'rule', b: r}; }
+    return null;
+  }
+  function roomName(id){ var r = state.rooms.find(function(x){ return x.id === id; }); return r ? r.name : ''; }
+  function weekLabel(m){
+    var a = parse(m), f = parse(addDays(m, 4));
+    return a.getFullYear() + '. ' + (a.getMonth() + 1) + '. ' + a.getDate() + '.(월) - ' + (f.getFullYear() !== a.getFullYear() ? f.getFullYear() + '. ' : '') + (f.getMonth() + 1) + '. ' + f.getDate() + '.(금)';
+  }
+  var isMine = function(cls){ return state.myCls && cls.replace(/\s/g, '') === state.myCls.replace(/\s/g, ''); };
+  function weekCount(room){ var n = 0; for (var d = 0; d < 5; d++) PERIODS.forEach(function(p){ if (bookingAt(room, addDays(week, d), p)) n++; }); return n; }
+  function tableHtml(room, forPrint){
+    var today = ymd(new Date());
+    var head = '<thead><tr><th>교시</th>' + [0, 1, 2, 3, 4].map(function(d){ var ds = addDays(week, d); return '<th' + (ds === today && !forPrint ? ' class="today"' : '') + '>' + md(ds) + '</th>'; }).join('') + '</tr></thead>';
+    var rows = PERIODS.map(function(p){
+      var tr = '<tr><td class="pn">' + p + '교시</td>' + [0, 1, 2, 3, 4].map(function(d){
+        var ds = addDays(week, d), at = bookingAt(room, ds, p);
+        if (forPrint) return '<td>' + (at ? '<b>' + (at.kind === 'rule' ? '🔁 ' : '') + esc(at.b.cls) + '</b><br>' + esc(at.b.subj) + (at.b.who ? '<br><small>' + esc(at.b.who) + '</small>' : '') : '') + '</td>';
+        var inner = at ? '<div class="bk' + (at.kind === 'rule' ? ' rep' : '') + (state.mine && state.myCls ? (isMine(at.b.cls) ? ' mine' : ' other') : '') + '"><b>' + (at.kind === 'rule' ? '🔁 ' : '') + esc(at.b.cls) + '</b><small>' + esc(at.b.subj) + '</small></div>' : '<span class="free">+ 예약</span>';
+        return '<td class="cell' + (ds === today ? ' today' : '') + '" data-day="' + d + '" data-p="' + p + '" tabindex="0">' + inner + '</td>';
+      }).join('') + '</tr>';
+      if (p === 4) tr += '<tr class="' + (forPrint ? 'l' : 'lunch') + '"><td' + (forPrint ? '' : ' class="pn"') + '>점심</td><td colspan="5">점심시간</td></tr>';
+      return tr;
+    }).join('');
+    return head + '<tbody>' + rows + '</tbody>';
+  }
+  function render(){
+    if (!state.rooms.some(function(r){ return r.id === state.cur; })) state.cur = state.rooms[0] ? state.rooms[0].id : '';
+    $('#weekLabel').textContent = weekLabel(week);
+    $('#weekPick').value = week;
+    $('#myCls').value = state.myCls;
+    $('#mineBtn').classList.toggle('on', state.mine);
+    $('#roomTabs').innerHTML = state.rooms.map(function(r){ return '<button type="button" class="rt' + (r.id === state.cur ? ' on' : '') + '" data-room="' + esc(r.id) + '"><span class="nm">' + esc(r.name) + '</span><span class="c">' + weekCount(r.id) + '</span></button>'; }).join('');
+    $('#roomTitle').textContent = state.cur ? '📍 ' + roomName(state.cur) + ' · ' + weekLabel(week) : '특별실을 먼저 추가해 주세요 (⚙ 특별실 편집)';
+    $('#grid').innerHTML = state.cur ? tableHtml(state.cur, false) : '';
+    var mine = [];
+    if (state.myCls) for (var d = 0; d < 5; d++) PERIODS.forEach(function(p){ state.rooms.forEach(function(r){ var at = bookingAt(r.id, addDays(week, d), p); if (at && isMine(at.b.cls)) mine.push('<div class="item">' + md(addDays(week, d)) + ' ' + p + '교시 · <b>' + esc(r.name) + '</b> ' + esc(at.b.subj) + '</div>'); }); });
+    $('#myList').innerHTML = !state.myCls ? '<div class="hint">위의 "내 반"에 학년반(예: 5-1)을 적으면 이번 주 우리 반 예약이 모여요.</div>' : (mine.length ? mine.join('') : '<div class="hint">이번 주 ' + esc(state.myCls) + ' 예약이 없어요.</div>');
+  }
+  function openCell(d, p){
+    var date = addDays(week, d), at = bookingAt(state.cur, date, p);
+    pick = {date: date, p: p, d: d, at: at};
+    $('#mTitle').textContent = roomName(state.cur) + ' · ' + md(date) + ' ' + p + '교시';
+    $('#mFree').style.display = at ? 'none' : '';
+    $('#mTaken').style.display = at ? '' : 'none';
+    if (at) {
+      $('#mInfo').innerHTML = '<b>' + esc(at.b.cls) + '</b> ' + esc(at.b.subj) + (at.b.who ? ' · ' + esc(at.b.who) : '') + '<br>' + (at.kind === 'rule' ? '🔁 매주 ' + WD[at.b.wd] + '요일 반복 (' + esc(at.b.from) + '부터' + (at.b.until ? ' ' + esc(at.b.until) + '까지' : '') + ')' : '한 번 예약');
+      $('#mCancelOne').textContent = at.kind === 'rule' ? '이번 주만 취소' : '예약 취소';
+      $('#mCancelAll').style.display = at.kind === 'rule' ? '' : 'none';
+    } else { $('#mCls').value = state.myCls || ''; $('#mSubj').value = ''; $('#mWho').value = ''; $('#mRepeat').checked = false; }
+    $('#modal').classList.add('on');
+    setTimeout(function(){ try { (at ? $('#mClose') : $('#mCls')).focus(); } catch(e){} }, 0);
+  }
+  function closeModal(){ $('#modal').classList.remove('on'); pick = null; }
+  $('#grid').addEventListener('click', function(e){ var c = e.target.closest('.cell'); if (c) openCell(+c.getAttribute('data-day'), +c.getAttribute('data-p')); });
+  $('#grid').addEventListener('keydown', function(e){ var c = e.target.closest('.cell'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openCell(+c.getAttribute('data-day'), +c.getAttribute('data-p')); } });
+  $('#mSave').addEventListener('click', function(){
+    if (!pick || pick.at) return;
+    var cls = str($('#mCls').value, 20), subj = str($('#mSubj').value, 30), who = str($('#mWho').value, 20);
+    if (!cls) return toast('학년반을 적어 주세요 (예: 5-1)');
+    if (bookingAt(state.cur, pick.date, pick.p)) return toast('이미 예약된 칸이에요');
+    if ($('#mRepeat').checked) {
+      var wd = parse(pick.date).getDay(), room = state.cur, p = pick.p, from = pick.date;
+      var clash = state.rules.filter(function(r){ return r.room === room && r.wd === wd && r.p === p && (!r.until || r.until >= from); })
+        .map(function(r){ return '매주 ' + WD[r.wd] + ' ' + r.cls; })
+        .concat(state.singles.filter(function(s){ return s.room === room && s.p === p && s.date >= from && parse(s.date).getDay() === wd; }).sort(function(a, b){ return a.date < b.date ? -1 : 1; }).map(function(s){ return md(s.date) + ' ' + s.cls; }));
+      if (clash.length) return toast('겹치는 예약이 있어 반복할 수 없어요: ' + clash.slice(0, 3).join(', ') + (clash.length > 3 ? ' 외 ' + (clash.length - 3) + '건' : ''));
+      state.rules.push({id: uid(), room: room, wd: wd, p: p, cls: cls, subj: subj, who: who, from: from, until: '', skip: []});
+      toast('매주 ' + WD[wd] + '요일 ' + p + '교시로 반복 예약했어요');
+    } else {
+      state.singles.push({id: uid(), room: state.cur, date: pick.date, p: pick.p, cls: cls, subj: subj, who: who});
+      toast(md(pick.date) + ' ' + pick.p + '교시 예약했어요');
+    }
+    save(); closeModal(); render();
+  });
+  $('#mCancelOne').addEventListener('click', function(){
+    if (!pick || !pick.at) return;
+    if (pick.at.kind === 'one') state.singles = state.singles.filter(function(s){ return s !== pick.at.b; });
+    else pick.at.b.skip.push(pick.date);
+    toast(md(pick.date) + ' ' + pick.p + '교시 예약을 취소했어요');
+    save(); closeModal(); render();
+  });
+  $('#mCancelAll').addEventListener('click', function(){
+    if (!pick || !pick.at || pick.at.kind !== 'rule') return;
+    var r = pick.at.b;
+    if (pick.date <= r.from) state.rules = state.rules.filter(function(x){ return x !== r; });
+    else { r.until = addDays(pick.date, -1); r.skip = r.skip.filter(function(s){ return s <= r.until; }); }
+    toast(md(pick.date) + '부터 반복 예약을 끝냈어요');
+    save(); closeModal(); render();
+  });
+  $('#mClose').addEventListener('click', closeModal);
+  $('#modal').addEventListener('click', function(e){ if (e.target === this) closeModal(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { closeModal(); $('#roomsModal').classList.remove('on'); } });
+  $('#mCls').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('#mSubj').focus(); });
+  $('#mSubj').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('#mSave').click(); });
+  $('#roomTabs').addEventListener('click', function(e){ var b = e.target.closest('.rt'); if (!b) return; state.cur = b.getAttribute('data-room'); save(); render(); });
+  $('#prevWeek').addEventListener('click', function(){ week = addDays(week, -7); render(); });
+  $('#nextWeek').addEventListener('click', function(){ week = addDays(week, 7); render(); });
+  $('#thisWeek').addEventListener('click', function(){ week = defaultWeek(); render(); });
+  $('#weekPick').addEventListener('change', function(){ if (validDate(this.value)) { week = monday(this.value); render(); } });
+  $('#myCls').addEventListener('input', function(){ state.myCls = str(this.value, 20); save(); render(); });
+  $('#mineBtn').addEventListener('click', function(){ state.mine = !state.mine; if (state.mine && !state.myCls) toast('먼저 "내 반"에 학년반을 적어 주세요'); save(); render(); });
+  // 특별실 편집
+  function renderRooms(){
+    $('#roomList').innerHTML = state.rooms.map(function(r){ return '<div class="rl"><input data-rid="' + esc(r.id) + '" value="' + esc(r.name) + '" aria-label="특별실 이름"><button type="button" class="btn" data-rdel="' + esc(r.id) + '">빼기(삭제)</button></div>'; }).join('') || '<p class="hint">특별실이 없어요. 아래에서 추가해 주세요.</p>';
+  }
+  $('#roomsBtn').addEventListener('click', function(){ renderRooms(); $('#roomsModal').classList.add('on'); });
+  $('#roomsClose').addEventListener('click', function(){ $('#roomsModal').classList.remove('on'); render(); });
+  $('#roomsModal').addEventListener('click', function(e){ if (e.target === this) { this.classList.remove('on'); render(); } });
+  $('#roomList').addEventListener('change', function(e){
+    var id = e.target.getAttribute('data-rid'); if (!id) return;
+    var r = state.rooms.find(function(x){ return x.id === id; }), v = str(e.target.value, 30);
+    if (!r) return;
+    if (!v) { e.target.value = r.name; return toast('이름을 비울 수 없어요'); }
+    r.name = v; save(); render(); toast('이름을 바꿨어요');
+  });
+  $('#roomList').addEventListener('click', function(e){
+    var id = e.target.getAttribute('data-rdel'); if (!id) return;
+    if (!confirm('"' + roomName(id) + '"과(와) 그 예약을 모두 뺄까요?')) return;
+    state.rooms = state.rooms.filter(function(r){ return r.id !== id; });
+    state.singles = state.singles.filter(function(s){ return s.room !== id; });
+    state.rules = state.rules.filter(function(s){ return s.room !== id; });
+    save(); renderRooms(); render();
+  });
+  $('#addRoom').addEventListener('click', function(){
+    var v = str($('#newRoom').value, 30);
+    if (!v) return toast('특별실 이름을 적어 주세요');
+    if (state.rooms.some(function(r){ return r.name === v; })) return toast('이미 있는 이름이에요');
+    var id = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    state.rooms.push({id: id, name: v}); $('#newRoom').value = '';
+    save(); renderRooms(); render(); toast(v + '을(를) 추가했어요');
+  });
+  $('#newRoom').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('#addRoom').click(); });
+  // 인쇄: 특별실마다 한 장
+  $('#printBtn').addEventListener('click', function(){
+    if (!state.rooms.length) return toast('인쇄할 특별실이 없어요');
+    $('#printArea').innerHTML = state.rooms.map(function(r){ return '<section class="pg"><h2>' + esc(r.name) + ' 주간 예약표</h2><p>' + weekLabel(week) + ' · 햇살초등학교 · 🔁 표시는 매주 반복</p><table>' + tableHtml(r.id, true) + '</table></section>'; }).join('');
+    window.print();
+  });
+  window.__rb = {state: function(){ return state; }, bookingAt: bookingAt};
+  render();
+})();
+</script>
+</body>
+</html>

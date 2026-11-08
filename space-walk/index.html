@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우주 산책 - 우주선 창밖으로 태양계를 나는 1인칭 여행</title>
+<meta name="description" content="우주선 창밖으로 태양계 8개 행성을 차례로 찾아가며 지름·평균 온도·하루 길이를 지구와 비교하고 탐사 도장을 모으는 1인칭 우주 여행.">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#02030a}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
+  button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+  #cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;pointer-events:none;z-index:3}
+  header>*{pointer-events:auto}
+  .logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#ffb347,#ff5f6d);display:grid;place-items:center;font-size:24px;box-shadow:0 4px 0 #a8324a;flex-shrink:0}
+  h1{margin:0;font-size:22px;letter-spacing:-.5px;text-shadow:0 2px 8px #000}
+  h1 small{display:block;font-size:12px;color:#b9c3ee;font-weight:600}
+  .hud{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .pill{background:rgba(10,14,40,.7);border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:5px 12px;font-weight:800;color:#a9b4e0;font-size:13px;white-space:nowrap}
+  .pill b{color:#fff;font-size:16px;margin-left:4px}
+  .ib{border:1px solid rgba(255,255,255,.18);background:rgba(10,14,40,.7);border-radius:12px;padding:8px 11px;font-weight:800;font-size:14px}
+  .ib[aria-pressed=true]{background:#2f5bd8}
+  .ov{position:fixed;left:50%;transform:translateX(-50%);width:min(94%,470px);background:rgba(10,14,44,.88);border:2px solid rgba(255,255,255,.16);border-radius:22px;padding:18px;text-align:center;display:none;z-index:4;backdrop-filter:blur(4px)}
+  .ov.on{display:block}
+  #ready{bottom:9%}
+  #result{top:50%;transform:translate(-50%,-50%);max-height:92%;overflow:auto}
+  .ov h2{margin:0 0 6px;font-size:24px}
+  .ov p{margin:6px 0;color:#d4dbf7;line-height:1.55;font-size:15px}
+  .tips{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;font-size:13px;color:#cfd7ff;text-align:left}
+  .tips span{background:rgba(255,255,255,.07);border-radius:10px;padding:6px 9px}
+  .go{border:0;border-radius:16px;background:linear-gradient(180deg,#ffd36b,#ff9a3c);color:#3a1a00;font-weight:900;font-size:19px;padding:12px 30px;box-shadow:0 5px 0 #b9631c;margin:6px 4px}
+  .go:active{transform:translateY(3px);box-shadow:0 2px 0 #b9631c}
+  .sub{border:0;border-radius:14px;background:rgba(255,255,255,.14);font-weight:800;padding:11px 18px;margin:6px 4px}
+  #info{position:fixed;right:3%;top:50%;transform:translateY(-50%);width:min(360px,40%);background:rgba(8,12,40,.9);border:2px solid rgba(140,170,255,.3);border-radius:20px;padding:16px 18px;display:none;z-index:4;max-height:84%;overflow:auto}
+  #info.on{display:block}
+  #info h2{margin:0;font-size:26px}
+  #info .where{color:#9fb0ea;font-size:13px;margin:2px 0 10px}
+  .row{background:rgba(255,255,255,.06);border-radius:12px;padding:8px 10px;margin:6px 0;font-size:14px;line-height:1.45}
+  .row b{font-size:16px;color:#fff}
+  .row .cmp{color:#ffd36b;font-weight:800}
+  .bar{position:relative;height:10px;border-radius:5px;margin-top:6px;background:linear-gradient(90deg,#3b6cff,#7ad0ff 40%,#ffe07a 70%,#ff5a3c)}
+  .bar.day{background:linear-gradient(90deg,#2a3270,#8a6cff)}
+  .bar i{position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:#fff;box-shadow:0 0 6px #fff}
+  .bar i.e{background:#4dff9c;box-shadow:0 0 6px #4dff9c}
+  .sizes{display:flex;align-items:flex-end;gap:14px;justify-content:center;margin-top:6px;height:96px}
+  .sizes div{border-radius:50%;flex-shrink:0}
+  .sizes small{display:block;font-size:11px;color:#9fb0ea;text-align:center}
+  .fact{color:#dfe5ff;font-size:14px;line-height:1.55;margin:8px 0}
+  #stamp,#next{width:100%;margin:6px 0 0}
+  #stamp:disabled{opacity:.5}
+  #boost{position:fixed;right:4%;bottom:8%;width:84px;height:84px;border-radius:50%;border:0;font-weight:900;font-size:15px;color:#3a1600;background:radial-gradient(circle at 40% 35%,#ffe29a,#ff8a2a);box-shadow:0 5px 0 rgba(0,0,0,.4);display:none;z-index:3}
+  #boost.on{display:block}
+  #rStamps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+  .st{border:2px dashed rgba(255,255,255,.25);border-radius:14px;padding:8px 2px;font-size:12px;color:#8892c0}
+  .st i{display:block;width:30px;height:30px;border-radius:50%;margin:0 auto 4px;opacity:.25}
+  .st.got{border-style:solid;border-color:#ffd36b;color:#fff;background:rgba(255,211,107,.1)}
+  .st.got i{opacity:1}
+  .sum{text-align:left;font-size:14px;color:#d4dbf7;background:rgba(255,255,255,.06);border-radius:12px;padding:8px 12px;line-height:1.7}
+  .back{position:fixed;right:12px;bottom:8px;font-size:12px;color:#c8d0f5;text-decoration:none;background:rgba(0,0,0,.4);padding:4px 10px;border-radius:99px;z-index:5}
+  #toast{position:fixed;left:50%;top:22%;transform:translateX(-50%);font-weight:900;font-size:20px;background:rgba(0,0,0,.55);padding:8px 18px;border-radius:99px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:4;white-space:nowrap}
+  #toast.on{opacity:1}
+  @media (max-width:760px){
+    header{padding:6px 8px;gap:6px}
+    .logo{width:34px;height:34px;font-size:19px;border-radius:10px}
+    h1{font-size:18px} h1 small{display:none}
+    .hud{order:3;width:100%;margin:0;gap:4px}
+    .pill{padding:3px 8px;font-size:11px} .pill b{font-size:13px}
+    .ib{padding:6px 8px;font-size:12px}
+    .tools{margin-left:auto}
+    #info{left:2%;right:2%;width:auto;top:auto;bottom:2%;transform:none;max-height:50%;padding:12px}
+    #info h2{font-size:21px}
+    .sizes{height:70px}
+    .ov{padding:12px} .ov h2{font-size:20px}
+    .tips{grid-template-columns:1fr;font-size:12px}
+    #boost{width:70px;height:70px;font-size:13px;bottom:10%}
+    #rStamps{gap:5px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="우주 산책">
+<meta property="og:description" content="우주선 창밖으로 태양계를 날며 행성마다 멈춰 크기·온도·하루 길이를 비교하는 1인칭 여행">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/76-space-walk.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/space-walk/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<canvas id="cv" aria-label="우주선 창밖 풍경"></canvas>
+<header>
+  <div class="logo" aria-hidden="true">🪐</div>
+  <h1>우주 산책<small>우주선 창밖으로 떠나는 태양계 1인칭 여행</small></h1>
+  <div class="hud">
+    <div class="pill">목적지<b id="dest">태양 옆</b></div>
+    <div class="pill">위치<b id="au">0.00 AU</b></div>
+    <div class="pill">도장<b><span id="stampN">0</span>/8</b></div>
+    <div class="pill">시간<b id="timeT">0:00</b></div>
+  </div>
+  <div class="tools"><button class="ib" id="snd" aria-pressed="false">🔇 소리</button> <button class="ib" id="fs">⛶ 전체화면</button></div>
+</header>
+<div id="toast"></div>
+<button id="boost" aria-label="부스터">🚀<br>부스터</button>
+<div class="ov on" id="ready">
+  <h2>🚀 태양계 8개 행성 탐사</h2>
+  <p>창밖의 행성을 <b>가운데 조준선</b>에 맞추며 날아가요. 도착하면 크기·온도·하루 길이를 지구와 비교하고 <b>탐사 도장</b>을 찍어요.</p>
+  <div class="tips"><span>⌨️ 방향키 / WASD 로 조종</span><span>📱 화면을 끌어서 조종</span><span>🚀 스페이스 = 부스터</span><span>🎯 조준이 맞아야 빨라져요</span></div>
+  <p id="recLine">모은 도장 0/8</p>
+  <button class="go" id="start">▶ 출발 (태양 → 수성)</button>
+</div>
+<div id="info" aria-live="polite">
+  <h2 id="infoName">수성</h2>
+  <div class="where" id="infoWhere"></div>
+  <div class="row">📏 지름 <b id="iDia"></b> · <span class="cmp" id="iDiaC"></span><div class="sizes" id="iSizes"></div></div>
+  <div class="row">🌡️ 평균 온도 <b id="iTemp"></b><div class="bar"><i class="e" id="iTempE"></i><i id="iTempM"></i></div></div>
+  <div class="row">🌗 하루 길이(자전) <b id="iDay"></b> · <span class="cmp" id="iDayC"></span><div class="bar day"><i class="e" id="iDayE"></i><i id="iDayM"></i></div></div>
+  <div class="row">🗓️ 1년(공전) <b id="iYear"></b></div>
+  <p class="fact" id="iFact"></p>
+  <button class="go" id="stamp">🔖 탐사 도장 찍기</button>
+  <button class="go" id="next" hidden>다음 행성 ▶</button>
+</div>
+<div class="ov" id="result">
+  <h2>🌌 태양계 여행 완료!</h2>
+  <p id="rTime"></p>
+  <div id="rStamps"></div>
+  <div class="sum" id="rSum"></div>
+  <button class="go" id="again">다시 여행</button><button class="sub" id="home">처음으로</button>
+</div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+'use strict';
+const DT = 1 / 60, START_DIST = 100;
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const KEY = 'edu-expo-space-walk-v1';
+// 지름(km)·평균 온도(°C)·자전 주기(시간)·공전·태양 거리(AU): NASA 행성 자료
+const P = [
+  { n: '수성', dia: 4879, ratio: '0.38', temp: 167, dayH: 1407.6, day: '58.6일', year: '88일', au: 0.39, size: 0.15, c: ['#c9c2b8', '#7d7770'],
+    fact: '태양과 가장 가까운 행성이에요. 공기가 거의 없어 낮엔 430°C, 밤엔 -180°C까지 오르내려요.' },
+  { n: '금성', dia: 12104, ratio: '0.95', temp: 464, dayH: 5832.5, day: '243일', year: '225일', au: 0.72, size: 0.2, c: ['#f3dca0', '#c99a4e'],
+    fact: '두꺼운 이산화탄소 대기가 열을 가둬 수성보다 더 뜨거워요. 다른 행성과 반대 방향으로 자전해요.' },
+  { n: '지구', dia: 12756, ratio: '1', temp: 15, dayH: 23.93, day: '23시간 56분', year: '365일', au: 1, size: 0.21, c: ['#4f9bff', '#1d4fae'],
+    fact: '액체 상태의 물이 있고 생명이 사는 우리 행성이에요. 옆에 보이는 달은 지름이 지구의 약 1/4이에요.' },
+  { n: '화성', dia: 6792, ratio: '0.53', temp: -65, dayH: 24.62, day: '24시간 37분', year: '687일', au: 1.52, size: 0.17, c: ['#e2794a', '#8e3a1d'],
+    fact: '흙 속 산화철(녹) 때문에 붉게 보여요. 태양계에서 가장 높은 화산인 올림푸스 산이 있어요.' },
+  { n: '목성', dia: 142984, ratio: '11.2', temp: -110, dayH: 9.93, day: '9시간 56분', year: '11.9년', au: 5.2, size: 0.31, c: ['#e8c9a0', '#a8754c'],
+    fact: '태양계에서 가장 큰 행성이에요. 지구보다 큰 폭풍 대적점이 수백 년째 불고 있어요.' },
+  { n: '토성', dia: 120536, ratio: '9.45', temp: -140, dayH: 10.57, day: '10시간 34분', year: '29.5년', au: 9.54, size: 0.24, c: ['#f0dba6', '#b8955a'],
+    fact: '얼음과 바위 조각으로 된 넓은 고리가 있어요. 평균 밀도가 물보다 낮아요.' },
+  { n: '천왕성', dia: 51118, ratio: '4.01', temp: -195, dayH: 17.23, day: '17시간 14분', year: '84년', au: 19.2, size: 0.23, c: ['#a6eef0', '#4fa9bd'],
+    fact: '자전축이 약 98° 누워 있어 옆으로 굴러가듯 돌아요. 대기의 메테인 때문에 청록색으로 보여요.' },
+  { n: '해왕성', dia: 49528, ratio: '3.88', temp: -200, dayH: 16.1, day: '16시간 6분', year: '165년', au: 30.1, size: 0.23, c: ['#5b7cff', '#1f2f9e'],
+    fact: '태양에서 가장 먼 행성이에요. 시속 2,000km가 넘는 태양계에서 가장 빠른 바람이 불어요.' }
+];
+const rec = { stamps: [], best: 0, trips: 0 };
+try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && typeof r === 'object') {
+  if (Array.isArray(r.stamps)) rec.stamps = [...new Set(r.stamps.map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < 8))];
+  rec.best = Math.max(0, Number(r.best) || 0); rec.trips = Math.max(0, Math.floor(Number(r.trips) || 0)); } } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+
+// ---- 소리 (누르기 전에는 만들지 않음) ----
+let AC = null, master = null, engG = null, sound = false;
+function initAudio() {
+  if (AC) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; return; }
+  master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination);
+  for (const [f, v] of [[55, 0.05], [82.6, 0.035], [110.4, 0.02]]) { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.value = f; g.gain.value = v; o.connect(g); g.connect(master); o.start(); }
+  const len = AC.sampleRate * 2, buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
+  engG = AC.createGain(); engG.gain.value = 0; src.connect(lp); lp.connect(engG); engG.connect(master); src.start();
+}
+function setSound(on) {
+  sound = on; $('#snd').textContent = on ? '🔊 소리' : '🔇 소리'; $('#snd').setAttribute('aria-pressed', String(on));
+  if (on) initAudio();
+  if (!AC) return;
+  try { if (on && AC.state === 'suspended') AC.resume().catch(() => {}); master.gain.setTargetAtTime(on ? 0.9 : 0, AC.currentTime, 0.3); } catch (e) {}
+}
+function tone(f1, f2, dur, type, vol, delay) {
+  if (!sound || !AC) return;
+  try { const t = AC.currentTime + (delay || 0), o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05); } catch (e) {}
+}
+const sfx = { arrive: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.5, 'sine', 0.08, i * 0.12)), stamp: () => { tone(180, 60, 0.18, 'square', 0.12); tone(900, 1300, 0.2, 'triangle', 0.06, 0.1); },
+  boost: () => tone(120, 600, 0.5, 'sawtooth', 0.05), end: () => [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.6, 'triangle', 0.08, i * 0.15)) };
+
+// ---- 화면 ----
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 1280, H = 720, DPR = 1;
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
+const stars = Array.from({ length: 320 }, (_, i) => ({ x: Math.sin(i * 12.9898) * 1.6, y: Math.cos(i * 78.233) * 1.0, z: ((i * 0.618) % 1) * 0.95 + 0.05, c: i % 7 === 0 ? '#ffd9a8' : i % 5 === 0 ? '#a8c8ff' : '#fff' }));
+
+// ---- 상태 ----
+let phase = 'ready', idx = 0, dist = START_DIST, spd = 0, ox = 0, oy = 0, vx = 0, vy = 0, t = 0, trip = 0, stampsNow = [], stamped = false, sunT = 0, rot = 0, lastBoost = false, manual = false, view = 1.5;
+let forced = null, toastT = 0;
+const keys = { l: 0, r: 0, u: 0, d: 0, b: 0 }, joy = { on: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 };
+let boostHeld = false;
+function input() {
+  if (forced) return forced;
+  let x = keys.r - keys.l, y = keys.d - keys.u;
+  if (joy.on) { x += clamp((joy.x - joy.ox) / 60, -1, 1); y += clamp((joy.y - joy.oy) / 60, -1, 1); }
+  return { x: clamp(x, -1, 1), y: clamp(y, -1, 1), boost: keys.b || boostHeld };
+}
+function toast(s) { const el = $('#toast'); el.textContent = s; el.classList.add('on'); toastT = 1.6; }
+const align = () => clamp(1 - (Math.hypot(ox, oy) - 30) / 120, 0.15, 1);
+function update() {
+  t += DT; rot += DT;
+  if (toastT > 0 && (toastT -= DT) <= 0) $('#toast').classList.remove('on');
+  if (phase === 'fly') {
+    trip += DT; sunT += DT;
+    const inp = input();
+    const ph = t * 0.9 + idx * 1.3, bx = Math.cos(idx * 2.1 + 0.5) * 26, by = Math.sin(idx * 2.1 + 0.5) * 22;
+    const ax = Math.sin(ph) * 90 + Math.sin(t * 0.37 + idx) * 60 + bx, ay = Math.cos(ph * 1.1) * 70 + Math.sin(t * 0.29 + idx * 2) * 50 + by;
+    vx += (ax - inp.x * 700 - vx * 1.2) * DT; vy += (ay - inp.y * 700 - vy * 1.2) * DT;
+    ox += vx * DT; oy += vy * DT;
+    const mx = W * 0.42, my = H * 0.38;
+    if (Math.abs(ox) > mx) { ox = clamp(ox, -mx, mx); vx = 0; }
+    if (Math.abs(oy) > my) { oy = clamp(oy, -my, my); vy = 0; }
+    const b = !!inp.boost;
+    if (b && !lastBoost) sfx.boost();
+    lastBoost = b;
+    const ts = (b ? 26 : 11) * align();
+    spd += (ts - spd) * Math.min(1, 2.2 * DT);
+    dist -= spd * DT;
+    view = spd;
+    if (dist <= 0) arrive();
+  } else if (phase === 'orbit') { trip += DT; view += (0.3 - view) * 0.05; ox *= 0.9; oy *= 0.9; }
+  else view += (1.2 - view) * 0.05;
+  if (AC && engG) { try { engG.gain.setTargetAtTime(phase === 'fly' ? 0.04 + spd * 0.006 : 0.01, AC.currentTime, 0.2); } catch (e) {} }
+  const dz = view * DT * 0.012;
+  for (const s of stars) { s.z -= dz; if (s.z < 0.04) { s.z += 0.96; } }
+}
+function arrive() {
+  dist = 0; spd = 0; phase = 'orbit'; stamped = false; $('#boost').classList.remove('on'); sfx.arrive(); toast(P[idx].n + ' 도착!');
+  showInfo(); hud();
+}
+const fmtN = v => v.toLocaleString('en-US');
+const lightMin = au => { const m = Math.round(au * 8.32); return m >= 60 ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분' : m + '분'; };
+function showInfo() {
+  const p = P[idx], E = P[2];
+  $('#infoName').textContent = p.n;
+  $('#infoWhere').textContent = '태양에서 ' + p.au + ' AU · 햇빛이 오는 데 약 ' + lightMin(p.au) + ' · ' + (idx + 1) + '번째 행성';
+  $('#iDia').textContent = fmtN(p.dia) + ' km';
+  $('#iDiaC').textContent = idx === 2 ? '기준(지구의 1배)' : '지구의 ' + p.ratio + '배';
+  const sz = $('#iSizes'); sz.textContent = '';
+  const maxPx = innerWidth < 760 ? 64 : 90, r = p.dia / E.dia;
+  const pp = r >= 1 ? maxPx : maxPx * r, ep = r >= 1 ? maxPx / r : maxPx;
+  for (const [lab, px, c] of [[p.n, pp, p.c], ['지구', ep, E.c]]) {
+    const w = document.createElement('span'); const d = document.createElement('div');
+    d.style.width = d.style.height = Math.max(2, px) + 'px'; d.style.background = `radial-gradient(circle at 35% 35%, ${c[0]}, ${c[1]})`;
+    const sm = document.createElement('small'); sm.textContent = lab; w.append(d, sm); sz.append(w);
+    if (idx === 2) break;
+  }
+  $('#iTemp').textContent = p.temp + '°C';
+  const tp = v => clamp((v + 220) / 700 * 100, 0, 100) + '%';
+  $('#iTempM').style.left = tp(p.temp); $('#iTempE').style.left = tp(15);
+  $('#iDay').textContent = p.day;
+  const ratio = p.dayH / E.dayH;
+  $('#iDayC').textContent = idx === 2 ? '기준' : '지구 하루의 약 ' + (ratio >= 10 ? Math.round(ratio) : ratio.toFixed(2)) + '배';
+  const lp = h => clamp((Math.log10(h) - 0.9) / (Math.log10(6000) - 0.9) * 100, 0, 100) + '%';
+  $('#iDayM').style.left = lp(p.dayH); $('#iDayE').style.left = lp(E.dayH);
+  $('#iYear').textContent = p.year;
+  $('#iFact').textContent = p.fact;
+  $('#stamp').disabled = false; $('#stamp').textContent = '🔖 탐사 도장 찍기'; $('#next').hidden = true;
+  $('#next').textContent = idx < 7 ? '다음 행성 ▶ ' + P[idx + 1].n : '🏁 여행 마치기';
+  $('#info').classList.add('on');
+}
+function stamp() {
+  if (phase !== 'orbit' || stamped) return;
+  stamped = true; stampsNow.push(idx); if (!rec.stamps.includes(idx)) rec.stamps.push(idx); save();
+  $('#stamp').disabled = true; $('#stamp').textContent = '✅ ' + P[idx].n + ' 도장 완료'; $('#next').hidden = false; sfx.stamp(); hud();
+}
+function next() {
+  if (phase !== 'orbit' || !stamped) return;
+  $('#info').classList.remove('on');
+  if (idx >= 7) return finish();
+  idx++; dist = START_DIST; spd = 4; vx = vy = 0; ox = (idx % 2 ? 1 : -1) * 70; oy = -30; phase = 'fly'; $('#boost').classList.add('on'); hud();
+}
+function finish() {
+  phase = 'end'; rec.trips++; if (!rec.best || trip < rec.best) rec.best = Math.round(trip * 10) / 10; save(); sfx.end();
+  const m = Math.floor(trip / 60), s = Math.floor(trip % 60);
+  $('#rTime').textContent = '여행 시간 ' + m + '분 ' + s + '초 · 최고 기록 ' + Math.floor(rec.best / 60) + '분 ' + Math.floor(rec.best % 60) + '초';
+  const g = $('#rStamps'); g.textContent = '';
+  P.forEach((p, i) => { const d = document.createElement('div'); d.className = 'st' + (stampsNow.includes(i) ? ' got' : ''); const c = document.createElement('i'); c.style.background = `radial-gradient(circle at 35% 35%, ${p.c[0]}, ${p.c[1]})`; d.append(c, document.createTextNode(p.n)); g.append(d); });
+  const big = P.reduce((a, b) => b.dia > a.dia ? b : a), hot = P.reduce((a, b) => b.temp > a.temp ? b : a), longD = P.reduce((a, b) => b.dayH > a.dayH ? b : a), shortD = P.reduce((a, b) => b.dayH < a.dayH ? b : a);
+  const sum = $('#rSum'); sum.textContent = '';
+  for (const line of ['🏆 가장 큰 행성: ' + big.n + ' (지구의 ' + big.ratio + '배)', '🔥 가장 뜨거운 행성: ' + hot.n + ' (' + hot.temp + '°C)', '🐢 하루가 가장 긴 행성: ' + longD.n + ' (' + longD.day + ')', '⚡ 하루가 가장 짧은 행성: ' + shortD.n + ' (' + shortD.day + ')']) { const d = document.createElement('div'); d.textContent = line; sum.append(d); }
+  $('#result').classList.add('on'); $('#boost').classList.remove('on'); hud();
+}
+function start() {
+  idx = 0; dist = START_DIST; spd = 3; ox = -90; oy = -40; vx = vy = 0; trip = 0; stampsNow = []; stamped = false; sunT = 0; phase = 'fly';
+  for (const id of ['#ready', '#result']) $(id).classList.remove('on'); $('#info').classList.remove('on');
+  $('#boost').classList.add('on'); hud();
+}
+function home() { phase = 'ready'; idx = 0; ox = oy = 0; $('#result').classList.remove('on'); $('#info').classList.remove('on'); $('#ready').classList.add('on'); $('#boost').classList.remove('on'); hud(); }
+function hud() {
+  $('#dest').textContent = phase === 'ready' ? '태양 옆' : phase === 'end' ? '완료' : P[idx].n;
+  const a0 = idx === 0 ? 0 : P[idx - 1].au, a1 = P[idx].au, au = phase === 'ready' ? 0 : phase === 'end' ? P[7].au : a0 + (a1 - a0) * (1 - dist / START_DIST);
+  $('#au').textContent = au.toFixed(2) + ' AU';
+  $('#stampN').textContent = String(stampsNow.length);
+  $('#timeT').textContent = Math.floor(trip / 60) + ':' + String(Math.floor(trip % 60)).padStart(2, '0');
+  $('#recLine').textContent = '지금까지 모은 도장 ' + rec.stamps.length + '/8' + (rec.best ? ' · 최고 기록 ' + Math.floor(rec.best / 60) + '분 ' + Math.floor(rec.best % 60) + '초' : '');
+}
+
+// ---- 그리기 ----
+function drawStars(cx, cy) {
+  const f = Math.min(W, H) * 0.55, streak = Math.min(1, view / 26);
+  for (const s of stars) {
+    const px = cx + s.x / s.z * f - ox * 0.3 * (1 - s.z), py = cy + s.y / s.z * f - oy * 0.3 * (1 - s.z);
+    if (px < -50 || px > W + 50 || py < -50 || py > H + 50) continue;
+    const a = clamp(1.2 - s.z, 0.15, 1), sz = clamp(1.6 / s.z * 0.5, 0.5, 3);
+    ctx.globalAlpha = a; ctx.strokeStyle = ctx.fillStyle = s.c;
+    if (streak > 0.15) {
+      const z2 = s.z + 0.04 * streak; const qx = cx + s.x / z2 * f - ox * 0.3 * (1 - z2), qy = cy + s.y / z2 * f - oy * 0.3 * (1 - z2);
+      ctx.lineWidth = sz; ctx.beginPath(); ctx.moveTo(qx, qy); ctx.lineTo(px, py); ctx.stroke();
+    } else { ctx.beginPath(); ctx.arc(px, py, sz * 0.7, 0, 6.283); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+}
+function drawSun(x, y, r) {
+  const g = ctx.createRadialGradient(x, y, r * 0.2, x, y, r * 3);
+  g.addColorStop(0, 'rgba(255,240,180,1)'); g.addColorStop(0.3, 'rgba(255,170,60,.55)'); g.addColorStop(1, 'rgba(255,90,20,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 3, 0, 6.283); ctx.fill();
+  const g2 = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+  g2.addColorStop(0, '#fffbe0'); g2.addColorStop(0.6, '#ffd24a'); g2.addColorStop(1, '#ff8a1a');
+  ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.clip(); ctx.globalAlpha = 0.09;
+  for (let i = 0; i < 14; i++) { ctx.fillStyle = i % 2 ? '#ff6a00' : '#fff3b0'; ctx.beginPath(); ctx.arc(x + Math.sin(i * 3.1 + t * 0.2) * r * 0.7, y + Math.cos(i * 2.3 + t * 0.15) * r * 0.7, r * 0.1, 0, 6.283); ctx.fill(); }
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+function ring(x, y, r, front) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(-0.18);
+  for (const [k, c, w] of [[1.45, 'rgba(230,205,150,.55)', 0.16], [1.75, 'rgba(210,180,120,.75)', 0.22], [2.1, 'rgba(240,220,170,.45)', 0.18]]) {
+    ctx.strokeStyle = c; ctx.lineWidth = r * w; ctx.beginPath();
+    if (front) ctx.ellipse(0, 0, r * k, r * k * 0.28, 0, 0, Math.PI); else ctx.ellipse(0, 0, r * k, r * k * 0.28, 0, Math.PI, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawPlanet(i, x, y, r) {
+  const p = P[i];
+  if (r < 1.5) { ctx.fillStyle = p.c[0]; ctx.fillRect(x - 1, y - 1, 2, 2); return; }
+  const glow = ctx.createRadialGradient(x, y, r * 0.9, x, y, r * 1.35);
+  glow.addColorStop(0, p.c[0] + '55'); glow.addColorStop(1, p.c[0] + '00');
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, r * 1.35, 0, 6.283); ctx.fill();
+  if (i === 5) ring(x, y, r, false);
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.clip();
+  const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+  g.addColorStop(0, p.c[0]); g.addColorStop(1, p.c[1]); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  const sh = (rot * 0.04 * r) % (r * 2);
+  if (i === 4 || i === 5 || i === 7) {
+    const bands = i === 4 ? ['#c48a5a', '#f1dcc0', '#b06b3e', '#e9cfa8', '#9b5f37', '#f0dfc6', '#c4925f'] : i === 5 ? ['#d9bd84', '#f3e2b8', '#c8a46a', '#efd9a5', '#bf9a60'] : ['#3d5ce0', '#5b7cff', '#2a3fb8', '#4f6df0'];
+    for (let k = 0; k < bands.length; k++) { ctx.fillStyle = bands[k]; ctx.globalAlpha = 0.55; const yy = y - r + (k + 0.3) * (2 * r / bands.length); ctx.beginPath(); ctx.ellipse(x, yy, r * 1.2, r / bands.length * 0.55, Math.sin(rot * 0.3 + k) * 0.03, 0, 6.283); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    if (i === 4) { ctx.fillStyle = '#c2553a'; ctx.beginPath(); ctx.ellipse(x + ((r * 0.6 - sh * 0.5) % (r * 1.4)), y + r * 0.28, r * 0.2, r * 0.11, 0, 0, 6.283); ctx.fill(); }
+    if (i === 7) { ctx.fillStyle = '#16207a'; ctx.beginPath(); ctx.ellipse(x - r * 0.25, y - r * 0.15, r * 0.16, r * 0.09, 0, 0, 6.283); ctx.fill(); }
+  } else if (i === 2) {
+    ctx.fillStyle = '#3f9a52';
+    for (let k = 0; k < 6; k++) { const cx2 = x - r * 1.2 + ((k * r * 0.8 + sh) % (r * 2.8)); ctx.beginPath(); ctx.ellipse(cx2, y + Math.sin(k * 2.7) * r * 0.5, r * (0.18 + (k % 3) * 0.08), r * (0.25 + (k % 2) * 0.12), k, 0, 6.283); ctx.fill(); }
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    for (let k = 0; k < 7; k++) { const cx2 = x - r * 1.2 + ((k * r * 0.7 + sh * 1.4) % (r * 2.8)); ctx.beginPath(); ctx.ellipse(cx2, y + Math.cos(k * 1.9) * r * 0.7, r * 0.3, r * 0.06, 0.2, 0, 6.283); ctx.fill(); }
+  } else if (i === 3) {
+    ctx.fillStyle = 'rgba(120,40,15,.5)';
+    for (let k = 0; k < 6; k++) { const cx2 = x - r * 1.2 + ((k * r * 0.9 + sh) % (r * 2.8)); ctx.beginPath(); ctx.ellipse(cx2, y + Math.sin(k * 2.2) * r * 0.4, r * 0.22, r * 0.12, k, 0, 6.283); ctx.fill(); }
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.beginPath(); ctx.ellipse(x, y - r * 0.95, r * 0.35, r * 0.12, 0, 0, 6.283); ctx.fill();
+  } else if (i === 0) {
+    ctx.strokeStyle = 'rgba(80,75,70,.6)'; ctx.lineWidth = Math.max(1, r * 0.03);
+    for (let k = 0; k < 12; k++) { const cx2 = x - r * 1.2 + ((k * r * 0.5 + sh) % (r * 2.8)); ctx.beginPath(); ctx.arc(cx2, y + Math.sin(k * 3.3) * r * 0.8, r * (0.05 + (k % 4) * 0.04), 0, 6.283); ctx.stroke(); }
+  } else if (i === 1) {
+    ctx.fillStyle = 'rgba(255,245,215,.35)';
+    for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse(x - r + ((k * r * 0.6 + sh * 0.5) % (r * 2.4)), y + (k - 2) * r * 0.35, r * 0.7, r * 0.1, 0.25, 0, 6.283); ctx.fill(); }
+  } else if (i === 6) {
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(x - r, y - r * 0.15, r * 2, r * 0.3);
+  }
+  const s = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
+  s.addColorStop(0, 'rgba(0,0,0,0)'); s.addColorStop(0.55, 'rgba(0,0,0,.05)'); s.addColorStop(1, 'rgba(0,0,10,.75)');
+  ctx.fillStyle = s; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  ctx.restore();
+  if (i === 5) ring(x, y, r, true);
+  if (i === 6) { ctx.strokeStyle = 'rgba(200,250,255,.35)'; ctx.lineWidth = Math.max(1, r * 0.04); ctx.beginPath(); ctx.ellipse(x, y, r * 0.35, r * 1.6, 0.17, 0, 6.283); ctx.stroke(); }
+  if (i === 2) { const mx = x + r * 1.7, my = y - r * 0.7, mr = r * 0.27; const mg = ctx.createRadialGradient(mx - mr * 0.3, my - mr * 0.3, 1, mx, my, mr); mg.addColorStop(0, '#eee'); mg.addColorStop(1, '#666'); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr, 0, 6.283); ctx.fill(); if (r > 60) { ctx.fillStyle = '#cfd6ff'; ctx.font = '700 13px system-ui'; ctx.textAlign = 'center'; ctx.fillText('달', mx, my + mr + 16); } }
+}
+function rr(x, y, w, h, r) { ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawCockpit() {
+  const m = Math.min(W, H) * 0.035, rad = Math.min(W, H) * 0.08;
+  ctx.fillStyle = '#0b0f1f'; ctx.beginPath(); ctx.rect(0, 0, W, H); rr(m, m * 1.4 + (W < 760 ? 60 : 50), W - 2 * m, H * 0.8 - m * 1.4 - (W < 760 ? 60 : 50), rad); ctx.fill('evenodd');
+  ctx.strokeStyle = '#3b4670'; ctx.lineWidth = 3; ctx.beginPath(); rr(m, m * 1.4 + (W < 760 ? 60 : 50), W - 2 * m, H * 0.8 - m * 1.4 - (W < 760 ? 60 : 50), rad); ctx.stroke();
+  const dg = ctx.createLinearGradient(0, H * 0.8, 0, H); dg.addColorStop(0, '#1a2140'); dg.addColorStop(1, '#070a17');
+  ctx.fillStyle = dg; ctx.beginPath(); ctx.moveTo(0, H * 0.83); ctx.quadraticCurveTo(W / 2, H * 0.76, W, H * 0.83); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+  for (let k = 0; k < 9; k++) { const on = Math.sin(t * 2 + k * 1.7) > 0; ctx.fillStyle = on ? ['#4dff9c', '#ffd36b', '#5bb8ff'][k % 3] : '#26304f'; ctx.beginPath(); ctx.arc(W * 0.3 + k * W * 0.05, H * 0.9, 4, 0, 6.283); ctx.fill(); }
+  ctx.fillStyle = '#7f8bc0'; ctx.font = '700 12px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText(phase === 'fly' ? '속도 ' + Math.round(spd * 1000).toLocaleString('en-US') + ' km/s(가상)' : phase === 'orbit' ? '궤도 진입 · 관측 중' : '대기 중', W / 2, H * 0.955);
+}
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const cx = W / 2, cy = H * 0.45;
+  ctx.fillStyle = '#02030a'; ctx.fillRect(0, 0, W, H);
+  const neb = ctx.createRadialGradient(W * 0.75, H * 0.3, 10, W * 0.75, H * 0.3, W * 0.6);
+  neb.addColorStop(0, 'rgba(90,50,160,.25)'); neb.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = neb; ctx.fillRect(0, 0, W, H);
+  drawStars(cx, cy);
+  const md = Math.min(W, H);
+  if (phase === 'ready' || (phase === 'fly' && idx === 0 && sunT < 3)) {
+    const k = phase === 'ready' ? 0 : sunT / 3;
+    drawSun(W * 0.24 - k * W * 0.5, H * 0.42 + Math.sin(t * 0.3) * 6, md * (0.2 - k * 0.1));
+    if (phase === 'ready') { drawPlanet(0, W * 0.72 + Math.sin(t * 0.4) * 20, H * 0.32, md * 0.03); }
+  }
+  if (phase === 'fly' || phase === 'orbit') {
+    const p = P[idx], fr = md * p.size, r = phase === 'orbit' ? fr : fr / (1 + dist * 0.12);
+    let px = cx + ox, py = cy + oy;
+    if (phase === 'orbit') { if (W >= 760) px -= W * 0.17; else { py = H * 0.3; } }
+    drawPlanet(idx, px, py, phase === 'orbit' && W < 760 ? r * 0.75 : r);
+    if (phase === 'fly') {
+      const a = align(), col = a > 0.85 ? '#4dff9c' : '#ffb347';
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.arc(cx, cy, 34, 0, 6.283); ctx.stroke();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { ctx.beginPath(); ctx.moveTo(cx + dx * 26, cy + dy * 26); ctx.lineTo(cx + dx * 46, cy + dy * 46); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+      if (Math.hypot(ox, oy) > 60) { ctx.strokeStyle = 'rgba(255,179,71,.6)'; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = '#fff'; ctx.font = '800 15px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(p.n + ' · 남은 거리 ' + Math.max(0, Math.ceil(dist)) + '%', px, py - r - 14);
+      if (a < 0.6) { ctx.fillStyle = '#ffb347'; ctx.fillText('행성을 조준선 가운데로!', cx, cy + 70); }
+    }
+  }
+  if (joy.on) { ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(joy.ox, joy.oy, 50, 0, 6.283); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.beginPath(); ctx.arc(joy.ox + clamp(joy.x - joy.ox, -50, 50), joy.oy + clamp(joy.y - joy.oy, -50, 50), 20, 0, 6.283); ctx.fill(); }
+  drawCockpit();
+}
+let last = 0, acc = 0;
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, last ? (ts - last) / 1000 : 0); last = ts;
+  if (!manual) { acc += dt; let k = 0; while (acc >= DT && k < 6) { update(); acc -= DT; k++; } if (k) hud(); }
+  draw();
+}
+
+// ---- 입력 ----
+cv.addEventListener('pointerdown', e => { if (phase !== 'fly' || joy.on) return; joy.on = true; joy.id = e.pointerId; joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY; try { cv.setPointerCapture(e.pointerId); } catch (er) {} e.preventDefault(); });
+cv.addEventListener('pointermove', e => { if (joy.on && e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
+const up = e => { if (e.pointerId === joy.id) { joy.on = false; joy.id = -1; } };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+const bb = $('#boost');
+bb.addEventListener('pointerdown', e => { boostHeld = true; e.preventDefault(); });
+for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) bb.addEventListener(ev, () => { boostHeld = false; });
+bb.addEventListener('click', () => {});
+const KM = { ArrowLeft: 'l', a: 'l', A: 'l', ArrowRight: 'r', d: 'r', D: 'r', ArrowUp: 'u', w: 'u', W: 'u', ArrowDown: 'd', s: 'd', S: 'd', ' ': 'b', Shift: 'b' };
+addEventListener('keydown', e => {
+  if (KM[e.key]) { keys[KM[e.key]] = 1; if (phase === 'fly') e.preventDefault(); }
+  if (e.key === 'Enter' || (e.key === ' ' && phase !== 'fly')) { if (phase === 'ready') start(); else if (phase === 'orbit') { if (!stamped) stamp(); else next(); } e.preventDefault(); }
+});
+addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = 0; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = 0; joy.on = false; boostHeld = false; });
+$('#start').addEventListener('click', start);
+$('#again').addEventListener('click', start);
+$('#home').addEventListener('click', home);
+$('#stamp').addEventListener('click', stamp);
+$('#next').addEventListener('click', next);
+$('#snd').addEventListener('click', () => setSound(!sound));
+const fsOk = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+if (!fsOk) $('#fs').hidden = true;
+$('#fs').addEventListener('click', () => {
+  const d = document, el = d.documentElement;
+  try { if (d.fullscreenElement || d.webkitFullscreenElement) { const x = (d.exitFullscreen || d.webkitExitFullscreen).call(d); if (x && x.catch) x.catch(() => {}); }
+    else { const x = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (x && x.catch) x.catch(() => {}); } } catch (e) {}
+});
+addEventListener('resize', resize);
+
+window.__test = {
+  manual: v => { manual = !!v; },
+  step: (n = 1) => { for (let i = 0; i < n; i++) update(); hud(); },
+  input: o => { forced = o ? { x: clamp(o.x || 0, -1, 1), y: clamp(o.y || 0, -1, 1), boost: !!o.boost } : null; },
+  state: () => ({ phase, idx, target: phase === 'ready' ? '' : P[idx].n, dist, spd, ox, oy, vx, vy, align: align(), stamps: stampsNow.length, trip, sound,
+    starSum: stars.reduce((a, s) => a + s.z, 0) }),
+  start, home
+};
+resize(); hud();
+for (let i = 0; i < 60; i++) update();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

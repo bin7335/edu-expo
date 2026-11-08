@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>설문 한눈에 - 설문 응답을 붙여넣으면 문항별 그래프와 보고서</title>
+<meta name="description" content="구글폼·엑셀에서 복사한 설문 응답(TSV/CSV)을 붙여넣으면 객관식·복수응답·척도·서술형을 자동으로 구분해 문항별 막대그래프, 응답 수·비율, 척도 평균, 서술형 모아보기와 키워드를 만들고 인쇄용 보고서까지 바로 만드는 교직원용 도구. 내 PC에서만 처리됩니다.">
+<style>
+  :root{--bg:#f4f2f8;--panel:#fff;--ink:#24212e;--sub:#676276;--line:#e2deea;--brand:#4b3a8c;--brand2:#6a54b8;--gold:#f0b43c;--ok:#1f7a4a;
+    --q1:#6a54b8;--q2:#e0773a;--q3:#1f8a74;--q4:#2f6fd0;--q5:#c2416b}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:linear-gradient(110deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.88}
+  .grow{flex:1}
+  .safe{display:inline-flex;align-items:center;gap:6px;background:#e7f7ee;color:#11603d;border:1px solid #a6dcbf;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .wipe{font:inherit;font-size:12px;font-weight:700;border:1px solid #ffffff88;background:transparent;color:#fff;border-radius:999px;padding:4px 10px;cursor:pointer}
+  .btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 13px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn.small{font-size:12.5px;padding:6px 10px}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.ghost{background:#ffffff22;color:#fff;border-color:#ffffff66}
+  .btn.gold{background:var(--gold);color:#3a2a00;border-color:transparent}
+  main{max-width:1440px;margin:0 auto;padding:12px 20px 56px;display:grid;grid-template-columns:330px minmax(0,1fr);gap:12px;align-items:start}
+  .side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;position:sticky;top:10px}
+  .side h2{margin:0;font-size:15px}
+  .side label{font-size:12.5px;color:var(--sub);font-weight:700}
+  .side input{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);border-radius:8px;padding:6px 9px;width:100%}
+  #raw{width:100%;height:300px;border:1px solid var(--line);border-radius:10px;padding:8px;font-family:Consolas,"D2Coding",monospace;font-size:12px;line-height:1.5;resize:vertical;white-space:pre;overflow:auto}
+  .row{display:flex;gap:6px;flex-wrap:wrap}
+  .hint{font-size:12px;color:var(--sub);line-height:1.55}
+  .out{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .sumbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:9px 12px}
+  #summary{font-weight:800;font-size:15px}
+  #skipped{font-size:12px;color:var(--sub);display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  #skipped button{font:inherit;font-size:11.5px;border:1px dashed var(--line);background:#faf9fc;border-radius:999px;padding:2px 8px;cursor:pointer;color:var(--sub)}
+  .ptitle{display:none}
+  #cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .qcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px;min-width:0;border-top:4px solid var(--qc,var(--brand2))}
+  .qcard.wide{grid-column:1 / -1}
+  .qhead{display:flex;gap:8px;align-items:flex-start}
+  .qhead h3{margin:0;font-size:14.5px;line-height:1.4;flex:1;min-width:0;word-break:keep-all;overflow-wrap:anywhere}
+  .qhead h3 em{font-style:normal;color:var(--qc,var(--brand2));margin-right:4px}
+  .qhead select{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:7px;padding:3px 5px;background:#fff}
+  .qmeta{font-size:12px;color:var(--sub);margin:2px 0 6px}
+  .brow{display:grid;grid-template-columns:minmax(70px,30%) minmax(0,1fr) 92px;gap:8px;align-items:center;font-size:13px;margin:3px 0}
+  .brow .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .track{height:15px;background:#eeebf4;border-radius:99px;overflow:hidden}
+  .track i{display:block;height:100%;background:var(--qc,var(--brand2));border-radius:99px;min-width:2px}
+  .brow.top .lab{font-weight:800}
+  .brow .cnt{text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--sub);white-space:nowrap}
+  .avgbox{display:flex;align-items:baseline;gap:6px;margin:2px 0 4px}
+  .avg{font-size:30px;font-weight:900;color:var(--qc);letter-spacing:-1px}
+  .kw{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}
+  .kw span{font-size:12px;border-radius:999px;padding:2px 9px;background:#f1eef8;color:var(--brand);font-weight:700}
+  .kw span.k1{font-size:14px;background:var(--qc);color:#fff}
+  .ans{margin:0;padding:0 0 0 18px;max-height:150px;overflow:auto;font-size:13px;line-height:1.55}
+  .ans li{white-space:pre-wrap;border-bottom:1px dashed var(--line);padding:2px 0}
+  .empty{padding:30px;text-align:center;color:var(--sub);background:var(--panel);border:1px dashed var(--line);border-radius:14px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:20}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.92);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:10}
+  @media (max-width:900px){
+    header{padding:10px 12px} header h1{font-size:19px}
+    main{grid-template-columns:minmax(0,1fr);padding:10px 10px 56px}
+    .side{position:static}
+    #raw{height:170px}
+    #cards{grid-template-columns:minmax(0,1fr)}
+    .brow{grid-template-columns:minmax(60px,32%) minmax(0,1fr) 84px}
+  }
+  @media print{
+    @page{size:A4;margin:12mm}
+    body{background:#fff}
+    header,.side,.back,.toast,.sumbar .btn,#skipped,.qhead select{display:none!important}
+    main{display:block;padding:0;max-width:none}
+    .ptitle{display:block;text-align:center;font-size:20px;font-weight:900;margin:0 0 6px}
+    .sumbar{border:0;padding:0 0 6px;justify-content:center}
+    #cards{grid-template-columns:repeat(2,1fr);gap:8px}
+    .qcard{break-inside:avoid;page-break-inside:avoid;border:1px solid #888;border-top-width:3px}
+    .track,.track i,.kw span,.qcard{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .ans{max-height:none;overflow:visible}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="설문 한눈에">
+<meta property="og:description" content="설문 결과를 붙여넣으면 문항별 막대그래프와 서술형 응답 모음을 바로">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/93-survey-tally.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/survey-tally/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">📊</div>
+  <div>
+    <h1>설문 한눈에</h1>
+    <p>구글폼·엑셀 응답을 붙여넣으면 문항별 그래프·평균·서술형 모음이 바로 나와요</p>
+  </div>
+  <span class="safe">🔒 내 PC에서만 처리 · 외부 전송 없음</span>
+  <div class="grow"></div>
+  <button type="button" class="wipe" id="wipeAll" title="공용 PC라면 다 쓴 뒤 눌러 주세요">🧹 이 PC 기록 모두 지우기</button>
+</header>
+<main>
+  <aside class="side">
+    <h2>① 응답 붙여넣기</h2>
+    <label for="title">설문 제목</label>
+    <input id="title" type="text">
+    <label for="raw">응답 표 (첫 줄은 문항)</label>
+    <textarea id="raw" spellcheck="false" wrap="off" placeholder="구글 시트에서 응답 표 전체를 골라 복사(Ctrl+C) → 여기에 붙여넣기(Ctrl+V)"></textarea>
+    <div class="row">
+      <button class="btn primary" id="go" type="button">📊 분석하기</button>
+      <button class="btn small" id="sample" type="button">예시 불러오기</button>
+      <button class="btn small" id="clear" type="button">비우기</button>
+    </div>
+    <p class="hint">• 구글폼 → 응답 → 스프레드시트에서 표를 복사하거나, CSV 파일 내용을 붙여넣어도 돼요.<br>• 유형은 자동 판별: 1-5 숫자 = 척도, “, ”로 여러 개 = 복수응답, 보기 몇 개 = 객관식, 나머지 = 서술형. 카드 오른쪽에서 바꿀 수 있어요.<br>• 타임스탬프·이름·이메일·연락처 열은 개인정보라 자동으로 뺐어요.</p>
+  </aside>
+  <section class="out">
+    <div class="ptitle" id="ptitle"></div>
+    <div class="sumbar">
+      <span id="summary"></span>
+      <span id="skipped"></span>
+      <span class="grow"></span>
+      <button class="btn small" id="copy" type="button">📋 결과 표 복사</button>
+      <button class="btn small gold" id="printBtn" type="button">🖨 보고서 인쇄</button>
+    </div>
+    <div id="cards"></div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(function(){
+  'use strict';
+  var KEY='edu-expo.survey-tally.v1';
+  var $=function(s){return document.querySelector(s);};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var H=['타임스탬프','자녀 학년','학교 교육활동 만족도(5점 척도)','도움이 된 교육활동(복수 선택)','선호하는 상담 방식','학교에 바라는 점'];
+  var R=[
+    ['1학년',5,'독서 교육, 체험학습','대면','안전한 등하굣길을 위해 교통 지도를 강화해 주세요'],
+    ['2학년',4,'체험학습','전화','체험학습이 더 많았으면 좋겠습니다'],
+    ['3학년',5,'독서 교육, 방과후학교, 체험학습','대면',''],
+    ['4학년',3,'진로 교육','온라인(화상)','방과후학교 강좌가 다양해지면 좋겠어요'],
+    ['5학년',4,'체험학습, 생태 교육','전화','급식이 맛있어요, 감사합니다'],
+    ['6학년',2,'진로 교육, 독서 교육','문자·메신저','상담 시간을 저녁에도 열어 주세요'],
+    ['1학년',5,'독서 교육','대면','체험학습 안전 교육도 꼼꼼히 부탁드립니다'],
+    ['2학년',4,'방과후학교, 체험학습','전화',''],
+    ['3학년',4,'생태 교육','대면','텃밭 활동이 아이에게 좋은 경험이었어요'],
+    ['4학년',5,'체험학습, 진로 교육','온라인(화상)','방과후학교 신청 방법이 쉬워졌으면 해요'],
+    ['5학년',3,'독서 교육','전화',''],
+    ['6학년',4,'진로 교육, 체험학습','대면','졸업 앨범 준비 안내를 일찍 해 주세요'],
+    ['1학년',5,'체험학습, 독서 교육','대면','선생님들 늘 감사합니다'],
+    ['2학년',4,'독서 교육, 생태 교육','문자·메신저',''],
+    ['3학년',3,'방과후학교','전화','교통 지도 감사합니다. 등하굣길이 안전해졌어요'],
+    ['4학년',4,'체험학습','대면',''],
+    ['5학년',5,'진로 교육, 방과후학교','온라인(화상)','진로 체험 기회를 더 늘려 주세요'],
+    ['6학년',4,'체험학습, 진로 교육','전화',''],
+    ['1학년',5,'독서 교육, 체험학습','대면','"도서관 개방 시간을\n늘려 주세요"'],
+    ['2학년',4,'생태 교육','전화','']];
+  var SAMPLE=H.join('\t')+'\n'+R.map(function(r,i){var mm=10+Math.floor(i/3),ss=('0'+(i*7%60)).slice(-2);return '2026. 10. 2'+(i%8)+' 오후 '+(1+i%8)+':'+mm+':'+ss+'\t'+r.join('\t');}).join('\n');
+  var SAMPLE_TITLE='2026 햇살초등학교 학부모 교육활동 만족도 조사';
+  var S={title:SAMPLE_TITLE,raw:SAMPLE,types:{}};
+  try{var st=JSON.parse(localStorage.getItem(KEY)||'null');if(st&&typeof st.raw==='string'){S.raw=st.raw;S.title=typeof st.title==='string'?st.title:'';S.types=(st.types&&typeof st.types==='object')?st.types:{};}}catch(e){}
+
+  // ---------- CSV/TSV 파서 (따옴표 안 쉼표·줄바꿈·"" 처리) ----------
+  function parse(text){
+    text=String(text||'').replace(/^﻿/,'');
+    var nl=text.indexOf('\n'),first=nl<0?text:text.slice(0,nl);
+    var d=first.indexOf('\t')>=0?'\t':(first.split(';').length>first.split(',').length?';':',');
+    var rows=[],row=[],f='',q=false,i=0,c,started=false;
+    for(;i<text.length;i++){
+      c=text[i];
+      if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; continue; }
+      if(c==='"'&&f===''&&!started){q=true;started=true;continue;}
+      if(c===d){row.push(f);f='';started=false;continue;}
+      if(c==='\r')continue;
+      if(c==='\n'){row.push(f);rows.push(row);row=[];f='';started=false;continue;}
+      f+=c;started=true;
+    }
+    if(f!==''||row.length){row.push(f);rows.push(row);}
+    return rows.filter(function(r){return r.some(function(x){return x.trim()!=='';});});
+  }
+  var META=/타임스탬프|timestamp|제출\s*시간|응답\s*시간|일시$|이메일|e-?mail|^\s*(학생\s*)?(이름|성명)\s*$|^\s*번호\s*$|연락처|전화번호|휴대폰/i;
+  function splitMulti(v){return v.split(/\s*[,;]\s*/).map(function(x){return x.trim();}).filter(Boolean);}
+  function detect(head,vals){
+    if(META.test(head))return 'skip';
+    if(!vals.length)return 'text';
+    if(vals.every(function(v){return /^\d{1,2}$/.test(v);})){var mx=Math.max.apply(null,vals.map(Number));if(mx<=10)return 'scale';}
+    var multi=vals.filter(function(v){return /[,;]\s/.test(v);}).length;
+    if(multi/vals.length>=0.2){var u={};vals.forEach(function(v){splitMulti(v).forEach(function(o){u[o]=1;});});if(Object.keys(u).length<=Math.max(10,vals.length*0.5))return 'multi';}
+    var uniq={},len=0;vals.forEach(function(v){uniq[v]=1;len+=v.length;});
+    if(Object.keys(uniq).length<=Math.max(8,Math.ceil(vals.length*0.4))&&len/vals.length<=25)return 'single';
+    return 'text';
+  }
+  var STOP={'주세요':1,'좋겠어요':1,'좋겠습니다':1,'있어요':1,'있습니다':1,'합니다':1,'해요':1,'해':1,'더':1,'늘':1,'좀':1,'및':1,'등':1,'수':1,'것':1,'부탁드립니다':1,'바랍니다':1,'같아요':1,'좋은':1,'좋을':1,'있으면':1,'했으면':1,'많았으면':1,'없음':1,'없습니다':1,'없어요':1,'그리고':1,'너무':1,'정말':1,'항상':1,'조금':1,'위해':1,'때문에':1,'대한':1};
+  var JOSA=['에서','으로','에게','까지','부터','이랑','처럼','보다','은','는','이','가','을','를','에','의','도','와','과','로','만'];
+  function keywords(vals){
+    var c={},order=[];
+    vals.forEach(function(v){
+      v.replace(/[^\w가-힣\s]/g,' ').split(/\s+/).forEach(function(w){
+        if(!w)return;
+        for(var i=0;i<JOSA.length;i++){var j=JOSA[i];if(w.length-j.length>=2&&w.slice(-j.length)===j){w=w.slice(0,-j.length);break;}}
+        if(w.length<2||STOP[w]||/^\d+$/.test(w))return;
+        if(!c[w]){c[w]=0;order.push(w);}c[w]++;
+      });
+    });
+    return order.filter(function(w){return c[w]>=2;}).sort(function(a,b){return c[b]-c[a]||order.indexOf(a)-order.indexOf(b);}).slice(0,12).map(function(w){return [w,c[w]];});
+  }
+  function fmtP(x){return (Math.round(x*10)/10)+'%';}
+  function analyze(){
+    var rows=parse(S.raw);
+    if(rows.length<2)return {n:0,qs:[],skipped:[]};
+    var head=rows[0],data=rows.slice(1),qs=[],skipped=[];
+    head.forEach(function(h,ci){
+      h=(h||'').trim()||('열 '+(ci+1));
+      var vals=data.map(function(r){return (r[ci]||'').trim();}).filter(function(v){return v!=='';});
+      var auto=detect(h,vals),type=S.types[h]||auto;
+      if(type==='skip'){skipped.push({h:h,ci:ci});return;}
+      var q={h:h,ci:ci,type:type,auto:auto,n:vals.length,items:[]};
+      if(type==='single'||type==='multi'){
+        var cnt={},order=[];
+        vals.forEach(function(v){(type==='multi'?splitMulti(v):[v]).forEach(function(o){if(!(o in cnt)){cnt[o]=0;order.push(o);}cnt[o]++;});});
+        q.items=order.map(function(o){return {lab:o,c:cnt[o]};}).sort(function(a,b){return b.c-a.c||a.lab.localeCompare(b.lab,'ko',{numeric:true});});
+      } else if(type==='scale'){
+        var nums=vals.map(Number).filter(function(x){return isFinite(x);}),mx=Math.max.apply(null,nums.concat([5])),mn=Math.min.apply(null,nums.concat([1]));
+        mx=mx<=5?5:mx<=7?7:10;mn=mn<1?0:1;
+        for(var k=mx;k>=mn;k--)q.items.push({lab:k+'점',c:nums.filter(function(x){return x===k;}).length});
+        q.n=nums.length;q.avg=nums.length?nums.reduce(function(a,b){return a+b;},0)/nums.length:0;q.max=mx;
+      } else {q.answers=vals;q.kw=keywords(vals);}
+      qs.push(q);
+    });
+    return {n:data.length,qs:qs,skipped:skipped};
+  }
+  var TYPES={single:'객관식',multi:'복수응답',scale:'척도',text:'서술형',skip:'제외'};
+  var COL=['--q1','--q2','--q3','--q4','--q5'];
+  var A;
+  function render(){
+    A=analyze();
+    $('#title').value=S.title;
+    $('#ptitle').textContent=(S.title||'설문')+' 설문 결과';
+    $('#summary').textContent=A.qs.length||A.n?'응답 '+A.n+'명 · 문항 '+A.qs.length+'개':'';
+    $('#skipped').innerHTML=A.skipped.length?'제외한 열: '+A.skipped.map(function(s){return '<button type="button" data-col="'+esc(s.h)+'" title="눌러서 다시 넣기">'+esc(s.h)+' ↺</button>';}).join(''):'';
+    if(!A.qs.length){$('#cards').innerHTML='<div class="empty">왼쪽에 응답 표를 붙여넣으세요. 첫 줄은 문항, 둘째 줄부터 응답이에요.</div>';save();return;}
+    $('#cards').innerHTML=A.qs.map(function(q,i){
+      var col='var('+COL[i%COL.length]+')';
+      var sel='<select data-h="'+esc(q.h)+'" aria-label="문항 유형">'+Object.keys(TYPES).map(function(t){return '<option value="'+t+'"'+(t===q.type?' selected':'')+'>'+TYPES[t]+(t===q.auto?' (자동)':'')+'</option>';}).join('')+'</select>';
+      var body='',meta='';
+      if(q.type==='text'){
+        meta='서술형 · 응답 '+q.n+'건';
+        body=(q.kw.length?'<div class="kw" title="두 번 이상 나온 낱말">'+q.kw.map(function(k,j){return '<span class="'+(j===0?'k1':'')+'">'+esc(k[0])+' '+k[1]+'</span>';}).join('')+'</div>':'<div class="hint">두 번 이상 나온 낱말이 없어요.</div>')+
+          '<ol class="ans">'+q.answers.map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ol>';
+      } else {
+        var den=q.n||1,mxc=Math.max.apply(null,q.items.map(function(x){return x.c;}).concat([1]));
+        meta=TYPES[q.type]+' · 응답 '+q.n+'명'+(q.type==='multi'?' · 비율은 응답자 대비(합이 100%를 넘을 수 있어요)':'');
+        if(q.type==='scale')body='<div class="avgbox"><span class="hint">평균</span><span class="avg">'+q.avg.toFixed(2)+'</span><span class="hint">/ '+q.max+'점</span></div>';
+        body+=q.items.map(function(it){var p=it.c/den*100;return '<div class="brow'+(it.c===mxc&&it.c>0?' top':'')+'"><span class="lab" title="'+esc(it.lab)+'">'+esc(it.lab)+'</span><div class="track"><i style="width:'+fmtP(p)+'"></i></div><span class="cnt">'+it.c+'명 ('+fmtP(p)+')</span></div>';}).join('');
+      }
+      return '<article class="qcard'+(q.type==='text'&&q.n>6?' wide':'')+'" data-type="'+q.type+'" style="--qc:'+col+'"><div class="qhead"><h3><em>Q'+(i+1)+'.</em>'+esc(q.h)+'</h3>'+sel+'</div><div class="qmeta">'+meta+'</div>'+body+'</article>';
+    }).join('');
+    save();
+  }
+  function tsv(){
+    var A2=A||analyze(),L=[(S.title||'설문')+' 결과','응답\t'+A2.n+'명',''];
+    A2.qs.forEach(function(q,i){
+      L.push('Q'+(i+1)+'. '+q.h+'\t('+TYPES[q.type]+')');
+      if(q.type==='text'){L.push('응답\t'+q.n+'건');if(q.kw.length)L.push('자주 나온 낱말\t'+q.kw.map(function(k){return k[0]+'('+k[1]+')';}).join(', '));q.answers.forEach(function(a){L.push('-\t'+a.replace(/[\t\n]+/g,' '));});}
+      else{if(q.type==='scale')L.push('평균\t'+q.avg.toFixed(2));L.push('보기\t응답 수\t비율');q.items.forEach(function(it){L.push(it.lab+'\t'+it.c+'\t'+fmtP(it.c/(q.n||1)*100));});}
+      L.push('');
+    });
+    return L.join('\n');
+  }
+  var saveT;
+  function save(){clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}},250);}
+  function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1900);}
+  function copyText(s){
+    if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(s).catch(fb);
+    return fb();
+    function fb(){return new Promise(function(ok,no){var ta=document.createElement('textarea');ta.value=s;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')?ok():no();}catch(e){no(e);}ta.remove();});}
+  }
+  var rawT;
+  $('#raw').addEventListener('input',function(){clearTimeout(rawT);rawT=setTimeout(function(){S.raw=$('#raw').value;S.types={};render();},300);});
+  $('#title').addEventListener('input',function(){S.title=this.value;$('#ptitle').textContent=(S.title||'설문')+' 설문 결과';save();});
+  $('#go').addEventListener('click',function(){clearTimeout(rawT);S.raw=$('#raw').value;render();toast(A.qs.length?'문항 '+A.qs.length+'개를 분석했어요':'첫 줄 문항 + 응답 줄이 필요해요');});
+  $('#sample').addEventListener('click',function(){clearTimeout(rawT);S={title:SAMPLE_TITLE,raw:SAMPLE,types:{}};$('#raw').value=SAMPLE;render();});
+  $('#clear').addEventListener('click',function(){clearTimeout(rawT);S={title:'',raw:'',types:{}};$('#raw').value='';render();});
+  $('#cards').addEventListener('change',function(e){var s=e.target.closest('select[data-h]');if(!s)return;var a=null;A.qs.forEach(function(q){if(q.h===s.getAttribute('data-h'))a=q;});S.types[s.getAttribute('data-h')]=s.value;if(a&&a.auto===s.value)delete S.types[s.getAttribute('data-h')];render();});
+  $('#skipped').addEventListener('click',function(e){
+    var b=e.target.closest('[data-col]');if(!b)return;var h=b.getAttribute('data-col');
+    var rows=parse(S.raw),ci=rows[0]?rows[0].map(function(x,i){return (x||'').trim()||('열 '+(i+1));}).indexOf(h):-1;
+    var vals=ci<0?[]:rows.slice(1).map(function(r){return (r[ci]||'').trim();}).filter(Boolean);
+    var t=detect('',vals);S.types[h]=t;render();toast(h+' 열을 '+TYPES[t]+'(으)로 넣었어요');
+  });
+  $('#copy').addEventListener('click',function(){copyText(tsv()).then(function(){toast('결과 표를 복사했어요. 엑셀·한글에 붙여넣으세요');},function(){toast('복사에 실패했어요');});});
+  $('#printBtn').addEventListener('click',function(){window.print();});
+  $('#wipeAll').addEventListener('click',function(){if(!confirm('이 PC에 저장된 설문 응답을 모두 지울까요? 되돌릴 수 없어요.'))return;clearTimeout(saveT);try{localStorage.removeItem(KEY);}catch(e){}S={title:SAMPLE_TITLE,raw:SAMPLE,types:{}};$('#raw').value=SAMPLE;render();setTimeout(function(){clearTimeout(saveT);try{localStorage.removeItem(KEY);}catch(e){}},400);toast('기록을 지웠어요');});
+  $('#raw').value=S.raw;
+  render();
+  window.__st={parse:parse,detect:detect,analyze:analyze,tsv:tsv,keywords:keywords};
+})();
+</script>
+</body>
+</html>

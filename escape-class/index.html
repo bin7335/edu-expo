@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>교실 탈출 - 단서를 모아 암호를 풀고 문을 여는 방탈출</title>
+<meta name="description" content="칠판·사물함·책장·시계에 숨은 단서를 모아 수학·국어 암호를 풀고 교실 문을 여는 방탈출 게임. 가방, 힌트, 타이머, 최고 기록.">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#1b1712}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#2b2118;user-select:none;-webkit-user-select:none}
+  button{font:inherit}
+  /* 화면 틀 */
+  #app{position:fixed;inset:0;display:flex;flex-direction:column}
+  #hud{display:flex;align-items:center;gap:8px;padding:8px 12px;background:linear-gradient(#2c241b,#221c15);color:#f6ead6;flex-wrap:wrap;z-index:5}
+  #hud h1{margin:0;font-size:19px;letter-spacing:-.5px;white-space:nowrap}
+  #hud .sp{flex:1}
+  .hb{border:0;background:#3d3226;color:#f6ead6;font-weight:800;font-size:14px;padding:7px 11px;border-radius:10px;cursor:pointer;white-space:nowrap}
+  .hb:hover{background:#4d3f30}
+  .hb[aria-pressed="true"]{background:#c98a2c;color:#231a10}
+  #timer{font-variant-numeric:tabular-nums;font-weight:900;font-size:17px;background:#120e0a;padding:5px 10px;border-radius:9px;min-width:72px;text-align:center}
+  #prog{font-size:13px;opacity:.85;white-space:nowrap}
+  #view{position:relative;flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  #scene{position:relative;height:100%;min-width:100%;aspect-ratio:16/9;margin:0 auto;overflow:hidden;background:#e9dcc2;perspective:900px}
+  .layer{position:absolute;inset:-3%;transition:transform .25s ease-out;will-change:transform}
+  /* 뒤 벽 */
+  #wall{background:linear-gradient(#f1e5cc 0 72%,#c9a77c 72% 74%,#a87d52 74%)}
+  #wall::after{content:"";position:absolute;left:0;right:0;top:74%;bottom:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 2px,transparent 2px 9%)}
+  .win{position:absolute;top:10%;width:13%;height:34%;border:6px solid #fff;border-radius:6px;background:linear-gradient(#7fc4f0,#cfeaff);overflow:hidden;box-shadow:inset 0 0 0 3px #ddd,0 4px 0 rgba(0,0,0,.08)}
+  .win::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:5px;background:#fff;transform:translateX(-50%)}
+  .cloud{position:absolute;font-size:3vmin;opacity:.95;animation:drift 38s linear infinite}
+  @keyframes drift{from{transform:translateX(-60%)}to{transform:translateX(260%)}}
+  /* 사물 */
+  .spot{position:absolute;cursor:pointer;border-radius:8px;outline:3px solid transparent;transition:outline-color .2s,filter .2s}
+  .spot:hover,.spot:focus-visible{outline-color:#ffd166;filter:brightness(1.06)}
+  .spot.done::after{content:"✔";position:absolute;right:-8px;top:-10px;background:#22a663;color:#fff;border-radius:50%;width:24px;height:24px;font-size:14px;display:grid;place-items:center;font-weight:900;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+  .spot .lbl{position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);font-size:12px;font-weight:800;background:rgba(43,33,24,.82);color:#fff;padding:2px 8px;border-radius:99px;white-space:nowrap;pointer-events:none;opacity:.0;transition:opacity .2s}
+  #scene:hover .spot .lbl,#scene.hintall .spot .lbl{opacity:1}
+  #board{left:28%;top:12%;width:36%;height:34%;background:#2f5e46;border:10px solid #8a5a32;border-radius:6px;color:#e9f5ec;padding:2.2% 3%;font-size:clamp(12px,2.5vmin,28px);line-height:1.45;box-shadow:0 8px 0 rgba(0,0,0,.12);font-family:"Comic Sans MS",system-ui,"Malgun Gothic",sans-serif}
+  #board b{color:#ffe08a}
+  #board::before{content:"";position:absolute;left:8%;right:8%;bottom:-18px;height:8px;background:#8a5a32;border-radius:3px}
+  #clock{left:68%;top:8%;width:8.5%;aspect-ratio:1;border-radius:50%;background:#fff;border:6px solid #3b3b3b;box-shadow:0 4px 0 rgba(0,0,0,.15)}
+  #clock svg{width:100%;height:100%}
+  #lockers{left:79%;top:30%;width:19%;height:44%;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:#55606e;padding:4px;border-radius:4px}
+  #lockers i{background:linear-gradient(90deg,#8fa3ba,#a9bbd0);border-radius:2px;position:relative;font-style:normal;font-size:clamp(9px,1.3vmin,14px);font-weight:800;color:#334;text-align:center;padding-top:6%}
+  #lockers i::after{content:"";position:absolute;right:12%;top:46%;width:8%;height:12%;background:#334;border-radius:2px}
+  #lockers i.tgt{background:linear-gradient(90deg,#e6b34a,#f2cd73)}
+  #lockers.open i.tgt{background:#2b2f36;transform:perspective(200px) rotateY(-55deg);transform-origin:left}
+  #shelf{left:3%;top:30%;width:15%;height:44%;background:#6d4626;border-radius:4px;padding:6% 6% 0;display:flex;flex-direction:column;gap:7%}
+  #shelf .row{flex:1;display:flex;align-items:flex-end;gap:4%;border-bottom:6px solid #4a2f17;padding:0 4%}
+  #shelf .row s{display:block;width:16%;border-radius:2px 2px 0 0}
+  #shelf::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(0,0,0,.2),rgba(0,0,0,.62));border-radius:4px;pointer-events:none;transition:opacity .4s}
+  #shelf.lit::after{opacity:.1}
+  #desk{left:56%;top:54%;width:20%;height:22%;background:linear-gradient(#b07a45 0 18%,#8f5e31 18%);border-radius:6px 6px 2px 2px;box-shadow:0 10px 0 rgba(0,0,0,.12)}
+  #desk .drw{position:absolute;left:10%;right:42%;top:32%;height:28%;background:#a3703e;border:2px solid #6a4320;border-radius:3px}
+  #desk .drw::after{content:"";position:absolute;left:42%;top:40%;width:16%;height:20%;background:#3b2a1a;border-radius:3px}
+  #desk.open .drw{transform:translateY(28%) scale(1.04);background:#c58a50}
+  #desk .mug{position:absolute;right:10%;top:-28%;font-size:clamp(16px,3vmin,34px)}
+  #door{left:19.5%;top:16%;width:8%;height:58%;background:linear-gradient(90deg,#9d6b3d,#b98450);border:5px solid #6a4320;border-radius:4px 4px 0 0;transform-origin:left center;transition:transform 1.2s cubic-bezier(.3,.7,.3,1)}
+  #door .gls{position:absolute;left:18%;right:18%;top:8%;height:28%;background:linear-gradient(#bfe3ff,#e8f6ff);border:3px solid #6a4320}
+  #door .knob{position:absolute;right:10%;top:52%;width:16%;aspect-ratio:1;border-radius:50%;background:#e8c14d;box-shadow:0 0 0 2px #7a5a10}
+  #door .pad{position:absolute;right:8%;top:40%;width:22%;height:7%;background:#333;border-radius:2px}
+  #scene.escaped #door{transform:perspective(600px) rotateY(-75deg)}
+  #light{position:absolute;left:19.5%;top:16%;width:8%;height:58%;background:radial-gradient(ellipse at 30% 50%,#fff8d8,#ffe7a0 50%,transparent 75%);opacity:0;transition:opacity 1.2s}
+  #scene.escaped #light{opacity:1}
+  #plant{left:46%;top:58%;width:6%;height:18%;font-size:clamp(28px,7vmin,80px);display:grid;place-items:end center;line-height:1}
+  #front{pointer-events:none}
+  .sdesk{position:absolute;bottom:2%;width:20%;height:18%;background:linear-gradient(#d4a46c 0 22%,#7c5634 22% 30%,transparent 30%);border-radius:6px}
+  .sdesk::before,.sdesk::after{content:"";position:absolute;top:28%;bottom:0;width:5%;background:#555;left:8%}
+  .sdesk::after{left:auto;right:8%}
+  .vign{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(30,20,10,.45))}
+  /* 가방 */
+  #invBar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#221c15;color:#f6ead6;min-height:58px;flex-wrap:wrap}
+  #invBar .t{font-weight:800;font-size:14px;white-space:nowrap}
+  #inv{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+  #inv .it{border:2px solid #5a4936;background:#3a2f23;color:#fff;border-radius:12px;padding:5px 10px;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:5px}
+  #inv .it.sel{border-color:#ffd166;background:#6b5225;box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+  #inv .it b{font-size:20px}
+  #inv .empty{opacity:.6;font-size:13px}
+  .back{color:#e9d8b8;font-size:13px;white-space:nowrap;text-decoration:none;margin-left:auto}
+  .back:hover{text-decoration:underline}
+  /* 창 */
+  .ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,14,8,.55);z-index:20;padding:14px}
+  .ov.on{display:flex}
+  .card{background:#fffaf0;border-radius:20px;padding:20px 22px;max-width:520px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.4);max-height:92vh;overflow:auto;animation:pop .25s ease-out}
+  @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+  .card h2{margin:0 0 8px;font-size:22px}
+  .card p{margin:6px 0;line-height:1.55}
+  .card .note{background:#fff3c9;border-left:5px solid #e0a623;padding:9px 12px;border-radius:8px;font-weight:700;margin:8px 0}
+  .card .eqs{background:#2f5e46;color:#eaf6ee;border-radius:10px;padding:10px 14px;font-size:19px;line-height:1.7;font-weight:700}
+  .btn{border:0;font-weight:900;font-size:16px;padding:11px 18px;border-radius:12px;cursor:pointer;background:#e9ddc8;color:#3a2c1c}
+  .btn.pri{background:#d9822b;color:#fff}
+  .btn.g{background:#22a663;color:#fff}
+  .row2{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+  .dials{display:flex;gap:10px;justify-content:center;margin:12px 0}
+  .dial{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .dial button{width:52px;height:38px;border:0;border-radius:10px;background:#e2d3b8;font-size:18px;font-weight:900;cursor:pointer;color:#3a2c1c}
+  .dial .dv{width:52px;height:56px;display:grid;place-items:center;background:#2b2118;color:#ffd166;border-radius:10px;font-size:30px;font-weight:900;font-variant-numeric:tabular-nums}
+  .msg{min-height:24px;text-align:center;font-weight:800}
+  .msg.bad{color:#d33}.msg.good{color:#1a8a50}
+  .shake{animation:shk .35s}
+  @keyframes shk{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+  .books{display:flex;gap:8px;justify-content:center;align-items:flex-end;margin:10px 0;background:#6d4626;padding:14px 10px 0;border-radius:10px;border-bottom:10px solid #4a2f17}
+  .book{width:62px;height:150px;border-radius:5px 5px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:8px 0;color:#fff;font-weight:900;box-shadow:inset -6px 0 0 rgba(0,0,0,.15)}
+  .book .tt{writing-mode:vertical-rl;font-size:19px;letter-spacing:4px}
+  .book .num{background:#fff;color:#222;border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font-size:17px}
+  .dark{background:#1d1a17;color:#c9bfae;border-radius:10px;padding:26px 14px;text-align:center}
+  #toast{position:fixed;left:50%;top:70px;transform:translateX(-50%) translateY(-20px);background:#2b2118;color:#ffe9b8;padding:10px 16px;border-radius:12px;font-weight:800;max-width:min(92vw,560px);opacity:0;transition:.3s;z-index:30;pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.35);text-align:center;line-height:1.5}
+  #toast.on{opacity:1;transform:translateX(-50%)}
+  #intro .card,#ending .card{text-align:center;max-width:560px}
+  #intro .big,#ending .big{font-size:56px;line-height:1}
+  .steps{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+  .steps span{background:#f1e4cc;border-radius:99px;padding:5px 11px;font-size:14px;font-weight:800}
+  #ending .stat{display:flex;gap:10px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+  #ending .stat div{background:#f1e4cc;border-radius:14px;padding:10px 14px;min-width:110px}
+  #ending .stat b{display:block;font-size:24px}
+  .conf{position:fixed;top:-20px;font-size:22px;z-index:25;pointer-events:none;animation:fall 2.6s linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+  @media (max-width:640px){#hud h1{font-size:16px}#prog{display:none}.hb{padding:6px 8px;font-size:13px}.book{width:52px;height:130px}.book .tt{font-size:16px}}
+  @media (prefers-reduced-motion:reduce){.layer{transition:none}.cloud{animation:none}}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="교실 탈출">
+<meta property="og:description" content="교실 곳곳의 단서를 모아 수학·국어 암호를 풀고 문을 여는 방탈출">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/86-escape-class.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/escape-class/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <h1>🚪 교실 탈출</h1>
+    <span id="prog">단서 0/3 · 자물쇠 0/3</span>
+    <span class="sp"></span>
+    <span id="timer" aria-label="걸린 시간">00:00</span>
+    <button class="hb" id="hintBtn" type="button">💡 힌트</button>
+    <button class="hb" id="snd" type="button" aria-pressed="false" title="교실 소리">🔇</button>
+    <button class="hb" id="fsBtn" type="button" title="전체 화면">⛶</button>
+  </div>
+  <div id="view">
+    <div id="scene">
+      <div class="layer" id="wall" data-depth="0.4">
+        <div class="win" style="left:6%"><span class="cloud" style="top:16%">☁️</span><span class="cloud" style="top:52%;animation-delay:-18s">☁️</span></div>
+        <div class="win" style="left:84%;width:12%;height:18%;top:8%"><span class="cloud" style="top:20%;animation-delay:-9s">☁️</span></div>
+      </div>
+      <div class="layer" id="mid" data-depth="1">
+        <div class="spot" id="door" data-spot="door" role="button" tabindex="0" aria-label="교실 문"><div class="gls"></div><div class="pad"></div><div class="knob"></div><span class="lbl">교실 문</span></div>
+        <div id="light"></div>
+        <div class="spot" id="board" data-spot="board" role="button" tabindex="0" aria-label="칠판">
+          <div>오늘의 수수께끼 ✏️</div>
+          <div><b>◆ + ◆ = 14</b> &nbsp; <b>◆ × ● = 21</b></div>
+          <div><b>● + ▲ = 9</b></div>
+          <div style="opacity:.85">사물함 번호는 ◆●▲</div>
+          <span class="lbl">칠판</span>
+        </div>
+        <div class="spot" id="clock" data-spot="clock" role="button" tabindex="0" aria-label="시계"><span class="lbl">시계</span></div>
+        <div class="spot" id="lockers" data-spot="locker" role="button" tabindex="0" aria-label="사물함"><span class="lbl">사물함</span></div>
+        <div class="spot" id="shelf" data-spot="shelf" role="button" tabindex="0" aria-label="책장">
+          <div class="row"><s style="height:82%;background:#e05d5d"></s><s style="height:70%;background:#4f8de0"></s><s style="height:90%;background:#f0b23e"></s><s style="height:76%;background:#5fbf7a"></s></div>
+          <div class="row"><s style="height:66%;background:#9b6fd6"></s><s style="height:84%;background:#e0885d"></s><s style="height:74%;background:#4fb6c0"></s></div>
+          <span class="lbl">책장</span>
+        </div>
+        <div class="spot" id="desk" data-spot="desk" role="button" tabindex="0" aria-label="선생님 책상"><div class="drw"></div><span class="mug">☕</span><span class="lbl">선생님 책상</span></div>
+        <div class="spot" id="plant" data-spot="plant" role="button" tabindex="0" aria-label="화분">🪴<span class="lbl">화분</span></div>
+      </div>
+      <div class="layer" id="front" data-depth="2.2">
+        <div class="sdesk" style="left:4%"></div><div class="sdesk" style="left:38%"></div><div class="sdesk" style="left:74%"></div>
+      </div>
+      <div class="vign"></div>
+    </div>
+  </div>
+  <div id="invBar"><span class="t">🎒 가방</span><div id="inv"></div><a class="back" href="../">← 전체 데모 보기</a></div>
+</div>
+
+<div class="ov on" id="intro"><div class="card">
+  <div class="big">🏫🔒</div>
+  <h2>교실 탈출</h2>
+  <p>쉬는 시간, 교실 문이 잠겼어요! 교실 곳곳의 <b>단서</b>를 눌러 모으고 <b>수학·국어 암호</b>를 풀어 문을 열어 보세요.</p>
+  <div class="steps"><span>✏️ 칠판</span><span>🔐 사물함</span><span>📚 책장</span><span>🗄️ 서랍</span><span>🕙 시계</span><span>🚪 문</span></div>
+  <p style="font-size:14px;color:#7a6650">가방의 물건은 눌러서 손에 든 뒤 사용해요 · 막히면 💡 힌트(+30초)</p>
+  <p id="bestLbl" style="font-weight:800;color:#a2601a">최고 기록 없음</p>
+  <div class="row2" style="justify-content:center"><button class="btn pri" id="startBtn" type="button">▶ 탈출 시작</button></div>
+</div></div>
+
+<div class="ov" id="modal" role="dialog" aria-modal="true"><div class="card"><div id="mBody"></div><div class="row2"><button class="btn" id="mClose" type="button">닫기</button></div></div></div>
+
+<div class="ov" id="ending"><div class="card">
+  <div class="big">🎉🚪</div>
+  <h2>교실 탈출 성공!</h2>
+  <p>문 너머로 복도 햇살이 들어와요. 모든 암호를 풀었어요.</p>
+  <div class="stat"><div>기록<b id="eTime">-</b></div><div>힌트<b id="eHint">-</b></div><div>최고 기록<b id="eBest">-</b></div></div>
+  <p id="eNew" style="font-weight:900;color:#d9822b" hidden>🏆 새 최고 기록!</p>
+  <p style="font-size:14px;color:#7a6650">풀이 돌아보기: ◆=7, ●=3, ▲=6 → 736 · 가나다순(가지·나비·사슴·하늘) → 1642 · 10시 50분 + 1시간 20분 = 12시 10분 → 1210</p>
+  <div class="row2" style="justify-content:center"><button class="btn pri" id="againBtn" type="button">↻ 다시 하기</button></div>
+</div></div>
+<div id="toast" role="status"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const KEY = 'edu-expo-escape-class-v1';
+  const PUZ = {
+    locker: '736',
+    books: [{ title: '하늘', num: '2', c: '#4f8de0' }, { title: '사슴', num: '4', c: '#e0885d' }, { title: '가지', num: '1', c: '#9b6fd6' }, { title: '나비', num: '6', c: '#5fbf7a' }],
+    drawer: '1642',
+    clock: '10:50',
+    door: '1210'
+  };
+  const ITEMS = { flash: ['🔦', '손전등'], note1: ['📝', '쪽지 1'], key: ['🔑', '열쇠'], note2: ['📄', '쪽지 2'] };
+  const HINTS = [
+    ['칠판의 ◆ + ◆ = 14 에서 ◆는 14의 절반이에요.', '◆=7 이면 7 × ● = 21 이니 ●는 3이에요.', '● + ▲ = 9 → ▲=6. 사물함 번호는 7·3·6!'],
+    ['사물함 쪽지를 다시 읽어 보세요. 책장은 어두워요 — 가방의 🔦 손전등을 눌러 손에 든 뒤 책장을 눌러요.', '책 제목을 사전처럼 가나다순(ㄱ→ㄴ→ㅅ→ㅎ)으로 줄 세워요.', '가지(1) → 나비(6) → 사슴(4) → 하늘(2). 서랍 번호는 1642!'],
+    ['서랍 쪽지: 시계가 가리키는 시각에서 1시간 20분 뒤를 구해요. 시계를 눌러 보세요.', '시계는 10시 50분. 1시간 뒤는 11시 50분, 20분 더 가면?', '12시 10분 → 문 번호는 1210. 🔑 열쇠를 손에 들고 문을 눌러요!']
+  ];
+  let st, raf = 0, last = 0;
+  const reset = () => { st = { phase: 'intro', stage: 0, inv: [], sel: null, opened: { locker: false, drawer: false, door: false }, clues: [], hints: 0, hintStep: [0, 0, 0], t0: 0, elapsed: 0, score: 0 }; };
+  reset();
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+  const save = o => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
+  const fmt = s => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+  const showBest = () => { const b = +load().best; $('#bestLbl').textContent = b > 0 ? '🏆 최고 기록 ' + fmt(b) : '최고 기록 없음'; };
+  showBest();
+
+  // 시계 그리기
+  const clockAngles = () => { const [h, m] = PUZ.clock.split(':').map(Number); return { h: (h % 12) * 30 + m * 0.5, m: m * 6 }; };
+  const clockSVG = (big) => { const a = clockAngles(); let ticks = '';
+    for (let i = 0; i < 60; i++) { const r = i % 5 ? 44 : 40, ang = i * 6 * Math.PI / 180; ticks += `<line x1="${50 + Math.sin(ang) * r}" y1="${50 - Math.cos(ang) * r}" x2="${50 + Math.sin(ang) * 47}" y2="${50 - Math.cos(ang) * 47}" stroke="#333" stroke-width="${i % 5 ? .8 : 2}"/>`; }
+    let nums = ''; if (big) for (let i = 1; i <= 12; i++) { const ang = i * 30 * Math.PI / 180; nums += `<text x="${50 + Math.sin(ang) * 33}" y="${50 - Math.cos(ang) * 33 + 3.5}" font-size="10" text-anchor="middle" font-weight="700" fill="#333">${i}</text>`; }
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">${ticks}${nums}<line x1="50" y1="50" x2="50" y2="25" stroke="#222" stroke-width="4" stroke-linecap="round" transform="rotate(${a.h} 50 50)"/><line x1="50" y1="50" x2="50" y2="12" stroke="#c0392b" stroke-width="2.5" stroke-linecap="round" transform="rotate(${a.m} 50 50)"/><circle cx="50" cy="50" r="3.5" fill="#222"/></svg>`; };
+  $('#clock').insertAdjacentHTML('afterbegin', clockSVG(false));
+  // 사물함 칸
+  { let h = ''; for (let i = 31; i <= 39; i++) h += `<i class="${i === 33 ? 'tgt' : ''}">${i === 33 ? '★' : i}</i>`; $('#lockers').insertAdjacentHTML('afterbegin', h); }
+
+  // 소리 (WebAudio, 누르기 전엔 꺼짐)
+  let ac = null, amb = null, soundOn = false;
+  const ctx = () => { if (!ac) { try { const A = window.AudioContext || window.webkitAudioContext; if (A) ac = new A(); } catch (e) { ac = null; } } return ac; };
+  const beep = (f, d = .12, type = 'sine', v = .08) => { if (!soundOn || !ctx()) return; try { const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(v, ac.currentTime); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d); o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + d + .02); } catch (e) {} };
+  const startAmb = () => { if (!ctx() || amb) return; try {
+      const len = ac.sampleRate * 2, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0); let b = 0;
+      for (let i = 0; i < len; i++) { b = (b + (Math.random() * 2 - 1) * .02) * .995; d[i] = b; }
+      const src = ac.createBufferSource(); src.buffer = buf; src.loop = true; const g = ac.createGain(); g.gain.value = .5; src.connect(g).connect(ac.destination); src.start();
+      const tick = setInterval(() => beep(1800, .03, 'square', .015), 1000); amb = { src, tick };
+    } catch (e) {} };
+  const stopAmb = () => { if (!amb) return; try { amb.src.stop(); } catch (e) {} clearInterval(amb.tick); amb = null; };
+  $('#snd').addEventListener('click', () => { soundOn = !soundOn; $('#snd').setAttribute('aria-pressed', String(soundOn)); $('#snd').textContent = soundOn ? '🔊' : '🔇';
+    if (soundOn) { ctx(); if (ac && ac.resume) ac.resume().catch(() => {}); startAmb(); } else stopAmb(); });
+  $('#fsBtn').addEventListener('click', () => { try { const d = document; if (d.fullscreenElement) { d.exitFullscreen && d.exitFullscreen().catch(() => {}); return; }
+    const el = d.documentElement; if (d.fullscreenEnabled && el.requestFullscreen) { const p = el.requestFullscreen(); if (p && p.catch) p.catch(() => {}); } else toast('이 브라우저는 전체 화면을 지원하지 않아요.'); } catch (e) {} });
+
+  // 깊이감: 손가락·마우스 위치에 따라 층마다 다르게 움직임
+  const layers = [...document.querySelectorAll('.layer')];
+  const par = (x, y) => layers.forEach(l => { const d = +l.dataset.depth; l.style.transform = `translate(${(-x * d * 10).toFixed(1)}px,${(-y * d * 6).toFixed(1)}px)`; });
+  $('#scene').addEventListener('pointermove', e => { const r = $('#scene').getBoundingClientRect(); par((e.clientX - r.left) / r.width - .5, (e.clientY - r.top) / r.height - .5); });
+
+  let tt = 0;
+  const toast = s => { const t = $('#toast'); t.textContent = s; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 3200); };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+  const renderInv = () => {
+    const el = $('#inv');
+    if (!st.inv.length) { el.innerHTML = '<span class="empty">아직 비어 있어요. 교실 곳곳을 눌러 보세요.</span>'; return; }
+    el.innerHTML = st.inv.map(k => `<button type="button" class="it${st.sel === k ? ' sel' : ''}" data-item="${k}"><b>${ITEMS[k][0]}</b>${ITEMS[k][1]}</button>`).join('');
+  };
+  $('#inv').addEventListener('click', e => { const b = e.target.closest('[data-item]'); if (!b) return; const k = b.dataset.item;
+    if (k === 'note1' || k === 'note2') { st.sel = null; renderInv(); openModal(noteHTML(k)); return; }
+    st.sel = st.sel === k ? null : k; renderInv(); beep(660, .06); if (st.sel) toast(ITEMS[k][0] + ' ' + ITEMS[k][1] + '을(를) 손에 들었어요. 쓸 곳을 눌러 보세요.'); });
+  const give = k => { if (!st.inv.includes(k)) st.inv.push(k); renderInv(); };
+  const prog = () => { const lk = ['locker', 'drawer', 'door'].filter(k => st.opened[k]).length;
+    $('#prog').textContent = `단서 ${Math.min(3, st.clues.length)}/3 · 자물쇠 ${lk}/3`;
+    $('#lockers').classList.toggle('open', st.opened.locker); $('#lockers').classList.toggle('done', st.opened.locker);
+    $('#desk').classList.toggle('open', st.opened.drawer); $('#desk').classList.toggle('done', st.opened.drawer);
+    ['board', 'clock'].forEach(k => $('[data-spot="' + k + '"]').classList.toggle('done', st.clues.includes(k)));
+    $('#shelf').classList.toggle('done', st.clues.includes('shelf')); };
+  const clue = k => { if (!st.clues.includes(k)) st.clues.push(k); prog(); };
+
+  const noteHTML = k => k === 'note1'
+    ? `<h2>📝 쪽지 1</h2><div class="note">책장의 책을 <u>사전처럼 가나다순</u>으로 꽂아 보렴.<br>그 순서대로 책 번호를 읽으면 서랍 번호가 된단다.</div><p style="font-size:14px;color:#7a6650">책장 구석은 어두워서 손전등이 있어야 보여요.</p>`
+    : `<h2>📄 쪽지 2</h2><div class="note">문 번호는 <u>시계가 가리키는 시각에서 1시간 20분 뒤</u>의 시각이야.<br>(시·분 네 자리, 예: 3시 5분 → 0305)</div>`;
+
+  let lockFor = null;
+  const lockHTML = (title, desc, n) => `<h2>${title}</h2><p>${desc}</p><div class="dials">${Array.from({ length: n }, (_, i) => `<div class="dial" data-i="${i}"><button type="button" class="up" aria-label="${i + 1}번째 숫자 올리기">▲</button><div class="dv">0</div><button type="button" class="dn" aria-label="${i + 1}번째 숫자 내리기">▼</button></div>`).join('')}</div><div class="msg" id="lmsg"></div><div class="row2" style="justify-content:center;margin-top:4px"><button type="button" class="btn pri" id="tryBtn">🔓 열어 보기</button></div>`;
+  const openModal = (html, lock) => { lockFor = lock || null; $('#mBody').innerHTML = html; $('#modal').classList.add('on'); };
+  const closeModal = () => { $('#modal').classList.remove('on'); lockFor = null; };
+  $('#mClose').addEventListener('click', closeModal);
+  $('#modal').addEventListener('click', e => {
+    if (e.target === $('#modal')) { closeModal(); return; }
+    const d = e.target.closest('.dial');
+    if (d && e.target.closest('button')) { const v = d.querySelector('.dv'); v.textContent = String((+v.textContent + (e.target.classList.contains('up') ? 1 : 9)) % 10); beep(520, .04, 'square', .03); return; }
+    if (e.target.id === 'tryBtn' && lockFor) tryLock();
+  });
+  const code = () => [...document.querySelectorAll('#mBody .dial .dv')].map(x => x.textContent).join('');
+  const lmsg = (s, good) => { const m = $('#lmsg'); if (!m) return; m.textContent = s; m.className = 'msg ' + (good ? 'good' : 'bad'); if (!good) { const c = $('#modal .card'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); } };
+  function tryLock() {
+    const c = code(), k = lockFor;
+    if (k === 'locker') {
+      if (c !== PUZ.locker) { lmsg('딸깍… 열리지 않아요. 칠판의 식을 다시 봐요.'); beep(160, .25, 'sawtooth', .05); return; }
+      st.opened.locker = true; st.stage = Math.max(st.stage, 1); give('flash'); give('note1'); prog(); beep(880, .15); setTimeout(() => beep(1320, .2), 120);
+      openModal(`<h2>🔓 사물함이 열렸어요!</h2><p>안에 <b>🔦 손전등</b>과 <b>📝 쪽지</b>가 있어요. 가방에 넣었어요.</p>${noteHTML('note1').replace(/<h2>.*?<\/h2>/, '')}`);
+    } else if (k === 'drawer') {
+      if (c !== PUZ.drawer) { lmsg('덜컹… 열리지 않아요. 책 순서를 다시 생각해요.'); beep(160, .25, 'sawtooth', .05); return; }
+      st.opened.drawer = true; st.stage = Math.max(st.stage, 2); give('key'); give('note2'); prog(); beep(880, .15); setTimeout(() => beep(1320, .2), 120);
+      openModal(`<h2>🔓 서랍이 열렸어요!</h2><p>안에 <b>🔑 열쇠</b>와 <b>📄 쪽지</b>가 있어요.</p>${noteHTML('note2').replace(/<h2>.*?<\/h2>/, '')}`);
+    } else if (k === 'door') {
+      if (c !== PUZ.door) { lmsg('삐빅! 번호가 틀렸어요. 시계를 다시 봐요.'); beep(160, .25, 'sawtooth', .05); return; }
+      st.opened.door = true; prog(); win();
+    }
+  }
+
+  const spots = {
+    board: () => { clue('board'); openModal(`<h2>✏️ 칠판</h2><p>선생님이 남긴 수수께끼예요. 같은 모양은 같은 숫자예요.</p><div class="eqs">◆ + ◆ = 14<br>◆ × ● = 21<br>● + ▲ = 9</div><div class="note">사물함 번호는 ◆●▲ (세 자리)</div>`); },
+    locker: () => { if (st.opened.locker) { openModal('<h2>🗄️ 사물함</h2><p>빈 사물함이에요. 이미 손전등과 쪽지를 꺼냈어요.</p>'); return; }
+      openModal(lockHTML('🔐 ★ 사물함', '세 자리 번호 자물쇠가 걸려 있어요.', 3), 'locker'); },
+    shelf: () => {
+      if (st.sel !== 'flash') { openModal(`<h2>📚 책장</h2><div class="dark">너무 어두워서 책 제목이 잘 안 보여요…<br>${st.inv.includes('flash') ? '가방의 🔦 손전등을 손에 들고 다시 눌러 보세요.' : '불빛이 필요해 보여요.'}</div>`); return; }
+      clue('shelf'); $('#shelf').classList.add('lit'); beep(740, .08);
+      openModal(`<h2>📚 책장 (🔦 비추는 중)</h2><p>책등에 제목과 번호가 보여요.</p><div class="books">${PUZ.books.map(b => `<div class="book" style="background:${b.c}"><span class="tt">${esc(b.title)}</span><span class="num">${esc(b.num)}</span></div>`).join('')}</div>`); },
+    desk: () => { if (st.opened.drawer) { openModal('<h2>🗄️ 선생님 책상</h2><p>열린 서랍은 비어 있어요.</p>'); return; }
+      openModal(lockHTML('🗄️ 선생님 책상 서랍', '네 자리 번호 자물쇠가 걸려 있어요. ' + (st.opened.locker ? '사물함 쪽지가 도움이 될 거예요.' : ''), 4), 'drawer'); },
+    clock: () => { clue('clock'); openModal(`<h2>🕙 교실 시계</h2><p>건전지가 다 됐는지 시계가 멈춰 있어요. 몇 시 몇 분일까요?</p><div style="width:min(240px,60vw);margin:8px auto;background:#fff;border:8px solid #3b3b3b;border-radius:50%">${clockSVG(true)}</div>`); },
+    door: () => {
+      if (st.sel !== 'key') { openModal(`<h2>🚪 교실 문</h2><p>꽉 잠겨 있어요. 열쇠 구멍과 네 자리 번호판이 있어요.</p><div class="note">${st.inv.includes('key') ? '가방의 🔑 열쇠를 손에 들고 문을 눌러 보세요.' : '먼저 열쇠를 찾아야 해요.'}</div>`); return; }
+      openModal(lockHTML('🚪 교실 문 번호판', '🔑 열쇠를 돌렸어요. 이제 네 자리 번호를 넣어요.', 4), 'door'); },
+    plant: () => { openModal('<h2>🪴 화분</h2><p>흙 속을 살짝 뒤져 봤지만… 지렁이만 꿈틀! 여긴 단서가 없네요. 🪱</p>'); }
+  };
+  document.querySelectorAll('[data-spot]').forEach(el => {
+    const go = () => { if (st.phase !== 'play') return; beep(440, .05); spots[el.dataset.spot](); };
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+
+  $('#hintBtn').addEventListener('click', () => {
+    if (st.phase !== 'play') return;
+    const s = Math.min(st.stage, 2), i = st.hintStep[s];
+    st.hints++; st.hintStep[s] = Math.min(i + 1, 2);
+    toast('💡 ' + HINTS[s][i] + ' (+30초)'); updTimer();
+  });
+
+  const now = () => (st.phase === 'play' ? st.elapsed + (performance.now() - st.t0) / 1000 : st.elapsed);
+  const updTimer = () => { $('#timer').textContent = fmt(now() + st.hints * 30); };
+  const loop = () => { updTimer(); if (st.phase === 'play') raf = requestAnimationFrame(loop); };
+  function start() {
+    cancelAnimationFrame(raf); reset(); st.phase = 'play'; st.t0 = performance.now();
+    document.querySelectorAll('.ov').forEach(o => o.classList.remove('on'));
+    $('#scene').classList.remove('escaped'); $('#shelf').classList.remove('lit');
+    renderInv(); prog(); loop(); toast('교실 곳곳을 눌러 단서를 찾아요! 칠판부터 볼까요?');
+    $('#scene').classList.add('hintall'); setTimeout(() => $('#scene').classList.remove('hintall'), 2500);
+  }
+  function win() {
+    st.elapsed = now(); st.phase = 'won'; st.score = Math.round((st.elapsed + st.hints * 30) * 100) / 100; updTimer();
+    closeModal(); $('#scene').classList.add('escaped');
+    const o = load(), isNew = !(o.best > 0) || st.score < o.best; if (isNew) o.best = st.score; o.plays = (o.plays || 0) + 1; save(o);
+    $('#eTime').textContent = fmt(st.score); $('#eHint').textContent = st.hints + '회'; $('#eBest').textContent = fmt(o.best); $('#eNew').hidden = !isNew;
+    [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, .25, 'triangle', .07), i * 140));
+    for (let i = 0; i < 26; i++) { const c = document.createElement('span'); c.className = 'conf'; c.textContent = ['🎉', '⭐', '🎊', '✨'][i % 4]; c.style.left = Math.random() * 100 + 'vw'; c.style.animationDelay = Math.random() * .8 + 's'; document.body.appendChild(c); setTimeout(() => c.remove(), 3600); }
+    setTimeout(() => $('#ending').classList.add('on'), 900); $('#ending').classList.add('on');
+    showBest();
+  }
+  $('#startBtn').addEventListener('click', start);
+  $('#againBtn').addEventListener('click', start);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); if (e.key.toLowerCase() === 'h' && !e.ctrlKey && !e.metaKey) $('#hintBtn').click(); });
+  renderInv(); prog();
+  // 좁은 화면: 교실을 옆으로 밀어 볼 수 있게 가운데(칠판)부터 보여 줌
+  const center = () => { const v = $('#view'); if (v.scrollWidth > v.clientWidth + 4) v.scrollLeft = (v.scrollWidth - v.clientWidth) * .42; };
+  center(); window.addEventListener('resize', center);
+  window.__test = {
+    state: () => ({ phase: st.phase, stage: st.stage, inv: st.inv.slice(), sel: st.sel, opened: { ...st.opened }, clues: st.clues.slice(), hints: st.hints, score: st.score, t: now() }),
+    puzzle: () => JSON.parse(JSON.stringify(PUZ)),
+    clockAngles
+  };
+})();
+</script>
+</body>
+</html>

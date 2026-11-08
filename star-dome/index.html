@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>별빛 돔 - 밤하늘을 둘러보고 별을 이어 계절 별자리를 완성하는 천체투영관</title>
+<meta name="description" content="실제 별 위치로 그린 우리나라 계절 저녁 하늘을 끌어서 둘러보고, 별을 순서대로 이어 북두칠성·백조자리·카시오페이아·오리온자리 등 계절 별자리를 완성하는 작은 천체투영관.">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#01030c}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
+  button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+  #cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+  #cv:active{cursor:grabbing}
+  header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;pointer-events:none;z-index:3}
+  header>*{pointer-events:auto}
+  .logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#7b6cff,#2a2f8f);display:grid;place-items:center;font-size:24px;box-shadow:0 4px 0 #1a1d5a;flex-shrink:0}
+  h1{margin:0;font-size:22px;letter-spacing:-.5px;text-shadow:0 2px 8px #000}
+  h1 small{display:block;font-size:12px;color:#c3c8ff;font-weight:600}
+  .hud{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .pill{background:rgba(8,10,40,.7);border:1px solid rgba(180,190,255,.18);border-radius:99px;padding:5px 11px;font-weight:800;color:#b3b9f5;font-size:13px;white-space:nowrap}
+  .pill b{color:#fff;font-size:16px;margin-left:4px}
+  .tools{display:flex;gap:5px}
+  .ib{border:1px solid rgba(180,190,255,.25);background:rgba(8,10,40,.7);border-radius:12px;padding:8px 10px;font-weight:800;font-size:14px}
+  .ib[aria-pressed=true]{background:#4a4fd0}
+  .ov{position:fixed;left:50%;transform:translateX(-50%);width:min(94%,500px);background:rgba(8,10,40,.88);border:2px solid rgba(180,190,255,.22);border-radius:22px;padding:18px;text-align:center;display:none;z-index:4}
+  .ov.on{display:block}
+  #ready{bottom:8%}
+  #result{top:50%;transform:translate(-50%,-50%);max-height:92%;overflow:auto}
+  .ov h2{margin:0 0 6px;font-size:24px}
+  .ov p{margin:6px 0;color:#d9dcff;line-height:1.55;font-size:15px}
+  .seasons{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+  .season{border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);border-radius:14px;padding:8px 4px;font-weight:900;font-size:16px}
+  .season small{display:block;font-size:11px;color:#b3b9f5;font-weight:700}
+  .season.on{border-color:#ffd36b;background:rgba(255,211,107,.15)}
+  .go{border:0;border-radius:16px;background:linear-gradient(180deg,#ffe08a,#ffb347);color:#3a2200;font-weight:900;font-size:19px;padding:12px 30px;box-shadow:0 5px 0 #a8681c;margin:6px 4px}
+  .go:active{transform:translateY(3px);box-shadow:0 2px 0 #a8681c}
+  .sub{border:0;border-radius:14px;background:rgba(255,255,255,.14);font-weight:800;padding:11px 18px;margin:6px 4px}
+  #mission{position:fixed;left:16px;bottom:44px;width:min(320px,calc(100% - 32px));background:rgba(8,10,40,.82);border:2px solid rgba(180,190,255,.22);border-radius:18px;padding:12px 14px;display:none;z-index:3}
+  #mission.on{display:block}
+  #mission .lab{font-size:12px;color:#b3b9f5;font-weight:800}
+  #mName{font-size:22px;font-weight:900;margin:2px 0}
+  #mHint{font-size:13px;color:#d9dcff}
+  #mPrev{display:block;width:100%;height:90px;margin:6px 0;background:rgba(255,255,255,.04);border-radius:10px}
+  #mProg{font-size:13px;color:#ffd36b;font-weight:800}
+  #mFact{font-size:12px;color:#c3c8ff;line-height:1.5;margin-top:4px}
+  #mission .row{display:flex;gap:6px;margin-top:8px}
+  #mission .row button{flex:1;border:0;border-radius:12px;background:rgba(255,255,255,.12);padding:8px;font-weight:800;font-size:13px}
+  #mission .row button[aria-pressed=true]{background:#4a4fd0}
+  #zoom{position:fixed;right:14px;bottom:44px;display:flex;flex-direction:column;gap:6px;z-index:3}
+  #zoom button{width:44px;height:44px;border-radius:12px;border:1px solid rgba(180,190,255,.25);background:rgba(8,10,40,.75);font-size:22px;font-weight:900}
+  #toast{position:fixed;left:50%;top:100px;transform:translateX(-50%);width:max-content;max-width:min(92%,520px);font-weight:800;font-size:16px;line-height:1.45;background:rgba(8,10,40,.85);border:2px solid rgba(255,255,255,.2);padding:9px 16px;border-radius:16px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:4;text-align:center}
+  #toast.on{opacity:1} #toast.good{border-color:#ffd36b} #toast.bad{border-color:#ff8a8a}
+  .cl{text-align:left;background:rgba(255,255,255,.06);border-radius:12px;padding:8px 12px;margin:6px 0;font-size:14px;line-height:1.55;color:#d9dcff}
+  .cl b{color:#fff;font-size:16px}
+  .back{position:fixed;right:12px;bottom:8px;font-size:12px;color:#d9dcff;text-decoration:none;background:rgba(0,0,0,.45);padding:4px 10px;border-radius:99px;z-index:5}
+  @media (max-width:760px){
+    header{padding:6px 8px;gap:5px}
+    .logo{width:34px;height:34px;font-size:19px;border-radius:10px}
+    h1{font-size:18px} h1 small{display:none}
+    .hud{order:3;width:100%;margin:0;gap:3px}
+    .pill{padding:3px 7px;font-size:11px} .pill b{font-size:13px;margin-left:2px}
+    .ib{padding:6px 7px;font-size:12px}
+    .tools{margin-left:auto}
+    #mission{left:8px;bottom:36px;padding:9px 11px;width:calc(100% - 76px)} #mName{font-size:18px} #mPrev{height:60px} #mFact{display:none}
+    #zoom{right:8px;bottom:36px} #zoom button{width:40px;height:40px}
+    #toast{top:118px;font-size:14px}
+    .ov{padding:12px} .ov h2{font-size:20px} .season{font-size:14px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="별빛 돔">
+<meta property="og:description" content="밤하늘을 끌어 둘러보고 별을 이어 계절 별자리를 완성하는 작은 천체투영관">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/84-star-dome.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/star-dome/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<canvas id="cv" aria-label="밤하늘 천체투영관 화면. 끌어서 둘러보고 별을 눌러 이어요"></canvas>
+<header>
+  <div class="logo" aria-hidden="true">🔭</div>
+  <h1>별빛 돔<small>별을 이어 계절 별자리를 완성하는 작은 천체투영관</small></h1>
+  <div class="hud">
+    <div class="pill">하늘<b id="seasonT">겨울 저녁</b></div>
+    <div class="pill">방향<b id="dirT">남</b></div>
+    <div class="pill">완성<b id="doneT">0/2</b></div>
+    <div class="pill">시간<b id="timeT">0:00</b></div>
+  </div>
+  <div class="tools"><button class="ib" id="snd" aria-pressed="false">🔇 소리</button><button class="ib" id="fs" aria-label="전체화면">⛶</button></div>
+</header>
+<div id="toast"></div>
+<div id="mission" aria-live="polite">
+  <div class="lab">🎯 찾아서 이을 별자리</div>
+  <div id="mName">오리온자리</div>
+  <div id="mHint"></div>
+  <canvas id="mPrev" width="300" height="90" aria-hidden="true"></canvas>
+  <div id="mProg"></div>
+  <div id="mFact"></div>
+  <div class="row"><button id="hint" aria-pressed="false">💡 다음 별 깜빡이기</button><button id="look">🧭 그쪽 보기</button></div>
+</div>
+<div id="zoom"><button id="zin" aria-label="확대">＋</button><button id="zout" aria-label="축소">－</button></div>
+<div class="ov on" id="ready">
+  <h2>🌌 오늘 밤, 어느 계절 하늘?</h2>
+  <p>위도 36.5°(우리나라)의 계절별 <b>저녁 9시 하늘</b>이에요. 하늘을 <b>끌어서 둘러보고</b>, 별을 <b>순서대로 눌러 이어</b> 별자리 2개를 완성해요.</p>
+  <div class="seasons">
+    <button class="season" data-s="spring">봄<small>4월 중순</small></button>
+    <button class="season" data-s="summer">여름<small>7월 중순</small></button>
+    <button class="season" data-s="autumn">가을<small>10월 중순</small></button>
+    <button class="season on" data-s="winter">겨울<small>1월 중순</small></button>
+  </div>
+  <p id="recLine">완성한 별자리 0/8</p>
+  <button class="go" id="start">✨ 별 잇기 시작</button>
+</div>
+<div class="ov" id="result">
+  <h2 id="rTitle">밤하늘 완성!</h2>
+  <p id="rStat"></p>
+  <div id="rList"></div>
+  <button class="go" id="home">다른 계절 하늘</button><button class="sub" id="again">다시 하기</button>
+</div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+'use strict';
+const DT = 1 / 60, LAT = 36.5, R2D = 180 / Math.PI, D2R = Math.PI / 180;
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const KEY = 'edu-expo-star-dome-v1';
+// 별: 적경(시)·적위(도)·겉보기 등급 (J2000 근삿값)
+const ST = {
+  dubhe: ['두베', 11.062, 61.75, 1.8], merak: ['메라크', 11.031, 56.38, 2.4], phecda: ['페크다', 11.897, 53.69, 2.4], megrez: ['메그레즈', 12.257, 57.03, 3.3],
+  alioth: ['알리오스', 12.900, 55.96, 1.8], mizar: ['미자르', 13.399, 54.93, 2.2], alkaid: ['알카이드', 13.792, 49.31, 1.9],
+  regulus: ['레굴루스', 10.140, 11.97, 1.4, '#cfe0ff'], etaleo: ['에타', 10.122, 16.76, 3.5], algieba: ['알기에바', 10.333, 19.84, 2.1, '#ffe0b0'], zosma: ['조스마', 11.235, 20.52, 2.6], denebola: ['데네볼라', 11.818, 14.57, 2.1], chertan: ['셰르탄', 11.237, 15.43, 3.3],
+  deneb: ['데네브', 20.690, 45.28, 1.3], sadr: ['사드르', 20.370, 40.26, 2.2], albireo: ['알비레오', 19.512, 27.96, 3.1, '#ffd9a0'], deltacyg: ['델타', 19.750, 45.13, 2.9], epscyg: ['엡실론', 20.770, 33.97, 2.5],
+  vega: ['베가(직녀성)', 18.616, 38.78, 0.0, '#d6e4ff'], altair: ['알타이르(견우성)', 19.846, 8.87, 0.8],
+  caph: ['카프', 0.153, 59.15, 2.3], schedar: ['셰다르', 0.675, 56.54, 2.2, '#ffd9a0'], gammacas: ['감마', 0.945, 60.72, 2.5], ruchbah: ['루크바', 1.430, 60.24, 2.7], segin: ['세긴', 1.907, 63.67, 3.4],
+  markab: ['마르카브', 23.079, 15.21, 2.5], scheat: ['셰아트', 23.063, 28.08, 2.4, '#ffc8a0'], alpheratz: ['알페라츠', 0.140, 29.09, 2.1], algenib: ['알제니브', 0.220, 15.18, 2.8],
+  betelgeuse: ['베텔게우스', 5.919, 7.41, 0.5, '#ffb070'], bellatrix: ['벨라트릭스', 5.419, 6.35, 1.6, '#cfe0ff'], mintaka: ['민타카', 5.533, -0.30, 2.2], alnilam: ['알닐람', 5.604, -1.20, 1.7],
+  alnitak: ['알니탁', 5.679, -1.94, 1.8], saiph: ['사이프', 5.796, -9.67, 2.1], rigel: ['리겔', 5.242, -8.20, 0.1, '#bcd4ff'],
+  sirius: ['시리우스', 6.752, -16.72, -1.5, '#e0ecff'], procyon: ['프로키온', 7.655, 5.22, 0.3],
+  polaris: ['북극성', 2.530, 89.26, 2.0], arcturus: ['아르크투루스', 14.261, 19.18, 0.0, '#ffc890'], spica: ['스피카', 13.420, -11.16, 1.0, '#cfe0ff'], capella: ['카펠라', 5.278, 46.0, 0.1, '#fff0c0'],
+  aldebaran: ['알데바란', 4.599, 16.51, 0.9, '#ffb070'], antares: ['안타레스', 16.490, -26.43, 1.0, '#ff9060'], fomalhaut: ['포말하우트', 22.961, -29.62, 1.2], pollux: ['폴룩스', 7.755, 28.03, 1.1, '#ffd9a0'], castor: ['카스토르', 7.577, 31.89, 1.6]
+};
+// 계절 저녁 9시 무렵의 지방항성시(시)
+const SEASONS = { spring: { n: '봄', when: '4월 중순 밤 9시', lst: 10 }, summer: { n: '여름', when: '7월 중순 밤 9시', lst: 16 }, autumn: { n: '가을', when: '10월 중순 밤 9시', lst: 22 }, winter: { n: '겨울', when: '1월 중순 밤 9시', lst: 4.5 } };
+const CONS = [
+  { id: 'bigdipper', s: 'spring', n: '북두칠성', seq: [['alkaid', 'mizar', 'alioth', 'megrez', 'phecda', 'merak', 'dubhe', 'megrez']], fact: '큰곰자리의 엉덩이와 꼬리 부분이에요. 국자 끝 두 별(메라크→두베) 사이를 5배 늘이면 북극성이 있어요.' },
+  { id: 'leo', s: 'spring', n: '사자자리', seq: [['regulus', 'etaleo', 'algieba', 'zosma', 'denebola', 'chertan', 'regulus']], fact: '봄철 남쪽 하늘의 대표 별자리예요. 가장 밝은 별 레굴루스는 사자의 심장 자리에 있어요.' },
+  { id: 'cygnus', s: 'summer', n: '백조자리', seq: [['deneb', 'sadr', 'albireo'], ['deltacyg', 'sadr', 'epscyg']], fact: '은하수 위를 나는 백조 모양이라 북십자성이라고도 해요. 꼬리의 데네브가 가장 밝아요.' },
+  { id: 'summertri', s: 'summer', n: '여름철 대삼각형', seq: [['vega', 'altair', 'deneb', 'vega']], fact: '거문고자리 베가(직녀성), 독수리자리 알타이르(견우성), 백조자리 데네브를 이은 큰 삼각형이에요. 직녀와 견우 사이에 은하수가 흘러요.' },
+  { id: 'cassiopeia', s: 'autumn', n: '카시오페이아자리', seq: [['caph', 'schedar', 'gammacas', 'ruchbah', 'segin']], fact: 'W(또는 M) 모양 별자리예요. 북극성을 사이에 두고 북두칠성 반대편에 있어 가을·겨울 북극성 찾기의 길잡이가 돼요.' },
+  { id: 'pegasus', s: 'autumn', n: '페가수스 사각형', seq: [['markab', 'scheat', 'alpheratz', 'algenib', 'markab']], fact: '가을 하늘 높이 뜨는 큰 사각형이에요. 한 모서리 별 알페라츠는 사실 안드로메다자리에 속해요.' },
+  { id: 'orion', s: 'winter', n: '오리온자리', seq: [['betelgeuse', 'bellatrix', 'mintaka', 'rigel', 'saiph', 'alnitak', 'betelgeuse'], ['mintaka', 'alnilam', 'alnitak']], fact: '사냥꾼 오리온이에요. 붉은 베텔게우스와 푸른빛 리겔의 색을 비교해 보세요. 가운데 나란한 세 별은 허리띠예요.' },
+  { id: 'wintertri', s: 'winter', n: '겨울철 대삼각형', seq: [['betelgeuse', 'sirius', 'procyon', 'betelgeuse']], fact: '오리온자리 베텔게우스, 큰개자리 시리우스, 작은개자리 프로키온을 이은 삼각형이에요. 시리우스는 밤하늘에서 가장 밝은 별이에요.' }
+];
+const CID = Object.fromEntries(CONS.map(c => [c.id, c]));
+const rec = { done: [], seasons: [] };
+try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && typeof r === 'object') {
+  if (Array.isArray(r.done)) rec.done = [...new Set(r.done.filter(id => CID[id]))];
+  if (Array.isArray(r.seasons)) rec.seasons = [...new Set(r.seasons.filter(s => SEASONS[s]))]; } } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+
+// ---- 천문 계산 ----
+function horiz(ra, dec, lst) { // → [동, 북, 위] 단위벡터
+  const H = (lst - ra) * 15 * D2R, d = dec * D2R, p = LAT * D2R;
+  return [-Math.cos(d) * Math.sin(H), Math.cos(p) * Math.sin(d) - Math.sin(p) * Math.cos(d) * Math.cos(H), Math.sin(p) * Math.sin(d) + Math.cos(p) * Math.cos(d) * Math.cos(H)];
+}
+const altAz = (ra, dec, lst) => { const v = horiz(ra, dec, lst); return { alt: Math.asin(clamp(v[2], -1, 1)) * R2D, az: ((Math.atan2(v[0], v[1]) * R2D) + 360) % 360 }; };
+const DIRS = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
+const dirName = az => DIRS[Math.round(((az % 360) + 360) % 360 / 45) % 8];
+let sd = 11;
+const rnd = () => { sd = sd + 0x6D2B79F5 | 0; let t = Math.imul(sd ^ sd >>> 15, 1 | sd); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const BG = Array.from({ length: 620 }, () => { const u = rnd() * 2 - 1, ra = rnd() * 24; return { ra, dec: Math.asin(u) * R2D, mag: 3.6 + rnd() * 2.2, tw: rnd() * 6 }; });
+// 은하수: 은하 좌표 (l, b) → 적도 좌표
+const MW = [];
+{ const aG = 192.85948 * D2R, dG = 27.12825 * D2R, lN = 122.93192 * D2R;
+  for (let l = 0; l < 360; l += 3) for (let k = 0; k < 3; k++) {
+    const b = (rnd() - 0.5) * 16 * D2R, L = l * D2R;
+    const sd2 = Math.sin(b) * Math.sin(dG) + Math.cos(b) * Math.cos(dG) * Math.cos(lN - L);
+    const ra = aG + Math.atan2(Math.cos(b) * Math.sin(lN - L), Math.sin(b) * Math.cos(dG) - Math.cos(b) * Math.sin(dG) * Math.cos(lN - L));
+    MW.push({ ra: ((ra * R2D / 15) % 24 + 24) % 24, dec: Math.asin(sd2) * R2D, r: 0.05 + rnd() * 0.06, a: 0.03 + 0.05 * Math.pow(Math.cos(L / 2), 4) + rnd() * 0.02 });
+  } }
+
+// ---- 소리 ----
+let AC = null, master = null, sound = false;
+function initAudio() {
+  if (AC) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; return; }
+  master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination);
+  for (const [f, v] of [[110, 0.03], [164.8, 0.022], [220.5, 0.015], [329.6, 0.008]]) { const o = AC.createOscillator(), g = AC.createGain(), lfo = AC.createOscillator(), lg = AC.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.value = v; lfo.frequency.value = 0.07 + f / 3000; lg.gain.value = v * 0.6; lfo.connect(lg); lg.connect(g.gain); o.connect(g); g.connect(master); o.start(); lfo.start(); }
+  const len = AC.sampleRate, buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) { const ph = (i / AC.sampleRate) % 0.5; d[i] = ph < 0.12 ? Math.sin(i * 0.9) * Math.sin(ph / 0.12 * Math.PI) * 0.3 * (Math.sin(i * 0.004) > 0 ? 1 : 0) : 0; }
+  const src = AC.createBufferSource(); src.buffer = buf; src.loop = true; const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 4200; const cg = AC.createGain(); cg.gain.value = 0.05; src.connect(bp); bp.connect(cg); cg.connect(master); src.start();
+}
+function setSound(on) {
+  sound = on; $('#snd').textContent = on ? '🔊 소리' : '🔇 소리'; $('#snd').setAttribute('aria-pressed', String(on));
+  if (on) initAudio(); if (!AC) return;
+  try { if (on && AC.state === 'suspended') AC.resume().catch(() => {}); master.gain.setTargetAtTime(on ? 1 : 0, AC.currentTime, 0.4); } catch (e) {}
+}
+function tone(f1, f2, dur, type, vol, delay) {
+  if (!sound || !AC) return;
+  try { const t = AC.currentTime + (delay || 0), o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05); } catch (e) {}
+}
+const NOTES = [523, 587, 659, 784, 880, 1047, 1175, 1319, 1568];
+const sfx = { link: k => tone(NOTES[k % 9], NOTES[k % 9], 0.5, 'sine', 0.09), wrong: () => tone(260, 200, 0.25, 'triangle', 0.07),
+  done: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.8, 'sine', 0.07, i * 0.1)), end: () => [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 1, 'triangle', 0.06, i * 0.16)) };
+
+// ---- 화면 ----
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 1280, H = 720, DPR = 1;
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
+
+// ---- 상태 ----
+let phase = 'ready', season = 'winter', az = 150, alt = 32, vaz = 0, valt = 0, zoom = 1, t = 0, play = 0, manual = false;
+let ci = 0, si = 0, pos = 0, sessionDone = [], lines = [], totalLinks = 0, wrong = 0, drags = 0, hintOn = false, idle = 0, toastT = 0, flash = [], shoot = null, look = null;
+let targetList = [];
+const keys = { l: 0, r: 0, u: 0, d: 0 };
+const lst = () => SEASONS[season].lst;
+const scale = () => Math.min(W, H) * 0.62 * zoom;
+function basis() {
+  const A = az * D2R, B = alt * D2R;
+  return { f: [Math.sin(A) * Math.cos(B), Math.cos(A) * Math.cos(B), Math.sin(B)], r: [Math.cos(A), -Math.sin(A), 0], u: [-Math.sin(A) * Math.sin(B), -Math.cos(A) * Math.sin(B), Math.cos(B)] };
+}
+let BS = basis();
+function project(v) {
+  const x = v[0] * BS.r[0] + v[1] * BS.r[1] + v[2] * BS.r[2], y = v[0] * BS.u[0] + v[1] * BS.u[1] + v[2] * BS.u[2], z = v[0] * BS.f[0] + v[1] * BS.f[1] + v[2] * BS.f[2];
+  if (z < -0.6) return null;
+  const k = 2 / (1 + z), S = scale();
+  return { x: W / 2 + k * x * S, y: H * 0.52 - k * y * S, z };
+}
+const vecAltAz = (al, a) => [Math.cos(al * D2R) * Math.sin(a * D2R), Math.cos(al * D2R) * Math.cos(a * D2R), Math.sin(al * D2R)];
+const starVec = id => horiz(ST[id][1], ST[id][2], lst());
+function screenOf(id) { const v = starVec(id), p = project(v); if (!p) return { x: -1, y: -1, vis: false }; return { x: p.x, y: p.y, vis: v[2] > 0 && p.x > 0 && p.x < W && p.y > 0 && p.y < H }; }
+function centroid(c) { const ids = [...new Set(c.seq.flat())]; let v = [0, 0, 0]; for (const id of ids) { const s = starVec(id); v = v.map((a, i) => a + s[i]); } const m = Math.hypot(...v); v = v.map(a => a / m); return { alt: Math.asin(v[2]) * R2D, az: ((Math.atan2(v[0], v[1]) * R2D) + 360) % 360, v }; }
+const cur = () => targetList[ci];
+const expected = () => cur() ? cur().seq[si][pos] : null;
+function toast(msg, cls) { const el = $('#toast'); el.textContent = msg; el.className = 'on ' + (cls || ''); toastT = 2.8; }
+
+function update() {
+  t += DT;
+  if (toastT > 0 && (toastT -= DT) <= 0) $('#toast').classList.remove('on');
+  if (phase === 'ready') az = (az + DT * 1.5) % 360;
+  if (phase === 'play') { play += DT; idle += DT; }
+  const kx = keys.r - keys.l, ky = keys.u - keys.d;
+  if (kx || ky) { vaz = kx * 50; valt = ky * 40; look = null; }
+  if (look) { let d = ((look.az - az + 540) % 360) - 180; az += d * 0.08; alt += (look.alt - alt) * 0.08; if (Math.abs(d) < 0.3 && Math.abs(look.alt - alt) < 0.3) look = null; }
+  else if (!dragging) { az += vaz * DT; alt += valt * DT; vaz *= 0.92; valt *= 0.92; }
+  az = (az + 360) % 360; alt = clamp(alt, 2, 85);
+  for (const f of flash) f.l -= DT; flash = flash.filter(f => f.l > 0);
+  if (!shoot && Math.sin(t * 0.37) > 0.995) shoot = { x: Math.random() * W, y: Math.random() * H * 0.4, l: 1 };
+  if (shoot && (shoot.l -= DT * 1.5) <= 0) shoot = null;
+  BS = basis();
+}
+function tapAt(x, y) {
+  if (phase !== 'play') return;
+  const R = W < 760 ? 34 : 26, exp = expected();
+  const pe = screenOf(exp);
+  if (pe.vis && Math.hypot(pe.x - x, pe.y - y) < R) return connect(exp);
+  let best = null, bd = R;
+  for (const id in ST) { const p = screenOf(id); if (!p.vis) continue; const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = id; } }
+  if (best) { wrong++; idle = 3; sfx.wrong(); flash.push({ id: best, l: 0.6, bad: true });
+    toast(pos === 0 ? '✗ 그 별은 ' + ST[best][0] + '. ' + (si === 0 ? '첫 별은 ' : '다음 줄은 ') + ST[exp][0] + '에서 시작해요!' : '✗ 그 별은 ' + ST[best][0] + '. ' + ST[cur().seq[si][pos - 1]][0] + ' 다음은 ' + ST[exp][0] + '!', 'bad'); hud(); }
+}
+function connect(id) {
+  idle = 0; flash.push({ id, l: 0.8 });
+  if (pos > 0) { lines.push([cur().seq[si][pos - 1], id, cur().id]); totalLinks++; }
+  sfx.link(totalLinks);
+  pos++;
+  if (pos >= cur().seq[si].length) { si++; pos = 0; if (si < cur().seq.length) toast('좋아요! 이번엔 ' + ST[cur().seq[si][0]][0] + '에서 시작해 이어요', 'good'); }
+  if (si >= cur().seq.length) complete();
+  hud();
+}
+function complete() {
+  const c = cur(); sessionDone.push(c.id); if (!rec.done.includes(c.id)) rec.done.push(c.id);
+  sfx.done(); toast('🌟 ' + c.n + ' 완성!', 'good');
+  $('#mFact').textContent = c.n + ': ' + c.fact;
+  ci++; si = 0; pos = 0;
+  if (ci >= targetList.length) { if (!rec.seasons.includes(season)) rec.seasons.push(season); save(); return finish(); }
+  save(); mission();
+}
+function finish() {
+  phase = 'end'; sfx.end();
+  $('#rTitle').textContent = '🌌 ' + SEASONS[season].n + ' 밤하늘 완성!';
+  $('#rStat').textContent = SEASONS[season].when + ' · 별 ' + totalLinks + '줄 이음 · 틀린 별 ' + wrong + '번 · ' + Math.floor(play / 60) + '분 ' + Math.floor(play % 60) + '초';
+  const box = $('#rList'); box.textContent = '';
+  for (const c of targetList) { const d = document.createElement('div'); d.className = 'cl'; const b = document.createElement('b'); b.textContent = '⭐ ' + c.n; d.append(b, document.createElement('br'), document.createTextNode(c.fact)); box.append(d); }
+  const p = document.createElement('p'); p.textContent = '모은 별자리 ' + rec.done.length + '/8 — 다른 계절 하늘에도 가 보세요!'; box.append(p);
+  $('#result').classList.add('on'); $('#mission').classList.remove('on'); hud();
+}
+function mission() {
+  const c = cur(); if (!c) return;
+  const ce = centroid(c);
+  $('#mName').textContent = c.n;
+  $('#mHint').textContent = dirName(ce.az) + '쪽 하늘, 높이 약 ' + Math.round(ce.alt) + '° · 별 ' + new Set(c.seq.flat()).size + '개';
+  drawPreview(c); hud();
+}
+function drawPreview(c) {
+  const pc = $('#mPrev'), p = pc.getContext('2d'), ids = [...new Set(c.seq.flat())], ce = centroid(c).v;
+  const r = [ce[1], -ce[0], 0], rm = Math.hypot(...r) || 1, rr2 = r.map(a => a / rm), u = [ce[1] * rr2[2] - ce[2] * rr2[1], ce[2] * rr2[0] - ce[0] * rr2[2], ce[0] * rr2[1] - ce[1] * rr2[0]];
+  const pts = {}; let mx = 0;
+  for (const id of ids) { const v = starVec(id); const x = v[0] * rr2[0] + v[1] * rr2[1] + v[2] * rr2[2], y = v[0] * u[0] + v[1] * u[1] + v[2] * u[2]; pts[id] = [-x, -y]; mx = Math.max(mx, Math.abs(x) * 2.6, Math.abs(y) * 2); }
+  // 화면에서 보이는 방향(위=천정)과 맞추기 위해 각 별의 지평 좌표 기준으로 다시 계산
+  const save2 = BS; const A = centroid(c); const a0 = az, b0 = alt; az = A.az; alt = A.alt; BS = basis();
+  let minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9; const sp = {};
+  for (const id of ids) { const q = project(starVec(id)); sp[id] = q; minx = Math.min(minx, q.x); maxx = Math.max(maxx, q.x); miny = Math.min(miny, q.y); maxy = Math.max(maxy, q.y); }
+  az = a0; alt = b0; BS = save2;
+  const w = pc.width, h = pc.height, k = Math.min((w - 30) / Math.max(1, maxx - minx), (h - 20) / Math.max(1, maxy - miny));
+  const X = id => 15 + (sp[id].x - minx) * k + ((w - 30) - (maxx - minx) * k) / 2, Y = id => 10 + (sp[id].y - miny) * k + ((h - 20) - (maxy - miny) * k) / 2;
+  p.clearRect(0, 0, w, h); p.strokeStyle = 'rgba(180,190,255,.45)'; p.lineWidth = 1.5; p.setLineDash([4, 4]);
+  for (const seq of c.seq) { p.beginPath(); seq.forEach((id, i) => i ? p.lineTo(X(id), Y(id)) : p.moveTo(X(id), Y(id))); p.stroke(); }
+  p.setLineDash([]);
+  for (const id of ids) { p.fillStyle = '#fff'; p.beginPath(); p.arc(X(id), Y(id), clamp(4 - ST[id][3], 1.5, 5), 0, 6.283); p.fill(); }
+  void pts; void mx;
+}
+function start() {
+  phase = 'play'; targetList = CONS.filter(c => c.s === season); ci = 0; si = 0; pos = 0; lines = []; totalLinks = 0; wrong = 0; play = 0; idle = 0; sessionDone = []; hintOn = false; setHint(false);
+  const ce = centroid(targetList[0]); zoom = W >= 760 ? 1.45 : 1.25; look = { az: (ce.az + 15) % 360, alt: clamp(ce.alt - 6, 10, 80) };
+  $('#mFact').textContent = '';
+  for (const id of ['#ready', '#result']) $(id).classList.remove('on'); $('#mission').classList.add('on'); mission();
+  toast(SEASONS[season].when + ' 하늘이에요. ' + targetList[0].n + '을(를) 찾아 별을 이어 보세요!', 'good');
+}
+function home() { phase = 'ready'; zoom = 1; $('#result').classList.remove('on'); $('#mission').classList.remove('on'); $('#ready').classList.add('on'); seasonUI(); hud(); }
+function seasonUI() { for (const b of $$('.season')) { const s = b.dataset.s; b.classList.toggle('on', s === season); b.firstChild.textContent = SEASONS[s].n + (rec.seasons.includes(s) ? ' ✓' : ''); } $('#recLine').textContent = '완성한 별자리 ' + rec.done.length + '/8' + (rec.done.length ? ' · ' + rec.done.map(id => CID[id].n).join(', ') : ''); }
+function setHint(v) { hintOn = v; $('#hint').setAttribute('aria-pressed', String(v)); }
+function hud() {
+  $('#seasonT').textContent = SEASONS[season].n + ' 저녁';
+  $('#dirT').textContent = dirName(az) + ' ' + Math.round(alt) + '°';
+  $('#doneT').textContent = (phase === 'ready' ? 0 : sessionDone.length) + '/2';
+  $('#timeT').textContent = Math.floor(play / 60) + ':' + String(Math.floor(play % 60)).padStart(2, '0');
+  if (phase === 'play' && cur()) { const c = cur(), total = c.seq.reduce((a, s) => a + s.length - 1, 0), made = lines.filter(l => l[2] === c.id).length; $('#mProg').textContent = '이은 선 ' + made + '/' + total + ' · 다음 별: ' + (pos === 0 && si === 0 && made === 0 ? ST[expected()][0] + '부터' : ST[expected()][0]); }
+}
+
+// ---- 그리기 ----
+const magR = m => clamp(3.4 - m * 0.62, 0.5, 4.6) * (0.75 + zoom * 0.25);
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#02041a'); sky.addColorStop(0.6, '#07113a'); sky.addColorStop(1, '#1b2a5e');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  const L = lst(), S = scale();
+  // 은하수
+  ctx.globalCompositeOperation = 'lighter';
+  for (const m of MW) { const v = horiz(m.ra, m.dec, L); if (v[2] < -0.05) continue; const p = project(v); if (!p || p.x < -200 || p.x > W + 200 || p.y < -200 || p.y > H + 200) continue; const r = m.r * S * (2 / (1 + p.z)); const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r); g.addColorStop(0, `rgba(170,180,255,${m.a})`); g.addColorStop(1, 'rgba(170,180,255,0)'); ctx.fillStyle = g; ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2); }
+  ctx.globalCompositeOperation = 'source-over';
+  // 고도 격자
+  ctx.strokeStyle = 'rgba(150,170,255,.08)'; ctx.lineWidth = 1;
+  for (const al of [30, 60]) { ctx.beginPath(); let st = false; for (let a = 0; a <= 360; a += 4) { const p = project(vecAltAz(al, a)); if (!p || p.z < -0.2) { st = false; continue; } if (!st) { ctx.moveTo(p.x, p.y); st = true; } else ctx.lineTo(p.x, p.y); } ctx.stroke(); }
+  // 배경 별
+  for (const s of BG) { const v = horiz(s.ra, s.dec, L); if (v[2] < 0) continue; const p = project(v); if (!p || p.x < 0 || p.x > W || p.y < 0 || p.y > H) continue; ctx.globalAlpha = clamp((6 - s.mag) / 2.4, 0.15, 0.9) * (0.75 + 0.25 * Math.sin(t * 2 + s.tw)); ctx.fillStyle = '#dfe6ff'; ctx.fillRect(p.x, p.y, magR(s.mag) * 0.9, magR(s.mag) * 0.9); }
+  ctx.globalAlpha = 1;
+  // 이은 선
+  const doneIds = phase === 'ready' ? [] : sessionDone;
+  for (const [a, b, cid] of lines) { const pa = project(starVec(a)), pb = project(starVec(b)); if (!pa || !pb) continue; const fin = doneIds.includes(cid); ctx.strokeStyle = fin ? 'rgba(255,214,120,.85)' : 'rgba(140,200,255,.9)'; ctx.lineWidth = fin ? 2.5 : 2; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 10; ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke(); }
+  ctx.shadowBlur = 0;
+  // 진행 중인 선 끝 표시
+  const exp = phase === 'play' ? expected() : null;
+  // 첫 화면: 고른 계절 별자리 미리 보기
+  if (phase === 'ready') { ctx.setLineDash([5, 6]); ctx.strokeStyle = 'rgba(255,214,120,.45)'; ctx.lineWidth = 1.5;
+    for (const c of CONS.filter(c => c.s === season)) { for (const seq of c.seq) { ctx.beginPath(); let ok2 = false; seq.forEach((id, i) => { const p = project(starVec(id)); if (!p) return; if (!i || !ok2) { ctx.moveTo(p.x, p.y); ok2 = true; } else ctx.lineTo(p.x, p.y); }); ctx.stroke(); }
+      const ce = centroid(c), p = project(ce.v); if (p) { ctx.fillStyle = 'rgba(255,214,120,.8)'; ctx.font = '800 15px system-ui'; ctx.textAlign = 'center'; ctx.fillText(c.n, p.x, p.y - Math.min(W, H) * 0.12); } }
+    ctx.setLineDash([]); }
+  // 이름 있는 별
+  const tgtIds = phase === 'play' && cur() ? new Set(cur().seq.flat()) : new Set();
+  for (const id in ST) {
+    const v = starVec(id); if (v[2] < 0) continue; const p = project(v); if (!p || p.x < -10 || p.x > W + 10 || p.y < -10 || p.y > H + 10) continue;
+    const s = ST[id], r = magR(s[3]), tw = 0.85 + 0.15 * Math.sin(t * 3 + s[1] * 7);
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 4); g.addColorStop(0, s[4] || '#fff'); g.addColorStop(0.25, (s[4] || '#ffffff') + '88'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.globalAlpha = tw; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r * 4, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
+    const fl = flash.find(f => f.id === id);
+    if (fl) { ctx.strokeStyle = fl.bad ? '#ff8a8a' : '#ffd36b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, 10 + (1 - fl.l) * 30, 0, 6.283); ctx.stroke(); }
+    if (id === exp && (hintOn || idle > 6)) { const k = 0.5 + 0.5 * Math.sin(t * 6); ctx.strokeStyle = `rgba(255,211,107,${0.4 + k * 0.6})`; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(p.x, p.y, 14 + k * 6, 0, 6.283); ctx.stroke(); }
+    if (pos > 0 && phase === 'play' && cur() && id === cur().seq[si][pos - 1]) { ctx.strokeStyle = 'rgba(140,200,255,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, 12, 0, 6.283); ctx.stroke(); }
+    if (zoom > 1.3 || tgtIds.has(id) || ['polaris', 'sirius', 'vega', 'arcturus', 'betelgeuse', 'deneb', 'altair'].includes(id)) { ctx.fillStyle = tgtIds.has(id) ? 'rgba(220,226,255,.9)' : 'rgba(200,206,255,.55)'; ctx.font = '700 12px system-ui'; ctx.textAlign = 'left'; ctx.fillText(s[0], p.x + 8, p.y - 7); }
+  }
+  // 완성 별자리 이름
+  for (const cid of doneIds) { const c = CID[cid], ce = centroid(c); const p = project(ce.v); if (p && ce.alt > 0) { ctx.fillStyle = 'rgba(255,214,120,.95)'; ctx.font = '900 18px system-ui'; ctx.textAlign = 'center'; ctx.fillText(c.n, p.x, p.y + 4); } }
+  // 별똥별
+  if (shoot) { ctx.strokeStyle = `rgba(255,255,255,${shoot.l})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(shoot.x, shoot.y); ctx.lineTo(shoot.x - 120 * (1 - shoot.l) - 20, shoot.y + 50 * (1 - shoot.l) + 8); ctx.stroke(); }
+  // 땅·지평선
+  const pts = [];
+  for (let a = az - 130; a <= az + 130; a += 2) { const h = 1.2 + Math.max(0, Math.sin(a * 0.11) * 2.5) + Math.max(0, Math.sin(a * 0.37 + 1) * 1.2) + (Math.sin(a * 2.3) > 0.85 ? 2.2 : 0); const p = project(vecAltAz(h, a)); if (p) pts.push(p); }
+  if (pts.length > 1) {
+    ctx.fillStyle = '#040612'; ctx.beginPath(); ctx.moveTo(pts[0].x, H + 2000); for (const p of pts) ctx.lineTo(p.x, p.y); ctx.lineTo(pts[pts.length - 1].x, H + 2000); ctx.closePath(); ctx.fill();
+    const glow = ctx.createLinearGradient(0, pts[Math.floor(pts.length / 2)].y - 60, 0, pts[Math.floor(pts.length / 2)].y); glow.addColorStop(0, 'rgba(60,80,160,0)'); glow.addColorStop(1, 'rgba(60,80,160,.25)'); ctx.fillStyle = glow; ctx.fillRect(0, pts[Math.floor(pts.length / 2)].y - 60, W, 60);
+  }
+  ctx.font = '900 16px system-ui'; ctx.textAlign = 'center';
+  for (const [n, a] of [['북', 0], ['동', 90], ['남', 180], ['서', 270]]) { const p = project(vecAltAz(-3, a)); if (p && p.z > 0 && p.x > 0 && p.x < W && p.y < H) { ctx.fillStyle = n === '북' ? '#ff9a9a' : '#9fb0ea'; ctx.fillText(n, p.x, Math.min(H - 50, p.y + 6)); } }
+  // 목표 방향 화살표
+  if (phase === 'play' && cur()) {
+    const ce = centroid(cur()), p = project(ce.v);
+    const off = !p || p.x < 40 || p.x > W - 40 || p.y < 80 || p.y > H - 60 || p.z < 0;
+    if (off) { let dx, dy; if (p && p.z > 0) { dx = p.x - W / 2; dy = p.y - H / 2; } else { const d = ((ce.az - az + 540) % 360) - 180; dx = d; dy = -(ce.alt - alt); } const a = Math.atan2(dy, dx), R = Math.min(W, H) * 0.36, x = W / 2 + Math.cos(a) * R, y = H / 2 + Math.sin(a) * R;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.fillStyle = 'rgba(255,211,107,.9)'; ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(-10, -14); ctx.lineTo(-4, 0); ctx.lineTo(-10, 14); ctx.fill(); ctx.restore();
+      ctx.fillStyle = '#ffd36b'; ctx.font = '800 13px system-ui'; ctx.fillText(cur().n + ' 쪽', x, y + 30); }
+  }
+  // 돔 가장자리
+  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.45, W / 2, H / 2, Math.max(W, H) * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,8,.6)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+}
+let last = 0, acc = 0;
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, last ? (ts - last) / 1000 : 0); last = ts;
+  if (!manual) { acc += dt; let k = 0; while (acc >= DT && k < 6) { update(); acc -= DT; k++; } if (k) hud(); }
+  draw();
+}
+
+// ---- 입력 ----
+let dragging = false, down = null;
+const ptrs = new Map(); let pinch0 = 0, zoom0 = 1;
+cv.addEventListener('pointerdown', e => { ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); zoom0 = zoom; down = null; return; } down = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false }; vaz = valt = 0; look = null; try { cv.setPointerCapture(e.pointerId); } catch (er) {} e.preventDefault(); });
+cv.addEventListener('pointermove', e => {
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 2 && pinch0) { const [a, b] = [...ptrs.values()]; zoom = clamp(zoom0 * Math.hypot(a.x - b.x, a.y - b.y) / pinch0, 0.7, 2.6); return; }
+  if (!down) return;
+  if (!down.moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) { down.moved = true; dragging = true; drags++; }
+  if (down.moved) { const k = R2D / scale(); const dx = e.clientX - down.lx, dy = e.clientY - down.ly; az -= dx * k; alt = clamp(alt + dy * k, 2, 85); vaz = -dx * k * 60; valt = dy * k * 60; az = (az + 360) % 360; BS = basis(); }
+  down.lx = e.clientX; down.ly = e.clientY;
+});
+const up = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = 0; if (!down) return; if (!down.moved) tapAt(e.clientX, e.clientY); down = null; dragging = false; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); down = null; dragging = false; });
+cv.addEventListener('wheel', e => { zoom = clamp(zoom * (e.deltaY < 0 ? 1.1 : 0.9), 0.7, 2.6); e.preventDefault(); }, { passive: false });
+cv.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+const KM = { ArrowLeft: 'l', a: 'l', A: 'l', ArrowRight: 'r', d: 'r', D: 'r', ArrowUp: 'u', w: 'u', W: 'u', ArrowDown: 'd', s: 'd', S: 'd' };
+addEventListener('keydown', e => {
+  if (KM[e.key]) { keys[KM[e.key]] = 1; e.preventDefault(); }
+  else if (e.key === '+' || e.key === '=') zoom = clamp(zoom * 1.15, 0.7, 2.6); else if (e.key === '-') zoom = clamp(zoom / 1.15, 0.7, 2.6);
+  else if (e.key === 'Enter' && phase === 'ready') start();
+});
+addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = 0; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = 0; down = null; dragging = false; });
+for (const b of $$('.season')) b.addEventListener('click', () => { season = b.dataset.s; const c = CONS.find(c => c.s === season), ce = centroid(c); az = ce.az; alt = clamp(ce.alt - 18, 5, 60); zoom = 1; look = null; seasonUI(); hud(); });
+$('#start').addEventListener('click', start);
+$('#again').addEventListener('click', start);
+$('#home').addEventListener('click', home);
+$('#hint').addEventListener('click', () => setHint(!hintOn));
+$('#look').addEventListener('click', () => { if (phase !== 'play' || !cur()) return; const ce = centroid(cur()); look = { az: ce.az, alt: clamp(ce.alt, 10, 80) }; });
+$('#zin').addEventListener('click', () => { zoom = clamp(zoom * 1.25, 0.7, 2.6); });
+$('#zout').addEventListener('click', () => { zoom = clamp(zoom / 1.25, 0.7, 2.6); });
+$('#snd').addEventListener('click', () => setSound(!sound));
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) $('#fs').hidden = true;
+$('#fs').addEventListener('click', () => {
+  const d = document, el = d.documentElement;
+  try { if (d.fullscreenElement || d.webkitFullscreenElement) { const x = (d.exitFullscreen || d.webkitExitFullscreen).call(d); if (x && x.catch) x.catch(() => {}); }
+    else { const x = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (x && x.catch) x.catch(() => {}); } } catch (e) {}
+});
+addEventListener('resize', resize);
+
+window.__test = {
+  manual: v => { manual = !!v; },
+  step: (n = 1) => { for (let i = 0; i < n; i++) update(); hud(); },
+  altOf: (id, s) => altAz(ST[id][1], ST[id][2], SEASONS[s].lst).alt,
+  azOf: (id, s) => altAz(ST[id][1], ST[id][2], SEASONS[s].lst).az,
+  starsOf: s => [...new Set(CONS.filter(c => c.s === s).flatMap(c => c.seq.flat()))],
+  seqOf: cid => CID[cid].seq.map(a => a.slice()),
+  lookAt: cid => { const ce = centroid(CID[cid]); az = ce.az; alt = clamp(ce.alt, 2, 85); vaz = valt = 0; look = null; zoom = 1; BS = basis(); },
+  screenOf: id => { BS = basis(); return screenOf(id); },
+  state: () => ({ phase, season, az, alt, zoom, target: phase === 'play' && cur() ? cur().n : '', links: totalLinks, wrong, drags, done: sessionDone.slice(), hintOn, sound })
+};
+resize(); seasonUI(); hud();
+{ const ce = centroid(CID.orion); az = (ce.az + 12) % 360; alt = clamp(ce.alt - 18, 5, 60); BS = basis(); }
+for (let i = 0; i < 30; i++) update();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

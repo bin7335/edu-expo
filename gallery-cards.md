@@ -1,4 +1,4 @@
-# 패들렛·작품 등록용 카드 문구 (75개)
+# 패들렛·작품 등록용 카드 문구 (100개)
 
 - catalog.json에서 생성(tools/build-catalog.js). 직접 고치지 말고 catalog.json을 고친 뒤 다시 실행.
 - 썸네일: `thumbnails/` 같은 번호 PNG (1280×720)
@@ -386,4 +386,129 @@ https://bin7335.github.io/edu-expo/item-kart/
 트랙 3곳에서 내 최고 기록 유령차와 겨루며 금·은·동 메달에 도전하는 타임어택
 대상: 학생·누구나 · 게임
 https://bin7335.github.io/edu-expo/ghost-lap/
+
+**76. 우주 산책**
+우주선 창밖으로 태양계를 날며 행성마다 멈춰 크기·온도·하루 길이를 비교하는 1인칭 여행
+대상: 학생·누구나 · 몰입형
+https://bin7335.github.io/edu-expo/space-walk/
+
+**77. 심해 잠수정**
+깊이 내려갈수록 어두워지는 바다에서 손전등으로 수심별 생물을 찾는 탐사
+대상: 학생·누구나 · 몰입형
+https://bin7335.github.io/edu-expo/deep-sea/
+
+**78. 혈관 속 여행**
+적혈구가 되어 심장·폐·온몸을 돌며 산소를 나르는 1인칭 순환 체험
+대상: 학생 · 몰입형
+https://bin7335.github.io/edu-expo/body-trip/
+
+**79. 화석 발굴단**
+붓으로 흙을 털어 공룡 뼈를 드러내고 맞춰 어떤 공룡인지 알아내는 발굴 체험
+대상: 학생·누구나 · 몰입형
+https://bin7335.github.io/edu-expo/dino-dig/
+
+**80. 한옥 한 바퀴**
+끌어서 둘러보는 360° 한옥 마당, 대청·온돌·처마 같은 곳을 눌러 알아보기
+대상: 학생·누구나 · 몰입형
+https://bin7335.github.io/edu-expo/hanok-360/
+
+**81. 역사 타임머신**
+시대를 골라 장면 속으로 들어가 그때 사람과 대화하며 생활 모습을 알아보기
+대상: 학생 · 몰입형
+https://bin7335.github.io/edu-expo/time-machine/
+
+**82. 화산 실험실**
+마그마 점성과 가스 양을 바꿔 분출 모습과 화산 모양이 어떻게 달라지는지 보기
+대상: 학생 · 몰입형
+https://bin7335.github.io/edu-expo/volcano-lab/
+
+**83. 숲속 쉼표**
+빗소리·새소리·바람을 섞고 숨쉬기 원을 따라 1분 쉬어 가는 소리 명상
+대상: 누구나 · 몰입형
+https://bin7335.github.io/edu-expo/forest-breath/
+
+**84. 별빛 돔**
+밤하늘을 끌어 둘러보고 별을 이어 계절 별자리를 완성하는 작은 천체투영관
+대상: 학생·누구나 · 몰입형
+https://bin7335.github.io/edu-expo/star-dome/
+
+**85. 구조 드론**
+재난 현장 위를 드론으로 날며 열화상으로 구조가 필요한 사람을 찾는 임무
+대상: 학생·누구나 · 몰입형
+https://bin7335.github.io/edu-expo/drone-rescue/
+
+**86. 교실 탈출**
+교실 곳곳의 단서를 모아 수학·국어 암호를 풀고 문을 여는 방탈출
+대상: 학생 · 몰입형
+https://bin7335.github.io/edu-expo/escape-class/
+
+**87. 생태 수조**
+수초·물고기·달팽이 수를 조절하며 산소와 먹이가 균형 잡힌 수조 만들기
+대상: 학생 · 몰입형
+https://bin7335.github.io/edu-expo/eco-tank/
+
+**88. 하늘 만들기**
+기온·습도·바람을 바꿔 구름·비·눈·무지개가 생기는 하늘을 직접 만들기
+대상: 학생 · 몰입형
+https://bin7335.github.io/edu-expo/sky-maker/
+
+**89. 출결 모으미**
+출결 기록을 붙여넣으면 학생별·월별 결석·지각·조퇴 집계와 개근 후보까지
+대상: 교사 · 업무 도구
+https://bin7335.github.io/edu-expo/attend-stats/
+
+**90. 회의록 뚝딱**
+회의 메모를 붙여넣으면 안건·결정·할 일·담당으로 나눠 회의록 양식으로 정리
+대상: 교직원 · 업무 도구
+https://bin7335.github.io/edu-expo/minutes-maker/
+
+**91. 공문 다듬이**
+공문 초안의 날짜·시간·금액 표기와 항목 기호·끝 표시를 공문서 규칙으로 점검
+대상: 교직원 · 업무 도구
+https://bin7335.github.io/edu-expo/gongmun-check/
+
+**92. 학급비 장부**
+학급운영비 예산·지출을 적으면 항목별 잔액과 집행률, 지출 목록 인쇄까지
+대상: 교사 · 업무 도구
+https://bin7335.github.io/edu-expo/class-budget/
+
+**93. 설문 한눈에**
+설문 결과를 붙여넣으면 문항별 막대그래프와 서술형 응답 모음을 바로
+대상: 교직원 · 업무 도구
+https://bin7335.github.io/edu-expo/survey-tally/
+
+**94. 모둠척척**
+성별 섞기·떼어 놓기·모둠장 조건을 지키며 모둠을 짜고 끌어서 바꾸기
+대상: 교사 · 업무 도구
+https://bin7335.github.io/edu-expo/group-maker/
+
+**95. 채점표 척척**
+루브릭 기준을 정하고 학생별로 누르면 총점·성취 수준·반 분포가 자동 계산
+대상: 교사 · 업무 도구
+https://bin7335.github.io/edu-expo/rubric-score/
+
+**96. 문자 알림 틀**
+학부모 문자 틀에 이름·날짜를 넣어 한 번에 만들고 SMS 90바이트 넘침 확인
+대상: 교사 · 업무 도구
+https://bin7335.github.io/edu-expo/notice-sms/
+
+**97. 상담 기록장**
+학부모·학생 상담을 날짜·방법·내용으로 남기고 학생별 모아 보기, 내 PC에만 저장
+대상: 교사 · 업무 도구
+https://bin7335.github.io/edu-expo/call-log/
+
+**98. 특별실 예약판**
+과학실·컴퓨터실 주간 시간표에서 눌러 예약, 겹침 막고 주간표 인쇄
+대상: 교직원 · 업무 도구
+https://bin7335.github.io/edu-expo/room-booking/
+
+**99. 교구 대장**
+교구 수량·위치·대여 반납을 기록하고 부족·미반납을 한눈에
+대상: 교직원 · 업무 도구
+https://bin7335.github.io/edu-expo/stock-ledger/
+
+**100. 출장비 계산기**
+출장 시간·공용차량 여부로 관내 출장 여비를 계산하고 월별 합계까지
+대상: 교직원 · 업무 도구
+https://bin7335.github.io/edu-expo/trip-expense/
 

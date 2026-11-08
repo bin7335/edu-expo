@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>심해 잠수정 - 손전등으로 수심별 생물을 찾는 심해 탐사</title>
+<meta name="description" content="깊이 내려갈수록 어두워지는 바다에서 잠수정을 몰고 손전등으로 표층·중층·심해층·초심해층 생물 13종을 찾아 도감을 채우는 탐사. 수심·수압·수온 계기판.">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#000208}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
+  button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+  #cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;pointer-events:none;z-index:3;background:linear-gradient(rgba(0,12,32,.6),rgba(0,12,32,0))}
+  header>*{pointer-events:auto}
+  .logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#ffd84a,#ff9f1a);display:grid;place-items:center;font-size:24px;box-shadow:0 4px 0 #a86412;flex-shrink:0}
+  h1{margin:0;font-size:22px;letter-spacing:-.5px;text-shadow:0 2px 8px #000}
+  h1 small{display:block;font-size:12px;color:#bfe3ff;font-weight:600}
+  .hud{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .pill{background:rgba(0,20,40,.7);border:1px solid rgba(160,220,255,.18);border-radius:99px;padding:5px 11px;font-weight:800;color:#9fd0f0;font-size:13px;white-space:nowrap}
+  .pill b{color:#fff;font-size:16px;margin-left:4px}
+  .pill b.low{color:#ff7a7a}
+  .tools{display:flex;gap:5px}
+  .ib{border:1px solid rgba(160,220,255,.22);background:rgba(0,20,40,.7);border-radius:12px;padding:8px 10px;font-weight:800;font-size:14px}
+  .ib[aria-pressed=true]{background:#1f6fb8}
+  .ov{position:fixed;left:50%;transform:translateX(-50%);width:min(94%,480px);background:rgba(2,18,40,.9);border:2px solid rgba(140,210,255,.22);border-radius:22px;padding:18px;text-align:center;display:none;z-index:4}
+  .ov.on{display:block}
+  #ready{bottom:8%}
+  #result,#dex{top:50%;transform:translate(-50%,-50%);max-height:92%;overflow:auto}
+  .ov h2{margin:0 0 6px;font-size:24px}
+  .ov p{margin:6px 0;color:#cfe7f7;line-height:1.55;font-size:15px}
+  .tips{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;font-size:13px;color:#cfe7f7;text-align:left}
+  .tips span{background:rgba(255,255,255,.07);border-radius:10px;padding:6px 9px}
+  .go{border:0;border-radius:16px;background:linear-gradient(180deg,#ffe066,#ffb21a);color:#3a2400;font-weight:900;font-size:19px;padding:12px 30px;box-shadow:0 5px 0 #a86a0c;margin:6px 4px}
+  .go:active{transform:translateY(3px);box-shadow:0 2px 0 #a86a0c}
+  .sub{border:0;border-radius:14px;background:rgba(255,255,255,.14);font-weight:800;padding:11px 18px;margin:6px 4px}
+  #found{position:fixed;left:50%;top:96px;transform:translateX(-50%);width:min(92%,420px);background:rgba(4,30,60,.92);border:2px solid #6fd3ff;border-radius:18px;padding:10px 14px;display:none;z-index:4;text-align:left}
+  #found.on{display:block;animation:pop .35s}
+  @keyframes pop{from{transform:translateX(-50%) scale(.8);opacity:0}}
+  #found b{font-size:18px} #found small{color:#9fd0f0;display:block;margin:2px 0}
+  #found p{margin:4px 0 0;font-size:14px;line-height:1.5;color:#e0f2ff}
+  #dexGrid,#rDex{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:6px;margin:10px 0;text-align:left}
+  .dx{background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.2);border-radius:12px;padding:6px 8px;font-size:12px;color:#7d97ad}
+  .dx i{font-style:normal;font-size:20px;display:block}
+  .dx.got{border-style:solid;border-color:#6fd3ff;color:#fff}
+  .dx small{display:block;color:#9fd0f0;font-size:11px}
+  .zl{font-size:12px;color:#9fd0f0;margin-top:8px;text-align:left;font-weight:800}
+  .back{position:fixed;right:12px;bottom:8px;font-size:12px;color:#cfe7f7;text-decoration:none;background:rgba(0,0,0,.45);padding:4px 10px;border-radius:99px;z-index:5}
+  @media (max-width:760px){
+    header{padding:6px 8px;gap:5px}
+    .logo{width:34px;height:34px;font-size:19px;border-radius:10px}
+    h1{font-size:18px} h1 small{display:none}
+    .hud{order:3;width:100%;margin:0;gap:3px}
+    .pill{padding:3px 7px;font-size:11px} .pill b{font-size:13px;margin-left:2px}
+    .ib{padding:6px 7px;font-size:12px}
+    .tools{margin-left:auto}
+    #found{top:120px}
+    .ov{padding:12px} .ov h2{font-size:20px}
+    .tips{grid-template-columns:1fr;font-size:12px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="심해 잠수정">
+<meta property="og:description" content="깊이 내려갈수록 어두워지는 바다에서 손전등으로 수심별 생물을 찾는 탐사">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/77-deep-sea.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/deep-sea/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<canvas id="cv" aria-label="바닷속 잠수정 화면"></canvas>
+<header>
+  <div class="logo" aria-hidden="true">🤿</div>
+  <h1>심해 잠수정<small>손전등으로 수심별 바다 생물 찾기</small></h1>
+  <div class="hud">
+    <div class="pill">수심<b id="depth">0 m</b></div>
+    <div class="pill">수압<b id="press">1 기압</b></div>
+    <div class="pill">수온<b id="temp">20°C</b></div>
+    <div class="pill">구역<b id="zone">표층</b></div>
+    <div class="pill">도감<b><span id="dexN">0</span>/13</b></div>
+    <div class="pill">전력<b id="pow">100%</b></div>
+  </div>
+  <div class="tools"><button class="ib" id="lamp" aria-pressed="true">🔦 손전등</button><button class="ib" id="dexBtn">📖 도감</button><button class="ib" id="snd" aria-pressed="false">🔇 소리</button><button class="ib" id="fs">⛶</button></div>
+</header>
+<div id="found" aria-live="polite"></div>
+<div class="ov on" id="ready">
+  <h2>🌊 바닷속 1만 m 탐사</h2>
+  <p>내려갈수록 햇빛이 사라져요. <b>손전등</b>으로 어둠을 비추며 수심마다 사는 생물 <b>13종</b>을 찾고, 마리아나 해구 바닥(약 10,900m)까지 가 보세요.</p>
+  <div class="tips"><span>⌨️ 방향키 / WASD 로 조종</span><span>📱 화면을 끌어서 조종</span><span>🖱️ 마우스 쪽을 손전등이 비춰요</span><span>🔋 전력이 떨어지기 전에!</span></div>
+  <p id="recLine">도감 0/13</p>
+  <button class="go" id="start">▼ 잠수 시작</button>
+</div>
+<div class="ov" id="dex"><h2>📖 심해 도감</h2><div id="dexGrid"></div><button class="go" id="dexClose">닫기</button></div>
+<div class="ov" id="result">
+  <h2 id="rTitle">탐사 끝!</h2>
+  <p id="rStat"></p>
+  <div id="rDex"></div>
+  <button class="go" id="again">다시 잠수</button><button class="sub" id="home">처음으로</button>
+</div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+'use strict';
+const DT = 1 / 60, WW = 2400;
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const KEY = 'edu-expo-deep-sea-v1';
+// 수심 → 화면 세로 위치 (구역마다 다른 축척)
+const ZONES = [{ n: '표층', a: 0, b: 200, y0: 0, y1: 900, sub: '햇빛이 드는 층' }, { n: '중층', a: 200, b: 1000, y0: 900, y1: 2100, sub: '어스름한 층' },
+  { n: '심해층', a: 1000, b: 6000, y0: 2100, y1: 3600, sub: '햇빛이 닿지 않는 층' }, { n: '초심해층', a: 6000, b: 11000, y0: 3600, y1: 5100, sub: '해구' }];
+const yAt = d => { for (const z of ZONES) if (d <= z.b) return z.y0 + (Math.max(0, d) - z.a) / (z.b - z.a) * (z.y1 - z.y0); return 5100; };
+const depthAt = y => { for (const z of ZONES) if (y <= z.y1) return z.a + (Math.max(0, y) - z.y0) / (z.y1 - z.y0) * (z.b - z.a); return 11000; };
+const zoneAt = d => (ZONES.find(z => d < z.b) || ZONES[3]).n;
+const FLOOR = 10900, BOT = yAt(FLOOR);
+const lightAt = d => d <= 200 ? 1 - d / 200 * 0.45 : d < 1000 ? 0.55 * Math.pow(1 - (d - 200) / 800, 1.5) : 0;
+const tempAt = d => d <= 200 ? 20 - d * 0.03 : d <= 1000 ? 14 - (d - 200) / 800 * 10 : d <= 4000 ? 4 - (d - 1000) / 3000 * 2 : 2 - Math.min(1, (d - 4000) / 7000) * 0.5;
+const atmAt = d => 1 + d / 10;
+// 생물: 서식 수심(min-max, m), 배치 수심(d)
+const C = [
+  { id: 'mackerel', name: '고등어 떼', e: '🐟', min: 0, max: 200, d: 60, x: 900, kind: 'school', fact: '표층의 플랑크톤과 작은 물고기를 먹으며 수백 마리가 떼 지어 다녀요.' },
+  { id: 'turtle', name: '푸른바다거북', e: '🐢', min: 0, max: 200, d: 120, x: 1900, kind: 'turtle', fact: '숨을 쉬러 수면으로 올라와야 하는 파충류예요. 다 자라면 주로 해초를 먹어요.' },
+  { id: 'jelly', name: '보름달물해파리', e: '🪼', min: 0, max: 200, d: 40, x: 1100, kind: 'jelly', fact: '몸의 95% 이상이 물이에요. 헤엄치기보다 해류를 타고 떠다녀요.' },
+  { id: 'lantern', name: '샛비늘치', e: '✨', min: 200, max: 1000, d: 450, x: 1700, kind: 'lantern', glow: '#7fd8ff', fact: '몸에 있는 발광기로 빛을 내요. 밤이면 먹이를 찾아 수면 가까이 올라와요.' },
+  { id: 'barreleye', name: '통안어(배럴아이)', e: '👀', min: 600, max: 800, d: 700, x: 600, kind: 'barrel', fact: '머리가 투명하고, 통 모양 눈으로 위를 올려다보며 먹이의 그림자를 찾아요.' },
+  { id: 'vampire', name: '흡혈오징어', e: '🦑', min: 600, max: 900, d: 850, x: 2000, kind: 'vampire', glow: '#5fb0ff', fact: '이름과 달리 피를 빨지 않아요. 위에서 떨어지는 바닷눈(유기물 부스러기)을 먹어요.' },
+  { id: 'angler', name: '초롱아귀', e: '🏮', min: 1000, max: 4000, d: 1600, x: 500, kind: 'angler', glow: '#b8ff9a', fact: '머리에 달린 낚싯대 끝에서 빛을 내 먹이를 꾀어요. 깜깜한 심해의 사냥법이에요.' },
+  { id: 'tubeworm', name: '관벌레(열수구)', e: '🌋', min: 1500, max: 3000, d: 2500, x: 2050, kind: 'tube', ledge: true, fact: '뜨거운 물이 솟는 열수구 곁에 살아요. 몸속 세균이 화학물질로 양분을 만들어 햇빛 없이도 살아가요.' },
+  { id: 'dumbo', name: '덤보문어', e: '🐙', min: 3000, max: 7000, d: 4200, x: 700, kind: 'dumbo', fact: '귀처럼 생긴 지느러미를 펄럭이며 헤엄쳐요. 문어 가운데 가장 깊은 곳에 살아요.' },
+  { id: 'seapig', name: '바다돼지(심해 해삼)', e: '🐷', min: 1000, max: 6000, d: 5200, x: 1900, kind: 'seapig', ledge: true, fact: '다리처럼 생긴 관족으로 바닥을 걸으며 진흙 속 먹이를 먹는 해삼이에요.' },
+  { id: 'snailfish', name: '마리아나꼼치', e: '🐡', min: 6000, max: 8200, d: 7600, x: 500, kind: 'snail', fact: '8,000m 가까운 곳에서도 사는 물고기예요. 몸이 젤리처럼 말랑해 엄청난 수압을 견뎌요.' },
+  { id: 'amphipod', name: '거대 옆새우(단각류)', e: '🦐', min: 6000, max: 11000, d: 9800, x: 1900, kind: 'amphi', fact: '해구 바닥으로 가라앉은 먹이 찌꺼기를 먹는 갑각류예요. 1만m 넘는 곳에서도 발견돼요.' },
+  { id: 'xeno', name: '크세노피오포어', e: '🪸', min: 1000, max: 10700, d: 10600, x: 400, kind: 'xeno', ledge: true, fact: '손바닥만 한데 세포가 단 하나인 생물이에요! 마리아나 해구 바닥에서도 발견됐어요.' }
+];
+for (const c of C) { c.y = yAt(c.d); c.scan = 0; c.zone = zoneAt(c.d); }
+const rec = { dex: [], deepest: 0, best: 0, dives: 0 };
+try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && typeof r === 'object') {
+  if (Array.isArray(r.dex)) rec.dex = [...new Set(r.dex.filter(id => C.some(c => c.id === id)))];
+  rec.deepest = clamp(Number(r.deepest) || 0, 0, 11000); rec.best = clamp(Math.floor(Number(r.best) || 0), 0, 13); rec.dives = Math.max(0, Math.floor(Number(r.dives) || 0)); } } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+
+// ---- 소리 ----
+let AC = null, master = null, sound = false, pingT = 0;
+function initAudio() {
+  if (AC) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; return; }
+  master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination);
+  const len = AC.sampleRate * 2, buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0);
+  let lp = 0; for (let i = 0; i < len; i++) { lp = lp * 0.97 + (Math.random() * 2 - 1) * 0.03; d[i] = lp * 6; }
+  const src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 400; const g = AC.createGain(); g.gain.value = 0.5;
+  src.connect(f); f.connect(g); g.connect(master); src.start();
+  const o = AC.createOscillator(), og = AC.createGain(); o.frequency.value = 48; og.gain.value = 0.04; o.connect(og); og.connect(master); o.start();
+}
+function setSound(on) {
+  sound = on; $('#snd').textContent = on ? '🔊 소리' : '🔇 소리'; $('#snd').setAttribute('aria-pressed', String(on));
+  if (on) initAudio(); if (!AC) return;
+  try { if (on && AC.state === 'suspended') AC.resume().catch(() => {}); master.gain.setTargetAtTime(on ? 0.8 : 0, AC.currentTime, 0.3); } catch (e) {}
+}
+function tone(f1, f2, dur, type, vol, delay) {
+  if (!sound || !AC) return;
+  try { const t = AC.currentTime + (delay || 0), o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05); } catch (e) {}
+}
+const sfx = { ping: d => tone(1200 - Math.min(600, d / 20), 1150 - Math.min(600, d / 20), 1.2, 'sine', 0.05), found: () => [660, 880, 1320].forEach((f, i) => tone(f, f, 0.3, 'triangle', 0.08, i * 0.09)),
+  click: () => tone(300, 200, 0.08, 'square', 0.05), end: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.5, 'sine', 0.08, i * 0.15)) };
+
+// ---- 화면 ----
+const cv = $('#cv'), ctx = cv.getContext('2d'), dk = document.createElement('canvas'), dctx = dk.getContext('2d');
+let W = 1280, H = 720, DPR = 1;
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); dk.width = Math.ceil(W / 2); dk.height = Math.ceil(H / 2); }
+const snow = Array.from({ length: 140 }, (_, i) => ({ x: (i * 197) % 1000 / 1000, y: (i * 311) % 1000 / 1000, s: 1 + (i % 3) }));
+
+// ---- 상태 ----
+let phase = 'ready', sx = 300, sy = 40, vx = 0, vy = 0, aim = Math.PI * 0.35, face = 1, lamp = true, power = 100, t = 0, dive = 0, deepest = 0, found = [], manual = false;
+let camX = 640, camY = 200, forced = null, forcedAim = null, mouse = null, foundT = 0, endReason = '';
+const keys = { l: 0, r: 0, u: 0, d: 0 }, joy = { on: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 };
+const depth = () => Math.max(0, depthAt(sy));
+function input() {
+  if (forced) return forced;
+  let x = keys.r - keys.l, y = keys.d - keys.u;
+  if (joy.on) { x += clamp((joy.x - joy.ox) / 60, -1, 1); y += clamp((joy.y - joy.oy) / 60, -1, 1); }
+  return { x: clamp(x, -1, 1), y: clamp(y, -1, 1) };
+}
+const angDiff = (a, b) => { let d = (a - b) % 6.2832; if (d > 3.1416) d -= 6.2832; if (d < -3.1416) d += 6.2832; return Math.abs(d); };
+function update() {
+  t += DT;
+  for (const c of C) { c.ax = c.x + Math.sin(t * 0.5 + c.d) * (c.ledge ? 0 : 30); c.ay = c.y + Math.cos(t * 0.7 + c.d) * (c.ledge ? 0 : 14); }
+  if (foundT > 0 && (foundT -= DT) <= 0) $('#found').classList.remove('on');
+  if (phase === 'ready') { sy = 18 + Math.sin(t * 1.3) * 5; sx = 300 + Math.sin(t * 0.3) * 30; aim = 0.5 + Math.sin(t * 0.6) * 0.3; follow(0.08); return; }
+  if (phase !== 'dive') return;
+  dive += DT;
+  const inp = input();
+  vx += (inp.x * 420 - vx * 1.4) * DT; vy += (inp.y * 420 + 12 - vy * 1.4) * DT;
+  sx += vx * DT; sy += vy * DT;
+  if (sx < 50) { sx = 50; vx = Math.abs(vx) * 0.3; } if (sx > WW - 50) { sx = WW - 50; vx = -Math.abs(vx) * 0.3; }
+  if (sy < 14) { sy = 14; vy = Math.max(0, vy); }
+  if (Math.abs(vx) > 15) face = vx > 0 ? 1 : -1;
+  if (forcedAim !== null) aim = forcedAim;
+  else if (mouse) aim = Math.atan2(mouse.y + camY - H / 2 - sy, mouse.x + camX - W / 2 - sx);
+  else if (Math.hypot(vx, vy) > 30) { const ta = Math.atan2(vy, vx); let d = ta - aim; while (d > Math.PI) d -= 6.2832; while (d < -Math.PI) d += 6.2832; aim += d * 0.06; }
+  const dpt = depth(); deepest = Math.max(deepest, dpt);
+  power -= DT * (0.32 + (lamp ? 0.12 : 0) + Math.hypot(inp.x, inp.y) * 0.08);
+  const L = lightAt(dpt);
+  for (const c of C) {
+    if (found.includes(c.id)) continue;
+    const dx = c.ax - sx, dy = c.ay - sy, d = Math.hypot(dx, dy);
+    const lit = (L >= 0.45 && d < 280) || (lamp && d < 360 && angDiff(Math.atan2(dy, dx), aim) < 0.5);
+    if (lit) { c.scan += DT; if (c.scan >= 0.6) discover(c); } else c.scan = Math.max(0, c.scan - DT);
+  }
+  if ((pingT -= DT) <= 0) { pingT = 4; sfx.ping(dpt); }
+  follow(0.1);
+  if (sy >= BOT - 22) { sy = BOT - 22; deepest = FLOOR; return end('bottom'); }
+  if (power <= 0) { power = 0; return end('power'); }
+}
+function follow(k) {
+  const tx = W >= WW ? WW / 2 : clamp(sx, W / 2, WW - W / 2), ty = clamp(sy + H * 0.08, H * 0.18, BOT + 90 - H / 2);
+  camX += (tx - camX) * k; camY += (ty - camY) * k;
+}
+function discover(c) {
+  found.push(c.id); if (!rec.dex.includes(c.id)) rec.dex.push(c.id); save(); sfx.found();
+  const el = $('#found'); el.textContent = '';
+  const b = document.createElement('b'); b.textContent = c.e + ' ' + c.name + ' 발견!';
+  const sm = document.createElement('small'); sm.textContent = c.zone + ' · 주로 수심 ' + c.min.toLocaleString('en-US') + '-' + c.max.toLocaleString('en-US') + 'm';
+  const p = document.createElement('p'); p.textContent = c.fact;
+  el.append(b, sm, p); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); foundT = 4; hud();
+}
+function fillDex(box, list) {
+  box.textContent = '';
+  for (const z of ZONES) {
+    const zl = document.createElement('div'); zl.className = 'zl'; zl.style.gridColumn = '1/-1'; zl.textContent = z.n + ' (' + z.a.toLocaleString('en-US') + '-' + z.b.toLocaleString('en-US') + 'm · ' + z.sub + ')'; box.append(zl);
+    for (const c of C.filter(c => c.zone === z.n)) {
+      const got = list.includes(c.id), d = document.createElement('div'); d.className = 'dx' + (got ? ' got' : '');
+      const i = document.createElement('i'); i.textContent = got ? c.e : '❔';
+      const sm = document.createElement('small'); sm.textContent = got ? c.d.toLocaleString('en-US') + 'm 부근' : '';
+      d.append(i, document.createTextNode(got ? c.name : '???'), sm); box.append(d);
+    }
+  }
+}
+function end(reason) {
+  phase = 'end'; endReason = reason; rec.dives++; rec.deepest = Math.max(rec.deepest, Math.round(deepest)); rec.best = Math.max(rec.best, found.length); save(); sfx.end();
+  const dm = Math.round(deepest);
+  $('#rTitle').textContent = reason === 'bottom' ? '🏁 마리아나 해구 바닥 도착!' : '🔋 전력이 떨어져 수면으로 돌아왔어요';
+  $('#rStat').textContent = '최대 수심 ' + dm.toLocaleString('en-US') + ' m · 수압 ' + Math.round(atmAt(dm)).toLocaleString('en-US') + ' 기압 · 이번에 찾은 생물 ' + found.length + '/13 · ' + Math.round(dive) + '초';
+  fillDex($('#rDex'), found);
+  $('#result').classList.add('on'); hud();
+}
+function start() {
+  phase = 'dive'; sx = 300; sy = 18; vx = 0; vy = 30; power = 100; dive = 0; deepest = 0; found = []; aim = 0.6; lamp = true; setLamp(true);
+  for (const c of C) c.scan = 0;
+  for (const id of ['#ready', '#result', '#dex']) $(id).classList.remove('on'); hud();
+}
+function home() { phase = 'ready'; sx = 300; sy = 40; vx = vy = 0; for (const id of ['#result', '#dex']) $(id).classList.remove('on'); $('#ready').classList.add('on'); hud(); }
+function setLamp(v) { lamp = v; $('#lamp').setAttribute('aria-pressed', String(v)); $('#lamp').textContent = v ? '🔦 손전등' : '🔦 꺼짐'; }
+function hud() {
+  const d = phase === 'ready' ? 0 : depth();
+  $('#depth').textContent = Math.round(d).toLocaleString('en-US') + ' m';
+  const atm = atmAt(d); $('#press').textContent = (atm < 100 ? atm.toFixed(1).replace(/\.0$/, '') : Math.round(atm).toLocaleString('en-US')) + ' 기압';
+  $('#temp').textContent = tempAt(d).toFixed(1) + '°C';
+  $('#zone').textContent = zoneAt(d);
+  $('#dexN').textContent = String(found.length);
+  $('#pow').textContent = Math.ceil(power) + '%'; $('#pow').classList.toggle('low', power < 25);
+  $('#recLine').textContent = '지금까지 도감 ' + rec.dex.length + '/13 · 최대 수심 ' + Math.round(rec.deepest).toLocaleString('en-US') + ' m';
+}
+
+// ---- 그리기 ----
+function waterColor(d) {
+  const st = [[0, [63, 169, 224]], [200, [18, 92, 160]], [1000, [4, 26, 58]], [4000, [1, 8, 22]], [11000, [0, 2, 8]]];
+  for (let i = 1; i < st.length; i++) if (d <= st[i][0]) { const k = (d - st[i - 1][0]) / (st[i][0] - st[i - 1][0]), a = st[i - 1][1], b = st[i][1]; return `rgb(${a.map((v, j) => Math.round(v + (b[j] - v) * k)).join(',')})`; }
+  return 'rgb(0,2,8)';
+}
+const wx = x => x - camX + W / 2, wy = y => y - camY + H / 2;
+function drawCreature(c) {
+  const x = wx(c.ax), y = wy(c.ay);
+  if (x < -150 || x > W + 150 || y < -150 || y > H + 150) return;
+  ctx.save(); ctx.translate(x, y);
+  const k = c.kind;
+  if (k === 'school') {
+    for (let i = 0; i < 22; i++) { const a = t * 0.8 + i * 0.29, r = 30 + (i % 5) * 12, fx = Math.cos(a) * r * 1.6, fy = Math.sin(a) * r * 0.6 + (i % 3) * 6; ctx.save(); ctx.translate(fx, fy); ctx.scale(-Math.sin(a) > 0 ? 1 : -1, 1); ctx.fillStyle = i % 2 ? '#b9d4e6' : '#7fa4c4'; ctx.beginPath(); ctx.ellipse(0, 0, 11, 4, 0, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-17, -5); ctx.lineTo(-17, 5); ctx.fill(); ctx.restore(); }
+  } else if (k === 'turtle') {
+    const f = Math.sin(t * 2) * 0.4; ctx.fillStyle = '#6b8f4a';
+    for (const [px, py, s] of [[14, -14, 1], [14, 14, -1], [-16, -10, 1], [-16, 10, -1]]) { ctx.save(); ctx.translate(px, py); ctx.rotate(s * (0.6 + f)); ctx.beginPath(); ctx.ellipse(0, s * -8, 6, 14, 0, 0, 6.283); ctx.fill(); ctx.restore(); }
+    ctx.beginPath(); ctx.ellipse(34, 0, 10, 8, 0, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#4a6a34'; ctx.beginPath(); ctx.ellipse(0, 0, 30, 22, 0, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = '#8fb06a'; ctx.lineWidth = 2; for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.arc(i * 12, 0, 8, 0, 6.283); ctx.stroke(); }
+  } else if (k === 'jelly') {
+    const p = 1 + Math.sin(t * 2.5) * 0.12; ctx.fillStyle = 'rgba(220,235,255,.45)'; ctx.beginPath(); ctx.ellipse(0, 0, 30 * p, 22 / p, 0, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,170,220,.8)'; ctx.lineWidth = 3; for (let i = -1; i <= 2; i++) { ctx.beginPath(); ctx.arc(i * 10 - 5, -8, 5, 0, 6.283); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(230,240,255,.5)'; ctx.lineWidth = 1.5; for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(i * 8, 0); ctx.quadraticCurveTo(i * 8 + Math.sin(t * 2 + i) * 10, 25, i * 8, 45); ctx.stroke(); }
+  } else if (k === 'lantern') {
+    for (let i = 0; i < 6; i++) { ctx.save(); ctx.translate(i * 26 - 60, Math.sin(t + i) * 12 + (i % 2) * 18); ctx.fillStyle = '#2e3d55'; ctx.beginPath(); ctx.ellipse(0, 0, 13, 5, 0, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-19, -5); ctx.lineTo(-19, 5); ctx.fill(); ctx.fillStyle = '#9fe8ff'; for (let j = 0; j < 4; j++) ctx.fillRect(-6 + j * 4, 3, 2, 2); ctx.restore(); }
+  } else if (k === 'barrel') {
+    ctx.fillStyle = '#3a3f4a'; ctx.beginPath(); ctx.ellipse(0, 6, 34, 10, 0, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.moveTo(-32, 6); ctx.lineTo(-48, -4); ctx.lineTo(-48, 16); ctx.fill();
+    ctx.strokeStyle = 'rgba(200,240,255,.7)'; ctx.fillStyle = 'rgba(200,240,255,.15)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(14, -4, 18, 14, 0, Math.PI, 0); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#3cff7a'; ctx.beginPath(); ctx.arc(10, -4, 4, 0, 6.283); ctx.arc(20, -4, 4, 0, 6.283); ctx.fill();
+  } else if (k === 'vampire') {
+    ctx.fillStyle = '#6a1424'; ctx.beginPath(); ctx.ellipse(0, -10, 16, 22, 0, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-16, 0); for (let i = 0; i <= 8; i++) { const a = Math.PI * i / 8; ctx.lineTo(Math.cos(a + Math.PI) * -34 * (1 + Math.sin(t * 2) * 0.1), 10 + Math.sin(a) * 28); } ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#4fa0ff'; ctx.beginPath(); ctx.arc(-6, -6, 3, 0, 6.283); ctx.arc(6, -6, 3, 0, 6.283); ctx.fill();
+  } else if (k === 'angler') {
+    ctx.fillStyle = '#2b2a2f'; ctx.beginPath(); ctx.arc(0, 0, 30, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.moveTo(-26, 0); ctx.lineTo(-48, -14); ctx.lineTo(-48, 14); ctx.fill();
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(30, -4); ctx.lineTo(8, 6); ctx.lineTo(30, 16); ctx.fill();
+    ctx.fillStyle = '#fff'; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(26 - i * 4, -2 + i * 2); ctx.lineTo(24 - i * 4, 4 + i * 2); ctx.lineTo(22 - i * 4, -1 + i * 2); ctx.fill(); }
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(6, -28); ctx.quadraticCurveTo(30, -60, 44, -30); ctx.stroke();
+    ctx.fillStyle = '#e8f0ff'; ctx.beginPath(); ctx.arc(14, -10, 4, 0, 6.283); ctx.fill();
+  } else if (k === 'tube') {
+    ctx.fillStyle = '#3b3430'; ctx.beginPath(); ctx.moveTo(-90, 40); ctx.lineTo(-30, -70); ctx.lineTo(-10, -70); ctx.lineTo(30, 40); ctx.fill();
+    ctx.fillStyle = 'rgba(200,200,210,.25)'; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(-20 + Math.sin(t * 3 + i) * 6, -80 - ((t * 40 + i * 20) % 100), 8 + i, 0, 6.283); ctx.fill(); }
+    for (let i = 0; i < 7; i++) { const bx = 10 + i * 12, h = 40 + (i % 3) * 14; ctx.fillStyle = '#eee8dc'; ctx.fillRect(bx, 40 - h, 6, h); ctx.fillStyle = '#e0283c'; ctx.beginPath(); ctx.ellipse(bx + 3 + Math.sin(t * 2 + i) * 2, 40 - h - 4, 6, 8, 0, 0, 6.283); ctx.fill(); }
+    ctx.fillStyle = '#4a403a'; ctx.fillRect(-120, 40, 260, 30);
+  } else if (k === 'dumbo') {
+    const fl = Math.sin(t * 3) * 0.5; ctx.fillStyle = '#f2a0a0';
+    for (const s of [-1, 1]) { ctx.save(); ctx.translate(s * 20, -14); ctx.rotate(s * (0.4 + fl)); ctx.beginPath(); ctx.ellipse(s * 10, 0, 14, 8, 0, 0, 6.283); ctx.fill(); ctx.restore(); }
+    ctx.fillStyle = '#ffb8b0'; ctx.beginPath(); ctx.ellipse(0, -10, 24, 26, 0, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#f29088'; ctx.beginPath(); ctx.moveTo(-26, 6); for (let i = 0; i <= 6; i++) ctx.lineTo(-26 + i * 52 / 6, 14 + (i % 2) * 10 + Math.sin(t * 3 + i) * 3); ctx.lineTo(26, 6); ctx.fill();
+    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(-8, -8, 3, 0, 6.283); ctx.arc(8, -8, 3, 0, 6.283); ctx.fill();
+  } else if (k === 'seapig') {
+    ctx.fillStyle = '#5a4a44'; ctx.fillRect(-100, 22, 220, 40);
+    ctx.fillStyle = 'rgba(255,190,200,.85)'; ctx.beginPath(); ctx.ellipse(Math.sin(t * 0.4) * 10, 0, 34, 16, 0, 0, 6.283); ctx.fill();
+    for (let i = 0; i < 6; i++) { ctx.fillRect(-26 + i * 10 + Math.sin(t * 0.4) * 10, 12, 4, 10 + Math.sin(t * 2 + i) * 2); }
+    ctx.fillRect(-12 + Math.sin(t * 0.4) * 10, -24, 3, 10); ctx.fillRect(-2 + Math.sin(t * 0.4) * 10, -26, 3, 12);
+  } else if (k === 'snail') {
+    ctx.fillStyle = 'rgba(255,220,225,.85)'; ctx.beginPath(); ctx.ellipse(10, 0, 24, 16, 0, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-8, -10); ctx.quadraticCurveTo(-50, Math.sin(t * 2) * 8, -8, 10); ctx.fill();
+    ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(24, -4, 3, 0, 6.283); ctx.fill();
+  } else if (k === 'amphi') {
+    for (let i = 0; i < 7; i++) { ctx.save(); ctx.translate(Math.cos(t * 0.6 + i) * 50, Math.sin(t * 0.9 + i * 2) * 25); ctx.strokeStyle = '#f2ece0'; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, 0, 10, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); ctx.restore(); }
+  } else if (k === 'xeno') {
+    ctx.fillStyle = '#4a3c34'; ctx.fillRect(-110, 26, 230, 40);
+    ctx.fillStyle = '#b39a7a'; for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.arc(Math.cos(i * 0.7) * 16, 6 + Math.sin(i * 1.3) * 12, 12 - (i % 3) * 2, 0, 6.283); ctx.fill(); }
+    ctx.strokeStyle = '#8a7056'; ctx.lineWidth = 2; for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.arc(Math.cos(i) * 12, 8 + Math.sin(i * 2) * 10, 5, 0, 6.283); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+function drawGlows() {
+  ctx.globalCompositeOperation = 'lighter';
+  for (const c of C) {
+    if (!c.glow) continue; const x = wx(c.ax), y = wy(c.ay); if (x < -100 || x > W + 100 || y < -100 || y > H + 100) continue;
+    const pts = c.kind === 'angler' ? [[44, -30, 14]] : c.kind === 'vampire' ? [[-6, -6, 8], [6, -6, 8], [-30, 30, 6], [30, 30, 6]] : [[-60, 0, 6], [-34, 18, 6], [-8, 0, 6], [18, 18, 6], [44, 0, 6], [70, 18, 6]];
+    const p = 0.6 + Math.sin(t * 3 + c.d) * 0.4;
+    for (const [dx, dy, r] of pts) { const g = ctx.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r * 3); g.addColorStop(0, c.glow); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.globalAlpha = p; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x + dx, y + dy, r * 3, 0, 6.283); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+}
+function drawSub() {
+  const x = wx(sx), y = wy(sy);
+  ctx.save(); ctx.translate(x, y); ctx.scale(face, 1); ctx.rotate(clamp(vy / 600, -0.25, 0.25) * face);
+  ctx.fillStyle = '#ffcf33'; ctx.beginPath(); ctx.ellipse(0, 0, 44, 22, 0, 0, 6.283); ctx.fill();
+  ctx.fillStyle = '#e8a91c'; ctx.fillRect(-14, -34, 26, 16); ctx.fillRect(-4, -44, 4, 12);
+  ctx.fillStyle = '#7fd8ff'; ctx.strokeStyle = '#555'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(14, -2, 10, 0, 6.283); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#ffe9a0'; ctx.beginPath(); ctx.arc(-14, 2, 5, 0, 6.283); ctx.fill();
+  ctx.fillStyle = '#666'; ctx.save(); ctx.translate(-46, 0); ctx.scale(1, Math.abs(Math.sin(t * 20))); ctx.fillRect(-3, -14, 6, 28); ctx.restore();
+  ctx.fillStyle = lamp ? '#fffbe0' : '#555'; ctx.beginPath(); ctx.arc(42, 6, 5, 0, 6.283); ctx.fill();
+  ctx.restore();
+  if (phase === 'dive' && Math.hypot(vx, vy) > 40) { ctx.fillStyle = 'rgba(220,240,255,.5)'; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(x - face * (50 + i * 10) + Math.sin(t * 9 + i) * 3, y - i * 6 - ((t * 60 + i * 9) % 20), 2 + i * 0.6, 0, 6.283); ctx.fill(); } }
+}
+function drawDark(L) {
+  const dark = 1 - L;
+  if (dark <= 0.02) return;
+  const s = 0.5; dctx.setTransform(1, 0, 0, 1, 0, 0); dctx.globalCompositeOperation = 'source-over'; dctx.clearRect(0, 0, dk.width, dk.height);
+  dctx.fillStyle = `rgba(0,1,6,${Math.min(0.97, dark)})`; dctx.fillRect(0, 0, dk.width, dk.height);
+  dctx.globalCompositeOperation = 'destination-out';
+  const x = wx(sx) * s, y = wy(sy) * s;
+  const halo = dctx.createRadialGradient(x, y, 0, x, y, 70 * s); halo.addColorStop(0, 'rgba(0,0,0,.8)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
+  dctx.fillStyle = halo; dctx.beginPath(); dctx.arc(x, y, 70 * s, 0, 6.283); dctx.fill();
+  if (lamp && phase !== 'end') {
+    const R = 380 * s, lx = x + Math.cos(aim) * 30 * s, ly = y + Math.sin(aim) * 30 * s;
+    const g = dctx.createRadialGradient(lx, ly, 0, lx, ly, R); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(0.7, 'rgba(0,0,0,.85)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    dctx.fillStyle = g; dctx.beginPath(); dctx.moveTo(lx, ly); dctx.arc(lx, ly, R, aim - 0.5, aim + 0.5); dctx.closePath(); dctx.fill();
+  }
+  for (const c of C) if (c.glow) { const gx = wx(c.ax) * s, gy = wy(c.ay) * s, g = dctx.createRadialGradient(gx, gy, 0, gx, gy, 30 * s); g.addColorStop(0, 'rgba(0,0,0,.35)'); g.addColorStop(1, 'rgba(0,0,0,0)'); dctx.fillStyle = g; dctx.beginPath(); dctx.arc(gx, gy, 30 * s, 0, 6.283); dctx.fill(); }
+  ctx.drawImage(dk, 0, 0, W, H);
+  if (lamp && phase !== 'end') {
+    const x2 = wx(sx) + Math.cos(aim) * 30, y2 = wy(sy) + Math.sin(aim) * 30;
+    const g = ctx.createRadialGradient(x2, y2, 0, x2, y2, 380); g.addColorStop(0, 'rgba(255,250,200,.18)'); g.addColorStop(1, 'rgba(255,250,200,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x2, y2); ctx.arc(x2, y2, 380, aim - 0.5, aim + 0.5); ctx.closePath(); ctx.fill();
+  }
+}
+function drawGauge() {
+  const x = 16, top = W < 760 ? 140 : 90, bot = H - 60, h = bot - top;
+  ctx.fillStyle = 'rgba(0,10,25,.6)'; ctx.fillRect(x - 6, top - 6, 46, h + 12);
+  const cols = ['#3fa9e0', '#125ca0', '#0a2a55', '#05132a'];
+  ZONES.forEach((z, i) => { const a = top + z.y0 / BOT * h, b = top + Math.min(z.y1, BOT) / BOT * h; ctx.fillStyle = cols[i]; ctx.fillRect(x, a, 10, b - a); ctx.fillStyle = '#9fd0f0'; ctx.font = '700 10px system-ui'; ctx.textAlign = 'left'; ctx.fillText(z.n, x + 13, a + 11); });
+  const m = top + clamp(sy / BOT, 0, 1) * h; ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.moveTo(x - 4, m); ctx.lineTo(x + 14, m - 6); ctx.lineTo(x + 14, m + 6); ctx.fill();
+}
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const top = camY - H / 2, d0 = depthAt(Math.max(0, top)), d1 = depthAt(top + H), dm = depth();
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  const sTop = wy(0);
+  if (sTop > 0) { const sky = ctx.createLinearGradient(0, 0, 0, sTop); sky.addColorStop(0, '#8fd0ff'); sky.addColorStop(1, '#dff3ff'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, sTop); }
+  g.addColorStop(0, waterColor(d0)); g.addColorStop(1, waterColor(d1));
+  ctx.fillStyle = g; ctx.fillRect(0, Math.max(0, sTop), W, H);
+  if (sTop > -40) {
+    ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.moveTo(0, sTop); for (let x = 0; x <= W; x += 20) ctx.lineTo(x, sTop + Math.sin(x * 0.03 + t * 2) * 4); ctx.lineTo(W, sTop + 8); ctx.lineTo(0, sTop + 8); ctx.fill();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 7; i++) { const bx = ((i * 230 - camX * 0.3) % (W + 200) + W + 200) % (W + 200) - 100; const rg = ctx.createLinearGradient(0, sTop, 0, sTop + 500); rg.addColorStop(0, 'rgba(255,255,220,.16)'); rg.addColorStop(1, 'rgba(255,255,220,0)'); ctx.fillStyle = rg; ctx.beginPath(); ctx.moveTo(bx, sTop); ctx.lineTo(bx + 60, sTop); ctx.lineTo(bx + 160 + Math.sin(t + i) * 20, sTop + 500); ctx.lineTo(bx + 40, sTop + 500); ctx.fill(); }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.fillStyle = 'rgba(220,235,255,.35)';
+  for (const p of snow) { const px = ((p.x * W - camX * 0.6 + t * 6) % W + W) % W, py = ((p.y * H - camY * 0.6 - t * 10) % H + H) % H; if (py > sTop) ctx.fillRect(px, py, p.s, p.s); }
+  const by = wy(BOT);
+  if (by < H + 20) { ctx.fillStyle = '#2a2420'; ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(0, by - 10); for (let x = 0; x <= W; x += 40) ctx.lineTo(x, by + Math.sin((x + camX) * 0.013) * 8 - 4); ctx.lineTo(W, H); ctx.fill(); ctx.fillStyle = '#9fd0f0'; ctx.font = '800 14px system-ui'; ctx.textAlign = 'center'; ctx.fillText('챌린저 해연 바닥 · 약 10,900 m', W / 2, by + 30); }
+  for (const z of ZONES.slice(1)) { const zy = wy(z.y0); if (zy > 0 && zy < H) { ctx.strokeStyle = 'rgba(160,220,255,.25)'; ctx.setLineDash([8, 10]); ctx.beginPath(); ctx.moveTo(60, zy); ctx.lineTo(W, zy); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = 'rgba(160,220,255,.7)'; ctx.font = '700 13px system-ui'; ctx.textAlign = 'right'; ctx.fillText(z.a.toLocaleString('en-US') + 'm · ' + z.n + ' 시작', W - 14, zy - 6); } }
+  for (const c of C) drawCreature(c);
+  drawDark(phase === 'ready' ? 1 : lightAt(dm));
+  drawGlows();
+  drawSub();
+  for (const c of C) if (c.scan > 0 && !found.includes(c.id)) { const x = wx(c.ax), y = wy(c.ay); ctx.strokeStyle = '#6fd3ff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 50, -1.57, -1.57 + 6.283 * c.scan / 0.6); ctx.stroke(); }
+  if (joy.on) { ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(joy.ox, joy.oy, 50, 0, 6.283); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.beginPath(); ctx.arc(joy.ox + clamp(joy.x - joy.ox, -50, 50), joy.oy + clamp(joy.y - joy.oy, -50, 50), 20, 0, 6.283); ctx.fill(); }
+  drawGauge();
+}
+let last = 0, acc = 0;
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, last ? (ts - last) / 1000 : 0); last = ts;
+  if (!manual) { acc += dt; let k = 0; while (acc >= DT && k < 6) { update(); acc -= DT; k++; } if (k) hud(); }
+  draw();
+}
+
+// ---- 입력 ----
+cv.addEventListener('pointerdown', e => { if (phase !== 'dive' || joy.on) return; if (e.pointerType === 'mouse') { mouse = { x: e.clientX, y: e.clientY }; } joy.on = true; joy.id = e.pointerId; joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY; try { cv.setPointerCapture(e.pointerId); } catch (er) {} e.preventDefault(); });
+cv.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') mouse = { x: e.clientX, y: e.clientY }; if (joy.on && e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
+const up = e => { if (e.pointerId === joy.id) { joy.on = false; joy.id = -1; } };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+const KM = { ArrowLeft: 'l', a: 'l', A: 'l', ArrowRight: 'r', d: 'r', D: 'r', ArrowUp: 'u', w: 'u', W: 'u', ArrowDown: 'd', s: 'd', S: 'd' };
+addEventListener('keydown', e => {
+  if (KM[e.key]) { keys[KM[e.key]] = 1; if (phase === 'dive') { e.preventDefault(); mouse = null; } }
+  else if ((e.key === 'Enter' || e.key === ' ') && phase === 'ready') { e.preventDefault(); start(); }
+  else if ((e.key === 'f' || e.key === 'F' || e.key === 'l' || e.key === 'L') && phase === 'dive') { setLamp(!lamp); sfx.click(); }
+});
+addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = 0; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = 0; joy.on = false; });
+$('#start').addEventListener('click', start);
+$('#again').addEventListener('click', start);
+$('#home').addEventListener('click', home);
+$('#lamp').addEventListener('click', () => { setLamp(!lamp); sfx.click(); });
+$('#dexBtn').addEventListener('click', () => { fillDex($('#dexGrid'), phase === 'dive' ? [...new Set([...found, ...rec.dex])] : rec.dex); $('#dex').classList.add('on'); });
+$('#dexClose').addEventListener('click', () => $('#dex').classList.remove('on'));
+$('#snd').addEventListener('click', () => setSound(!sound));
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) $('#fs').hidden = true;
+$('#fs').setAttribute('aria-label', '전체화면');
+$('#fs').addEventListener('click', () => {
+  const d = document, el = d.documentElement;
+  try { if (d.fullscreenElement || d.webkitFullscreenElement) { const x = (d.exitFullscreen || d.webkitExitFullscreen).call(d); if (x && x.catch) x.catch(() => {}); }
+    else { const x = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (x && x.catch) x.catch(() => {}); } } catch (e) {}
+});
+addEventListener('resize', resize);
+
+window.__test = {
+  manual: v => { manual = !!v; },
+  step: (n = 1) => { for (let i = 0; i < n; i++) update(); hud(); },
+  input: o => { forced = o ? { x: clamp(o.x || 0, -1, 1), y: clamp(o.y || 0, -1, 1) } : null; },
+  aim: a => { forcedAim = a === null || a === undefined ? null : a; },
+  place: (x, y) => { sx = x; sy = y; vx = vy = 0; camX = x; camY = y; },
+  setPower: p => { power = p; },
+  yAt, zoneAt,
+  info: () => ({ creatures: C.map(c => ({ id: c.id, name: c.name, x: c.x, y: c.y, depth: c.d, min: c.min, max: c.max, zone: c.zone })) }),
+  state: () => ({ phase, x: sx, y: sy, vx, vy, depth: depth(), light: phase === 'ready' ? 1 : lightAt(depth()), power, lamp, found: found.slice(), sound, anim: C[0].ax + C[2].ay })
+};
+resize(); hud(); follow(1);
+for (let i = 0; i < 30; i++) update();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

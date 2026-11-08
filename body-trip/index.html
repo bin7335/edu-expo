@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>혈관 속 여행 - 적혈구가 되어 온몸을 도는 1인칭 순환 체험</title>
+<meta name="description" content="적혈구가 되어 우심방→우심실→폐동맥→폐→폐정맥→좌심방→좌심실→대동맥→온몸→대정맥을 직접 지나며 폐에서 산소를 받고 세포에 나눠 주는 1인칭 혈액 순환 체험.">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#1a0004}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
+  button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+  #cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;pointer-events:none;z-index:3;background:linear-gradient(rgba(30,0,6,.65),rgba(30,0,6,0))}
+  header>*{pointer-events:auto}
+  .logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#ff6b6b,#c8102e);display:grid;place-items:center;font-size:24px;box-shadow:0 4px 0 #7a0a1c;flex-shrink:0}
+  h1{margin:0;font-size:22px;letter-spacing:-.5px;text-shadow:0 2px 8px #000}
+  h1 small{display:block;font-size:12px;color:#ffc9cf;font-weight:600}
+  .hud{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .pill{background:rgba(40,0,8,.7);border:1px solid rgba(255,180,190,.2);border-radius:99px;padding:5px 11px;font-weight:800;color:#ffb3bd;font-size:13px;white-space:nowrap}
+  .pill b{color:#fff;font-size:16px;margin-left:4px}
+  #o2{letter-spacing:1px;font-size:14px}
+  .tools{display:flex;gap:5px}
+  .ib{border:1px solid rgba(255,180,190,.25);background:rgba(40,0,8,.7);border-radius:12px;padding:8px 10px;font-weight:800;font-size:14px}
+  .ib[aria-pressed=true]{background:#b8213a}
+  #route{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px;width:min(96%,900px);z-index:3;pointer-events:none}
+  #route span{font-size:12px;font-weight:800;padding:4px 8px;border-radius:99px;background:rgba(40,0,8,.7);color:#c98c95;border:1px solid rgba(255,180,190,.15)}
+  #route span.done{color:#ffd6db;background:rgba(120,10,30,.7)}
+  #route span.now{background:#ff4d6a;color:#fff;border-color:#fff;transform:scale(1.08)}
+  #route span.blue{box-shadow:inset 0 -3px 0 #4a6cff} #route span.red{box-shadow:inset 0 -3px 0 #ff3b3b}
+  .ov{position:fixed;left:50%;transform:translateX(-50%);width:min(94%,500px);background:rgba(40,0,10,.9);border:2px solid rgba(255,160,175,.25);border-radius:22px;padding:18px;text-align:center;display:none;z-index:4}
+  .ov.on{display:block}
+  #ready{bottom:12%}
+  #result{top:50%;transform:translate(-50%,-50%);max-height:92%;overflow:auto}
+  .ov h2{margin:0 0 6px;font-size:24px}
+  .ov p{margin:6px 0;color:#ffdfe3;line-height:1.55;font-size:15px}
+  .tips{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;font-size:13px;color:#ffdfe3;text-align:left}
+  .tips span{background:rgba(255,255,255,.07);border-radius:10px;padding:6px 9px}
+  .go{border:0;border-radius:16px;background:linear-gradient(180deg,#ff8a9a,#e8213f);color:#fff;font-weight:900;font-size:19px;padding:12px 30px;box-shadow:0 5px 0 #8a0f24;margin:6px 4px}
+  .go:active{transform:translateY(3px);box-shadow:0 2px 0 #8a0f24}
+  .sub{border:0;border-radius:14px;background:rgba(255,255,255,.14);font-weight:800;padding:11px 18px;margin:6px 4px}
+  #toast{position:fixed;left:50%;top:104px;transform:translateX(-50%);width:max-content;max-width:min(92%,560px);font-weight:800;font-size:16px;line-height:1.45;background:rgba(20,0,4,.82);border:2px solid rgba(255,255,255,.2);padding:9px 16px;border-radius:16px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:4;text-align:center}
+  #toast.on{opacity:1} #toast.bad{border-color:#ffb020} #toast.good{border-color:#5cff9d}
+  #fact{position:fixed;left:16px;bottom:74px;width:min(330px,60%);background:rgba(30,0,6,.7);border-radius:14px;padding:9px 12px;font-size:13px;line-height:1.5;color:#ffe3e6;z-index:3;pointer-events:none}
+  #fact b{display:block;font-size:15px;color:#fff} #fact:empty{display:none}
+  #rRoute{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:10px 0}
+  #rRoute span{font-size:12px;font-weight:800;padding:4px 8px;border-radius:99px;background:rgba(255,255,255,.08)}
+  #rRoute span.ok{background:rgba(92,255,157,.15);color:#c9ffdf}
+  .sum{text-align:left;font-size:14px;color:#ffdfe3;background:rgba(255,255,255,.06);border-radius:12px;padding:8px 12px;line-height:1.7}
+  .back{position:fixed;right:12px;bottom:8px;font-size:12px;color:#ffdfe3;text-decoration:none;background:rgba(0,0,0,.45);padding:4px 10px;border-radius:99px;z-index:5}
+  @media (max-width:760px){
+    header{padding:6px 8px;gap:5px}
+    .logo{width:34px;height:34px;font-size:19px;border-radius:10px}
+    h1{font-size:18px} h1 small{display:none}
+    .hud{order:3;width:100%;margin:0;gap:3px}
+    .pill{padding:3px 7px;font-size:11px} .pill b{font-size:13px;margin-left:2px} #o2{font-size:11px;letter-spacing:0}
+    .ib{padding:6px 7px;font-size:12px}
+    .tools{margin-left:auto}
+    #route{bottom:32px;gap:3px} #route span{font-size:10px;padding:3px 5px}
+    #fact{display:none}
+    #toast{top:120px;font-size:14px}
+    .ov{padding:12px} .ov h2{font-size:20px}
+    .tips{grid-template-columns:1fr;font-size:12px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="혈관 속 여행">
+<meta property="og:description" content="적혈구가 되어 심장·폐·온몸을 돌며 산소를 나르는 1인칭 순환 체험">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/78-body-trip.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/body-trip/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<canvas id="cv" aria-label="혈관 속 1인칭 화면"></canvas>
+<header>
+  <div class="logo" aria-hidden="true">🩸</div>
+  <h1>혈관 속 여행<small>적혈구가 되어 산소를 나르는 1인칭 순환 체험</small></h1>
+  <div class="hud">
+    <div class="pill">지금<b id="where">우심방</b></div>
+    <div class="pill">산소<b id="o2">○○○○○○○○</b></div>
+    <div class="pill">전달<b id="del">0</b></div>
+    <div class="pill">실수<b id="mis">0</b></div>
+    <div class="pill">시간<b id="timeT">0:00</b></div>
+  </div>
+  <div class="tools"><button class="ib" id="snd" aria-pressed="false">🔇 소리</button><button class="ib" id="fs" aria-label="전체화면">⛶</button></div>
+</header>
+<div id="route"></div>
+<div id="toast"></div>
+<div id="fact"></div>
+<div class="ov on" id="ready">
+  <h2>🔴 나는 적혈구!</h2>
+  <p>심장에서 출발해 <b>폐에서 산소(O₂)를 받고</b>, <b>온몸의 세포에 나눠 준 뒤</b> 다시 심장으로 돌아와요. 갈림길에서는 피가 흐르는 <b>올바른 길</b>을 골라요.</p>
+  <div class="tips"><span>⌨️ 방향키 / WASD 로 조종</span><span>📱 화면을 끌어서 조종</span><span>🫧 폐: 파란 O₂ 방울 모으기</span><span>🧫 온몸: 세포를 스치며 O₂ 주기</span></div>
+  <p id="recLine">아직 완주 기록이 없어요</p>
+  <button class="go" id="start">▶ 우심방에서 출발</button>
+</div>
+<div class="ov" id="result">
+  <h2>❤️ 온몸 한 바퀴 완주!</h2>
+  <p id="rStat"></p>
+  <div id="rRoute"></div>
+  <div class="sum" id="rSum"></div>
+  <button class="go" id="again">한 바퀴 더</button><button class="sub" id="home">처음으로</button>
+</div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+'use strict';
+const DT = 1 / 60, VIEW = 14, MAXO2 = 8;
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const KEY = 'edu-expo-body-trip-v1';
+// 혈액 순환 순서. type: heart 심장 방, art 동맥, vein 정맥, lung/body 모세혈관. blood: 흐르는 피의 산소(red 많음/blue 적음)
+const SEG = [
+  { n: '우심방', len: 14, type: 'heart', blood: 'blue', fact: '온몸을 돌고 온, 산소가 적은 피가 대정맥을 통해 들어오는 방이에요.',
+    j: { ok: '우심실', no: '좌심실', okMsg: '✓ 삼첨판을 지나 우심실로!', noMsg: '✗ 오른쪽과 왼쪽 심장 사이는 벽(심장 중격)으로 막혀 있어요. 우심방 → 우심실!' } },
+  { n: '우심실', len: 14, type: 'heart', blood: 'blue', fact: '우심실이 수축하면 피가 폐동맥으로 밀려 나가요.',
+    j: { ok: '폐동맥', no: '대동맥', okMsg: '✓ 폐동맥판을 지나 폐동맥으로!', noMsg: '✗ 대동맥은 좌심실에서 나가요. 우심실 → 폐동맥!' } },
+  { n: '폐동맥', len: 20, type: 'art', blood: 'blue', fact: '동맥이지만 산소가 적은 피가 흘러요. 심장에서 폐로 가는 길이에요.' },
+  { n: '폐', len: 40, type: 'lung', blood: 'blue', fact: '폐포를 감싼 가는 모세혈관이에요. 피가 천천히 흐르며 산소를 받고 이산화탄소를 내보내요.' },
+  { n: '폐정맥', len: 20, type: 'vein', blood: 'red', fact: '정맥이지만 산소가 많은 피가 흘러요. 폐에서 심장으로 돌아가는 길이에요.',
+    j: { ok: '좌심방', no: '우심방', okMsg: '✓ 좌심방 도착!', noMsg: '✗ 폐에서 돌아온 피는 좌심방으로 들어가요.' } },
+  { n: '좌심방', len: 14, type: 'heart', blood: 'red', fact: '폐에서 돌아온, 산소가 많은 피가 들어오는 방이에요.',
+    j: { ok: '좌심실', no: '우심실', okMsg: '✓ 승모판을 지나 좌심실로!', noMsg: '✗ 좌우 심장 사이는 막혀 있어요. 좌심방 → 좌심실!' } },
+  { n: '좌심실', len: 14, type: 'heart', blood: 'red', fact: '심장에서 벽이 가장 두꺼운 방! 힘껏 수축해 온몸으로 피를 보내요.',
+    j: { ok: '대동맥', no: '폐동맥', okMsg: '✓ 대동맥판을 지나 대동맥으로!', noMsg: '✗ 폐동맥은 우심실에서 나가요. 좌심실 → 대동맥!' } },
+  { n: '대동맥', len: 24, type: 'art', blood: 'red', fact: '우리 몸에서 가장 굵은 동맥이에요. 심장이 뛸 때마다 피가 세차게 밀려가요.' },
+  { n: '온몸', len: 44, type: 'body', blood: 'red', fact: '온몸의 모세혈관에서 세포에 산소와 영양소를 주고 이산화탄소를 받아 와요.' },
+  { n: '대정맥', len: 22, type: 'vein', blood: 'blue', fact: '온몸을 돌고 온 피를 모아 우심방으로 들여보내는 굵은 정맥이에요.',
+    j: { ok: '우심방', no: '좌심방', okMsg: '✓ 우심방으로 돌아왔어요. 한 바퀴 완주!', noMsg: '✗ 대정맥은 우심방으로 들어가요.' } }
+];
+const SPEED = { heart: 4.2, art: 5, vein: 3.6, lung: 2.6, body: 2.6 };
+const rec = { laps: 0, best: 0, bestO2: 0 };
+try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && typeof r === 'object') { rec.laps = Math.max(0, Math.floor(Number(r.laps) || 0)); rec.best = Math.max(0, Number(r.best) || 0); rec.bestO2 = clamp(Math.floor(Number(r.bestO2) || 0), 0, 99); } } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+let sd = 7;
+const rnd = () => { sd = sd + 0x6D2B79F5 | 0; let t = Math.imul(sd ^ sd >>> 15, 1 | sd); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+// ---- 소리 ----
+let AC = null, master = null, sound = false;
+function initAudio() {
+  if (AC) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; return; }
+  master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination);
+  const len = AC.sampleRate * 2, buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0);
+  let lp = 0; for (let i = 0; i < len; i++) { lp = lp * 0.96 + (Math.random() * 2 - 1) * 0.04; d[i] = lp * 5; }
+  const src = AC.createBufferSource(); src.buffer = buf; src.loop = true; const g = AC.createGain(); g.gain.value = 0.35; src.connect(g); g.connect(master); src.start();
+}
+function setSound(on) {
+  sound = on; $('#snd').textContent = on ? '🔊 소리' : '🔇 소리'; $('#snd').setAttribute('aria-pressed', String(on));
+  if (on) initAudio(); if (!AC) return;
+  try { if (on && AC.state === 'suspended') AC.resume().catch(() => {}); master.gain.setTargetAtTime(on ? 0.9 : 0, AC.currentTime, 0.2); } catch (e) {}
+}
+function tone(f1, f2, dur, type, vol, delay) {
+  if (!sound || !AC) return;
+  try { const t = AC.currentTime + (delay || 0), o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05); } catch (e) {}
+}
+const sfx = { beat: () => { tone(70, 38, 0.16, 'sine', 0.5); tone(62, 34, 0.14, 'sine', 0.35, 0.22); }, o2: () => tone(700, 1100, 0.12, 'sine', 0.08), give: () => tone(900, 500, 0.15, 'triangle', 0.08),
+  ok: () => [523, 784].forEach((f, i) => tone(f, f, 0.2, 'triangle', 0.09, i * 0.1)), no: () => tone(220, 110, 0.35, 'square', 0.08), bump: () => tone(120, 80, 0.1, 'sine', 0.15),
+  end: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.5, 'triangle', 0.09, i * 0.14)) };
+
+// ---- 화면 ----
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 1280, H = 720, DPR = 1;
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
+
+// ---- 상태 ----
+let phase = 'ready', si = 0, z = 0, px = 0, py = 0, vx = 0, vy = 0, o2 = 0, delivered = 0, mistakes = 0, t = 0, trip = 0, beatT = 0, pulse = 0, shake = 0, manual = false, forced = null;
+let items = [], sides = [], toastT = 0, passed = [];
+const keys = { l: 0, r: 0, u: 0, d: 0 }, joy = { on: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 };
+function input() {
+  if (forced) return forced;
+  let x = keys.r - keys.l, y = keys.d - keys.u;
+  if (joy.on) { x += clamp((joy.x - joy.ox) / 60, -1, 1); y += clamp((joy.y - joy.oy) / 60, -1, 1); }
+  return { x: clamp(x, -1, 1), y: clamp(y, -1, 1) };
+}
+function makeItems() {
+  items = [];
+  const s = SEG[si];
+  if (s.type === 'lung') for (let k = 0; k < 14; k++) { const a = rnd() * 6.283, r = rnd() * 0.55; items.push({ kind: 'o2', z: 5 + k * 2.4, x: Math.cos(a) * r, y: Math.sin(a) * r, done: false }); }
+  if (s.type === 'body') for (let k = 0; k < 10; k++) { const a = rnd() * 6.283; items.push({ kind: 'cell', z: 6 + k * 3.6, x: Math.cos(a) * 0.62, y: Math.sin(a) * 0.62, a, done: false }); }
+}
+function toast(msg, cls) { const el = $('#toast'); el.textContent = msg; el.className = 'on ' + (cls || ''); toastT = 2.6; }
+function enterSeg(i) {
+  si = i; z = 0; makeItems(); passed.push(i);
+  const s = SEG[i]; const f = $('#fact'); f.textContent = ''; const b = document.createElement('b'); b.textContent = s.n; f.append(b, document.createTextNode(s.fact));
+  routeUI(); hud();
+}
+const junction = () => { const s = SEG[si]; return s.j && phase === 'go' && z > s.len - VIEW ? { side: sides[si], labels: sides[si] < 0 ? [s.j.ok, s.j.no] : [s.j.no, s.j.ok] } : null; };
+function update() {
+  t += DT;
+  if (toastT > 0 && (toastT -= DT) <= 0) $('#toast').classList.remove('on');
+  const s = SEG[si];
+  const period = 0.86; beatT += DT;
+  if (beatT >= period) { beatT -= period; if (phase !== 'end') sfx.beat(); }
+  pulse = Math.exp(-beatT * 7) + 0.6 * Math.exp(-Math.max(0, beatT - 0.22) * 9) * (beatT > 0.22 ? 1 : 0);
+  if (shake > 0) shake = Math.max(0, shake - DT * 3);
+  if (phase === 'ready') { z += DT * 2.2; if (z > 1000) z = 0; px = Math.sin(t * 0.5) * 0.2; py = Math.cos(t * 0.4) * 0.15; return; }
+  if (phase !== 'go') return;
+  trip += DT;
+  const inp = input();
+  vx += (inp.x * 5 - vx * 3) * DT; vy += (inp.y * 5 - vy * 3) * DT;
+  px += vx * DT; py += vy * DT;
+  const lim = s.type === 'lung' || s.type === 'body' ? 0.78 : 0.85, d = Math.hypot(px, py);
+  if (d > lim) { px *= lim / d; py *= lim / d; const nx = px / lim, ny = py / lim, dot = vx * nx + vy * ny; if (dot > 0) { vx -= dot * nx * 1.6; vy -= dot * ny * 1.6; if (dot > 0.6) { shake = 0.5; sfx.bump(); } } }
+  const art = s.type === 'heart' || s.type === 'art';
+  const sp = SPEED[s.type] * (art ? 0.7 + pulse * 0.9 : 1);
+  const z0 = z; z += sp * DT;
+  for (const it of items) {
+    if (it.done || !(it.z > z0 && it.z <= z)) continue;
+    it.done = true;
+    const dd = Math.hypot(it.x - px, it.y - py);
+    if (it.kind === 'o2' && dd < 0.35 && o2 < MAXO2) { o2++; it.got = true; sfx.o2(); }
+    if (it.kind === 'cell' && dd < 0.45 && o2 > 0) { o2--; delivered++; it.got = true; sfx.give(); }
+  }
+  if (z >= s.len) {
+    if (s.j) {
+      const chose = px * sides[si] > 0;
+      if (!chose) { mistakes++; z = s.len - 6; vx = -vx * 0.5; shake = 0.8; toast(s.j.noMsg, 'bad'); sfx.no(); hud(); return; }
+      toast(s.j.okMsg, 'good'); sfx.ok();
+    } else toast(SEG[(si + 1) % SEG.length].n + ' 도착', 'good');
+    if (si === SEG.length - 1) return finish();
+    px *= 0.3; py *= 0.3; enterSeg(si + 1);
+  }
+}
+function finish() {
+  phase = 'end'; rec.laps++; if (!rec.best || trip < rec.best) rec.best = Math.round(trip * 10) / 10; rec.bestO2 = Math.max(rec.bestO2, delivered); save(); sfx.end();
+  $('#rStat').textContent = '세포에 나눠 준 산소 ' + delivered + '개 · 갈림길 실수 ' + mistakes + '번 · ' + Math.floor(trip / 60) + '분 ' + Math.floor(trip % 60) + '초';
+  const rr = $('#rRoute'); rr.textContent = '';
+  SEG.forEach((s, i) => { const sp = document.createElement('span'); sp.className = 'ok'; sp.textContent = (i ? '→ ' : '') + s.n; rr.append(sp); });
+  const sum = $('#rSum'); sum.textContent = '';
+  for (const line of ['🫁 폐순환: 우심실 → 폐동맥 → 폐 → 폐정맥 → 좌심방', '🧍 온몸순환: 좌심실 → 대동맥 → 온몸 → 대정맥 → 우심방', '💡 폐동맥에는 산소가 적은 피, 폐정맥에는 산소가 많은 피가 흘러요.', '⏱️ 실제 우리 몸에서 피가 온몸을 한 바퀴 도는 데는 1분 안팎이 걸려요.']) { const d = document.createElement('div'); d.textContent = line; sum.append(d); }
+  $('#result').classList.add('on'); routeUI(); hud();
+}
+function start() {
+  phase = 'go'; sd = 7 + rec.laps; sides = SEG.map(() => rnd() < 0.5 ? -1 : 1);
+  px = py = vx = vy = 0; o2 = 0; delivered = 0; mistakes = 0; trip = 0; passed = [];
+  $('#ready').classList.remove('on'); $('#result').classList.remove('on'); enterSeg(0); toast('우심방 출발! 산소가 적은 피예요', 'good');
+}
+function home() { phase = 'ready'; si = 0; z = 0; passed = []; $('#fact').textContent = ''; $('#result').classList.remove('on'); $('#ready').classList.add('on'); routeUI(); hud(); }
+function routeUI() {
+  const r = $('#route'); r.textContent = '';
+  SEG.forEach((s, i) => { const sp = document.createElement('span'); sp.textContent = s.n; sp.className = s.blood + (phase !== 'ready' && i === si && phase === 'go' ? ' now' : passed.includes(i) ? ' done' : ''); r.append(sp); });
+}
+function hud() {
+  $('#where').textContent = phase === 'ready' ? '출발 전' : SEG[si].n;
+  $('#o2').textContent = '●'.repeat(o2) + '○'.repeat(MAXO2 - o2);
+  $('#del').textContent = String(delivered); $('#mis').textContent = String(mistakes);
+  $('#timeT').textContent = Math.floor(trip / 60) + ':' + String(Math.floor(trip % 60)).padStart(2, '0');
+  $('#recLine').textContent = rec.laps ? '완주 ' + rec.laps + '번 · 최고 ' + Math.floor(rec.best / 60) + '분 ' + Math.floor(rec.best % 60) + '초 · 최다 전달 ' + rec.bestO2 + '개' : '아직 완주 기록이 없어요';
+}
+
+// ---- 그리기 ----
+const COL = { heart: [150, 18, 40], art: [190, 30, 45], vein: [120, 20, 60], lung: [230, 120, 140], body: [210, 70, 90] };
+function bendX(zz) { return Math.sin(zz * 0.09 + si * 1.7) * 0.9 + Math.sin(zz * 0.031) * 0.6; }
+function bendY(zz) { return Math.cos(zz * 0.07 + si) * 0.5; }
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const s = SEG[phase === 'ready' ? 0 : si], c = COL[phase === 'ready' ? 'heart' : s.type];
+  const F = Math.min(W, H) * 0.42, sh = shake * 14, cx = W / 2 + (Math.random() - 0.5) * sh, cy = H * 0.5 + (Math.random() - 0.5) * sh;
+  const puff = 1 + (s.type === 'heart' ? 0.1 : s.type === 'art' ? 0.05 : 0.02) * pulse;
+  ctx.fillStyle = `rgb(${c[0] * 0.55 | 0},${c[1] * 0.55 | 0},${c[2] * 0.55 | 0})`; ctx.fillRect(0, 0, W, H);
+  const jEnd = s.j && phase !== 'ready' ? s.len - z : 1e9;
+  const far = Math.min(VIEW, jEnd);
+  const centre = d => { const bx = (bendX(z + d) - bendX(z)) * d * 0.06, by = (bendY(z + d) - bendY(z)) * d * 0.06; return [cx + (bx - px) * F / Math.max(d, 0.2) * 0.6, cy + (by - py) * F / Math.max(d, 0.2) * 0.6]; };
+  const proj = (x, y, d) => { const [ccx, ccy] = centre(d); return [ccx + x * F / d * 0.6 * puff, ccy + y * F / d * 0.6 * puff]; };
+  // 안쪽 어둠
+  const [vx0, vy0] = centre(far);
+  const vg = ctx.createRadialGradient(vx0, vy0, 0, vx0, vy0, Math.max(W, H) * 0.7);
+  vg.addColorStop(0, 'rgb(20,0,4)'); vg.addColorStop(0.25, `rgb(${c[0] * 0.4 | 0},${c[1] * 0.4 | 0},${c[2] * 0.4 | 0})`); vg.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  // 고리
+  const off = z % 0.5;
+  for (let k = Math.floor(far * 2); k >= 1; k--) {
+    const d = k * 0.5 - off; if (d <= 0.25 || d > far) continue;
+    const [ccx, ccy] = centre(d), R = F / d * 0.6 * puff, a = clamp(1 - d / VIEW, 0, 1);
+    ctx.strokeStyle = `rgba(${Math.min(255, c[0] + 60)},${c[1] + 30},${c[2] + 30},${0.15 + a * 0.55})`; ctx.lineWidth = Math.max(1, 18 / d);
+    ctx.beginPath(); ctx.arc(ccx, ccy, R, 0, 6.283); ctx.stroke();
+    if (s.type === 'lung' && phase !== 'ready') { ctx.fillStyle = `rgba(255,200,210,${a * 0.35})`; for (let q = 0; q < 6; q++) { const an = q * 1.05 + Math.floor(z + d) * 0.7; ctx.beginPath(); ctx.arc(ccx + Math.cos(an) * R * 1.05, ccy + Math.sin(an) * R * 1.05, R * 0.18, 0, 6.283); ctx.fill(); } }
+  }
+  // 벽 줄무늬
+  ctx.strokeStyle = `rgba(${c[0] + 40},${c[1] + 10},${c[2] + 10},.35)`; ctx.lineWidth = 2;
+  for (let q = 0; q < 12; q++) { const an = q * 0.5236 + 0.2; ctx.beginPath(); for (let d = far; d >= 0.4; d -= 0.5) { const [x, y] = proj(Math.cos(an), Math.sin(an), d); if (d === far) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.stroke(); }
+  // 갈림길 벽
+  if (jEnd < VIEW && jEnd > 0.3) {
+    const d = jEnd, [ccx, ccy] = centre(d), R = F / d * 0.6 * puff;
+    ctx.fillStyle = `rgb(${c[0] * 0.8 | 0},${c[1] * 0.8 | 0},${c[2] * 0.8 | 0})`; ctx.beginPath(); ctx.arc(ccx, ccy, R, 0, 6.283); ctx.fill();
+    const labs = sides[si] < 0 ? [s.j.ok, s.j.no] : [s.j.no, s.j.ok];
+    [-1, 1].forEach((side, k) => {
+      const [hx, hy] = proj(side * 0.48, 0, d), hr = R * 0.36;
+      const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr); g.addColorStop(0, '#0d0002'); g.addColorStop(0.8, '#3a0610'); g.addColorStop(1, `rgb(${c[0]},${c[1]},${c[2]})`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, 6.283); ctx.fill();
+      const valve = Math.max(0, 1 - pulse) * 0.3; ctx.strokeStyle = 'rgba(255,220,225,.5)'; ctx.lineWidth = Math.max(1, hr * 0.05);
+      for (let q = 0; q < 3; q++) { const an = q * 2.094; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + Math.cos(an) * hr * (0.9 - valve), hy + Math.sin(an) * hr * (0.9 - valve)); ctx.stroke(); }
+      ctx.fillStyle = '#fff'; ctx.font = `900 ${clamp(hr * 0.3, 12, 34) | 0}px system-ui`; ctx.textAlign = 'center';
+      ctx.fillText(labs[k], hx, hy - hr - 8);
+    });
+    if (d < 6) { ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = '800 16px system-ui'; ctx.textAlign = 'center'; ctx.fillText('갈림길! 피가 흐르는 쪽으로 ← →', W / 2, H * 0.78); }
+  }
+  // 아이템
+  if (phase === 'go') for (const it of items) {
+    const d = it.z - z; if (d <= 0.25 || d > far) continue; if (it.done) continue;
+    const [x, y] = proj(it.x, it.y, d), r = F / d * 0.6 * (it.kind === 'o2' ? 0.13 : 0.2), a = clamp(1.3 - d / VIEW, 0, 1);
+    ctx.globalAlpha = a;
+    if (it.kind === 'o2') { const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r); g.addColorStop(0, '#e6f3ff'); g.addColorStop(1, '#3a7bff'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill(); ctx.fillStyle = '#062a6e'; ctx.font = `900 ${Math.max(8, r * 0.8) | 0}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('O₂', x, y); ctx.textBaseline = 'alphabetic'; }
+    else { ctx.fillStyle = '#e9a0b4'; ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.8, it.a, 0, 6.283); ctx.fill(); ctx.fillStyle = '#9b4a6a'; ctx.beginPath(); ctx.arc(x, y, r * 0.3, 0, 6.283); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = `900 ${Math.max(8, r * 0.5) | 0}px system-ui`; ctx.textAlign = 'center'; ctx.fillText('세포 O₂?', x, y - r - 4); }
+    ctx.globalAlpha = 1;
+  }
+  // 흘러가는 다른 혈구
+  for (let q = 0; q < 10; q++) {
+    const d = ((q * 1.37 - z * 0.6) % VIEW + VIEW) % VIEW + 0.6; if (d > far) continue;
+    const an = q * 2.4, rr = 0.3 + (q % 4) * 0.12, [x, y] = proj(Math.cos(an) * rr, Math.sin(an) * rr, d), r = F / d * 0.6 * 0.09;
+    ctx.globalAlpha = clamp(1 - d / VIEW, 0, 0.8); ctx.fillStyle = q % 5 === 0 ? '#f4eedf' : (s.blood === 'red' ? '#e0283c' : '#8a1a3a');
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.55, q + t, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  // 나(적혈구) 테두리: 산소가 많을수록 선홍색
+  const sat = o2 / MAXO2, rc = `rgba(${150 + sat * 105 | 0},${10 + sat * 20 | 0},${40 - sat * 20 | 0},`;
+  const vg2 = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.max(W, H) * 0.75);
+  vg2.addColorStop(0, rc + '0)'); vg2.addColorStop(1, rc + '.85)'); ctx.fillStyle = vg2; ctx.fillRect(0, 0, W, H);
+  if (phase === 'go') { const x = W / 2, y = H - 92; ctx.fillStyle = rc + '1)'; ctx.beginPath(); ctx.ellipse(x, y, 36, 20, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y, 16, 8, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '800 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText('나 · O₂ ' + o2, x, y - 26); }
+  if (joy.on) { ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(joy.ox, joy.oy, 50, 0, 6.283); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.beginPath(); ctx.arc(joy.ox + clamp(joy.x - joy.ox, -50, 50), joy.oy + clamp(joy.y - joy.oy, -50, 50), 20, 0, 6.283); ctx.fill(); }
+}
+let last = 0, acc = 0;
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, last ? (ts - last) / 1000 : 0); last = ts;
+  if (!manual) { acc += dt; let k = 0; while (acc >= DT && k < 6) { update(); acc -= DT; k++; } if (k) hud(); }
+  draw();
+}
+
+// ---- 입력 ----
+cv.addEventListener('pointerdown', e => { if (phase !== 'go' || joy.on) return; joy.on = true; joy.id = e.pointerId; joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY; try { cv.setPointerCapture(e.pointerId); } catch (er) {} e.preventDefault(); });
+cv.addEventListener('pointermove', e => { if (joy.on && e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
+const up = e => { if (e.pointerId === joy.id) { joy.on = false; joy.id = -1; } };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+const KM = { ArrowLeft: 'l', a: 'l', A: 'l', ArrowRight: 'r', d: 'r', D: 'r', ArrowUp: 'u', w: 'u', W: 'u', ArrowDown: 'd', s: 'd', S: 'd' };
+addEventListener('keydown', e => {
+  if (KM[e.key]) { keys[KM[e.key]] = 1; if (phase === 'go') e.preventDefault(); }
+  else if ((e.key === 'Enter' || e.key === ' ') && phase === 'ready') { e.preventDefault(); start(); }
+});
+addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = 0; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = 0; joy.on = false; });
+$('#start').addEventListener('click', start);
+$('#again').addEventListener('click', start);
+$('#home').addEventListener('click', home);
+$('#snd').addEventListener('click', () => setSound(!sound));
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) $('#fs').hidden = true;
+$('#fs').addEventListener('click', () => {
+  const d = document, el = d.documentElement;
+  try { if (d.fullscreenElement || d.webkitFullscreenElement) { const x = (d.exitFullscreen || d.webkitExitFullscreen).call(d); if (x && x.catch) x.catch(() => {}); }
+    else { const x = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (x && x.catch) x.catch(() => {}); } } catch (e) {}
+});
+addEventListener('resize', resize);
+
+window.__test = {
+  manual: v => { manual = !!v; },
+  step: (n = 1) => { for (let i = 0; i < n; i++) update(); hud(); },
+  input: o => { forced = o ? { x: clamp(o.x || 0, -1, 1), y: clamp(o.y || 0, -1, 1) } : null; },
+  state: () => {
+    const s = SEG[si]; let next = null;
+    if (phase === 'go') { const want = s.type === 'lung' ? 'o2' : s.type === 'body' && o2 > 0 ? 'cell' : null; const it = want && items.find(i => i.kind === want && !i.done && i.z > z); if (it) next = { x: it.x, y: it.y, d: it.z - z }; }
+    return { phase, seg: phase === 'ready' ? '' : s.n, z, px, py, vx, vy, o2, sat: o2 / MAXO2, delivered, mistakes, trip, sound, junction: junction(), next };
+  }
+};
+resize(); routeUI(); hud();
+for (let i = 0; i < 30; i++) update();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

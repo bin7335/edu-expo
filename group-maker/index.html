@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>모둠척척 - 조건을 지키는 모둠 편성기</title>
+<meta name="description" content="학생 명단(번호·이름·성별·수준)을 붙여넣고 모둠 수를 정하면 성비·수준을 고르게, 떼어 놓을 학생과 같이 둘 학생, 모둠장 조건을 지켜 무작위로 모둠을 짜고 조건 검증, 끌어서 바꾸기, 모둠 이름·역할 배정, 인쇄까지 하는 교사용 도구. 내 PC에만 저장됩니다.">
+<style>
+  :root{--bg:#f6f3ee;--panel:#fff;--ink:#2a2620;--sub:#6d665c;--line:#e6dfd3;--brand:#b4521d;--brand2:#d9772e;--gold:#f2c14e;--ok:#1f7a4a;--bad:#c2412d;--boy:#2f6fd0;--girl:#d0457a}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:linear-gradient(110deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.9}
+  .grow{flex:1}
+  .safe{display:inline-flex;align-items:center;gap:6px;background:#e7f7ee;color:#11603d;border:1px solid #a6dcbf;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .wipe{font:inherit;font-size:12px;font-weight:700;border:1px solid #ffffff88;background:transparent;color:#fff;border-radius:999px;padding:4px 10px;cursor:pointer}
+  .btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 13px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn.small{font-size:12.5px;padding:6px 10px}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.gold{background:var(--gold);color:#3a2a00;border-color:transparent}
+  main{max-width:1440px;margin:0 auto;padding:12px 20px 56px;display:grid;grid-template-columns:330px minmax(0,1fr);gap:12px;align-items:start}
+  .side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:7px}
+  .side h2{margin:2px 0 0;font-size:14px}
+  .side label.t{font-size:12px;color:var(--sub);font-weight:700}
+  .side textarea,.side input[type=text],.side input[type=number]{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100%;color:var(--ink);background:#fff}
+  #roster{height:120px;font-family:Consolas,"D2Coding",monospace;font-size:12px;line-height:1.45}
+  #sep,#tog{height:46px;font-size:12.5px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .opt{display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap}
+  .opt input[type=number]{width:62px}
+  .opt label{display:inline-flex;align-items:center;gap:4px}
+  .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  #seed{width:120px!important}
+  .hint{font-size:11.5px;color:var(--sub);line-height:1.5}
+  .out{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .topbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 12px}
+  #stat{font-weight:800;font-size:14px}
+  #verify{display:flex;flex-wrap:wrap;gap:5px}
+  #verify span{font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;border:1px solid}
+  #verify .ok{color:var(--ok);background:#ecf8f1;border-color:#b7e2c8}
+  #verify .bad{color:var(--bad);background:#fff0ec;border-color:#f1b9ab}
+  #verify .warn{color:#8a5a00;background:#fff7e0;border-color:#f0d58c}
+  #groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .grp{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 10px;border-top:5px solid var(--gc);min-width:0;transition:box-shadow .15s}
+  .grp.over{box-shadow:0 0 0 3px var(--gold)}
+  .ghead{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+  .gnum{font-weight:900;color:var(--gc);font-size:14px;white-space:nowrap}
+  .gname{font:inherit;font-weight:800;font-size:14px;border:1px solid transparent;border-radius:6px;padding:2px 4px;width:100%;min-width:0;background:transparent;color:var(--ink)}
+  .gname:hover,.gname:focus{border-color:var(--line);background:#fff;outline:none}
+  .gsum{font-size:11px;color:var(--sub);white-space:nowrap}
+  .mems{display:flex;flex-direction:column;gap:4px;min-height:40px}
+  .mem{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:9px;padding:4px 7px;cursor:grab;background:#fffdf9;font-size:13.5px;user-select:none;-webkit-user-select:none}
+  .mem:hover{border-color:var(--brand2)}
+  .mem.sel{outline:3px solid var(--brand2);background:#fff4e8}
+  .mem.leader{background:#fff6dc;border-color:#ecd38a}
+  .mem .no{font-size:11px;color:var(--sub);width:18px;text-align:right}
+  .mem .nm{font-weight:800}
+  .mem .sx{font-size:11px;font-weight:800;border-radius:5px;padding:0 4px;color:#fff}
+  .mem .sx.m{background:var(--boy)} .mem .sx.f{background:var(--girl)} .mem .sx.u{background:#999}
+  .mem .lv{font-size:11px;font-weight:800;color:var(--sub);border:1px solid var(--line);border-radius:5px;padding:0 4px}
+  .mem .role{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--brand);white-space:nowrap}
+  .mem.leader .role::before{content:"👑 "}
+  .mem.flag{box-shadow:inset 3px 0 0 var(--bad)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:20;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.92);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:10}
+  .ptitle{display:none}
+  @media (max-width:1000px){ #groups{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:860px){
+    header{padding:10px 12px} header h1{font-size:19px}
+    main{grid-template-columns:minmax(0,1fr);padding:10px 10px 56px}
+    #groups{grid-template-columns:minmax(0,1fr)}
+  }
+  @media print{
+    @page{size:A4 landscape;margin:12mm}
+    body{background:#fff}
+    header,.side,.back,.toast,.topbar{display:none!important}
+    main{display:block;padding:0;max-width:none}
+    .ptitle{display:block;text-align:center;font-size:22px;font-weight:900;margin-bottom:8px}
+    #groups{grid-template-columns:repeat(3,1fr)}
+    .grp{break-inside:avoid;border:1.5px solid #555;border-top:5px solid var(--gc);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .mem{font-size:16px;border-color:#999}
+    .mem .lv,.mem .no{display:none}
+    .gname{border:0}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="모둠척척">
+<meta property="og:description" content="성별 섞기·떼어 놓기·모둠장 조건을 지키며 모둠을 짜고 끌어서 바꾸기">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/94-group-maker.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/group-maker/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🧩</div>
+  <div>
+    <h1>모둠척척</h1>
+    <p>성비·수준은 고르게, 떼어 놓을 친구는 떨어지게 — 조건을 지켜 모둠을 짜고 역할까지</p>
+  </div>
+  <span class="safe">🔒 내 PC에만 저장 · 외부 전송 없음</span>
+  <div class="grow"></div>
+  <button type="button" class="wipe" id="wipeAll" title="공용 PC라면 다 쓴 뒤 눌러 주세요">🧹 이 PC 기록 모두 지우기</button>
+</header>
+<main>
+  <aside class="side">
+    <h2>① 명단</h2>
+    <label class="t" for="roster">번호 · 이름 · 성별(남/여) · 수준(상/중/하, 생략 가능) — 엑셀에서 복사해 붙여넣기</label>
+    <textarea id="roster" spellcheck="false"></textarea>
+    <h2>② 조건</h2>
+    <div class="opt"><label><input type="radio" name="mode" id="modeCount" value="count"> 모둠 수</label><input type="number" id="count" min="1" max="20" aria-label="모둠 수">
+      <label><input type="radio" name="mode" id="modeSize" value="size"> 모둠당</label><input type="number" id="size" min="2" max="15" aria-label="모둠당 인원">명</div>
+    <div class="opt"><label><input type="checkbox" id="balG"> 성비 고르게</label><label><input type="checkbox" id="balL"> 수준 고르게</label></div>
+    <div class="two">
+      <div><label class="t" for="sep">떼어 놓기 (한 줄에 두 명)</label><textarea id="sep" placeholder="박지호-최민준"></textarea></div>
+      <div><label class="t" for="tog">같이 두기</label><textarea id="tog" placeholder="이서준-한유찬"></textarea></div>
+    </div>
+    <label class="t" for="leaders">모둠장 지정 (쉼표로, 나머지 모둠은 자동)</label>
+    <input type="text" id="leaders" placeholder="김하늘, 장서아">
+    <label class="t" for="roles">역할 (첫째가 모둠장)</label>
+    <input type="text" id="roles">
+    <div class="row"><label class="t" for="theme">모둠 이름</label><select id="theme" style="font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:4px"><option value="animal">동물</option><option value="fruit">과일</option><option value="space">우주</option><option value="num">번호만</option></select>
+      <label class="t" for="seed">시드</label><input type="text" id="seed" aria-label="시드"></div>
+    <div class="row">
+      <button class="btn primary" id="make" type="button">🧩 이 시드로 편성</button>
+      <button class="btn" id="shuffle" type="button">🎲 다시 섞기</button>
+    </div>
+    <p class="hint">같은 명단·조건·시드면 언제나 같은 모둠이 나와요(공정성 설명용). 모둠 칸의 학생을 끌어 다른 학생 위에 놓거나, 두 학생을 차례로 누르면 자리가 바뀌어요.</p>
+  </aside>
+  <section class="out">
+    <div class="ptitle" id="ptitle">모둠 편성표</div>
+    <div class="topbar">
+      <span id="stat"></span>
+      <div id="verify"></div>
+      <span class="grow"></span>
+      <button class="btn small" id="reroles" type="button">🎭 역할 다시 나누기</button>
+      <button class="btn small" id="copy" type="button">📋 표 복사</button>
+      <button class="btn small gold" id="printBtn" type="button">🖨 인쇄</button>
+    </div>
+    <div id="groups"></div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(function(){
+  'use strict';
+  var KEY='edu-expo.group-maker.v1';
+  var $=function(s){return document.querySelector(s);};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var SAMPLE_ROSTER=[
+    [1,'김하늘','여','상'],[2,'이서준','남','하'],[3,'박지호','남','중'],[4,'최민준','남','중'],[5,'정예린','여','상'],[6,'조하윤','여','중'],
+    [7,'강시우','남','상'],[8,'윤도현','남','하'],[9,'장서아','여','상'],[10,'한유찬','남','상'],[11,'임지안','여','중'],[12,'오세린','여','하'],
+    [13,'신동하','남','중'],[14,'서다온','여','중'],[15,'권태오','남','하'],[16,'황보은','여','중'],[17,'안로운','남','중'],[18,'송채아','여','하'],
+    [19,'류건우','남','상'],[20,'홍나윤','여','중'],[21,'전시후','남','중'],[22,'고은채','여','상'],[23,'문준서','남','하'],[24,'양서윤','여','중'],
+    [25,'배도윤','남','중'],[26,'백지유','여','하']].map(function(r){return r.join('\t');}).join('\n');
+  var DEF={roster:SAMPLE_ROSTER,mode:'count',count:6,size:4,balG:true,balL:true,sep:'박지호-최민준\n강시우-윤도현\n김하늘-정예린',tog:'이서준-한유찬',leaders:'김하늘, 장서아',
+    roles:'모둠장, 기록이, 발표이, 칭찬이, 시간지기',theme:'animal',seed:'햇살5-3',groups:null,leaderIds:null,roleMap:null,gnames:null};
+  var THEMES={animal:['🦁 사자','🐯 호랑이','🦅 독수리','🐬 돌고래','🦊 여우','🦉 부엉이','🐧 펭귄','🐘 코끼리','🦒 기린','🐼 판다','🐢 거북','🐝 꿀벌'],
+    fruit:['🍎 사과','🍊 귤','🍇 포도','🍓 딸기','🍑 복숭아','🍉 수박','🍋 레몬','🍐 배','🍒 체리','🥝 키위','🍌 바나나','🍍 파인애플'],
+    space:['☀️ 태양','🌙 달','⭐ 북극성','🪐 토성','🌍 지구','☄️ 혜성','🔴 화성','🌌 은하수','🛰 위성','🚀 로켓','🌟 샛별','🔭 망원경'],num:[]};
+  var COLORS=['#d9772e','#2f6fd0','#1f8a74','#c2416b','#7a46c2','#b08a10','#0f8a8a','#c8402c','#4b6b2a','#6a54b8','#a0522d','#2a6f97'];
+  var S=JSON.parse(JSON.stringify(DEF));
+  try{var st=JSON.parse(localStorage.getItem(KEY)||'null');if(st&&typeof st==='object'){Object.keys(DEF).forEach(function(k){if(k in st&&(typeof st[k]===typeof DEF[k]||DEF[k]===null))S[k]=st[k];});}}catch(e){}
+
+  // ---------- 명단·조건 읽기 ----------
+  function parseRoster(t){
+    var out=[];
+    String(t||'').split(/\r?\n/).forEach(function(line){
+      var tk=line.split(/\t|,|\s+/).map(function(x){return x.trim();}).filter(Boolean);
+      if(!tk.length)return;
+      var no='',name='',g='',l='';
+      tk.forEach(function(x){
+        if(!no&&!name&&/^\d+$/.test(x)){no=x;return;}
+        if(!g&&/^(남|여|남자|여자|M|F|m|f)$/.test(x)){g=/^(남|남자|M|m)$/.test(x)?'남':'여';return;}
+        if(!l&&/^(상|중|하)$/.test(x)){l=x;return;}
+        if(!name)name=x;
+      });
+      if(!name||/^(이름|성명|번호)$/.test(name))return;
+      if(out.some(function(s){return s.name===name;}))name=name+'('+(no||out.length+1)+')';
+      out.push({id:out.length,no:no||String(out.length+1),name:name,g:g,l:l});
+    });
+    return out;
+  }
+  function parsePairs(t,P,unknown){
+    var idx={};P.forEach(function(s){idx[s.name]=s.id;});
+    var out=[];
+    String(t||'').split(/\r?\n/).forEach(function(line){
+      var nm=line.split(/\s*[-,·/~&]\s*|\s+/).map(function(x){return x.trim();}).filter(Boolean);
+      if(nm.length<2)return;
+      var ids=[];nm.forEach(function(n){if(n in idx)ids.push(idx[n]);else unknown.push(n);});
+      for(var i=1;i<ids.length;i++)out.push([ids[0],ids[i]]);
+    });
+    return out;
+  }
+  // ---------- 시드 난수 ----------
+  function rngFrom(str){
+    var h=1779033703^str.length;
+    for(var i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}
+    var a=h>>>0;
+    return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+  }
+  function shuffle(arr,R){for(var i=arr.length-1;i>0;i--){var j=Math.floor(R()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t;}return arr;}
+  function sizesFor(N){
+    var G=S.mode==='size'?Math.max(1,Math.floor(N/Math.max(2,+S.size||4))):Math.max(1,Math.min(N,+S.count||1));
+    G=Math.min(G,Math.max(1,N));
+    var base=Math.floor(N/G),r=N%G,out=[];for(var i=0;i<G;i++)out.push(base+(i<r?1:0));return out;
+  }
+  function ctx(){
+    var P=parseRoster(S.roster),unknown=[];
+    var sep=parsePairs(S.sep,P,unknown),tog=parsePairs(S.tog,P,unknown);
+    var idx={};P.forEach(function(s){idx[s.name]=s.id;});
+    var fixedL=[];String(S.leaders||'').split(/[,\n]+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(n){if(n in idx){if(fixedL.indexOf(idx[n])<0)fixedL.push(idx[n]);}else unknown.push(n);});
+    var N=P.length,M=P.filter(function(s){return s.g==='남';}).length,LV={상:0,중:0,하:0};P.forEach(function(s){if(s.l)LV[s.l]++;});
+    return {P:P,sep:sep,tog:tog,fixedL:fixedL,unknown:unknown,N:N,M:M,LV:LV};
+  }
+  function bounds(size,total,N){var x=size*total/N;return [Math.floor(x+1e-9),Math.ceil(x-1e-9)];}
+  function cost(gs,C){
+    var c=0,gi={};gs.forEach(function(g,i){g.forEach(function(id){gi[id]=i;});});
+    C.sep.forEach(function(p){if(gi[p[0]]===gi[p[1]])c+=1000;});
+    C.tog.forEach(function(p){if(gi[p[0]]!==gi[p[1]])c+=1000;});
+    gs.forEach(function(g){
+      if(S.balG){var m=0;g.forEach(function(id){if(C.P[id].g==='남')m++;});var b=bounds(g.length,C.M,C.N);c+=10*(Math.max(0,b[0]-m)+Math.max(0,m-b[1]));}
+      if(S.balL)['상','중','하'].forEach(function(l){if(!C.LV[l])return;var k=0;g.forEach(function(id){if(C.P[id].l===l)k++;});var b=bounds(g.length,C.LV[l],C.N);c+=10*(Math.max(0,b[0]-k)+Math.max(0,k-b[1]));});
+    });
+    return c;
+  }
+  function make(seed){
+    var C=ctx(),R=rngFrom(String(seed)+'|'+S.roster.length),sizes=sizesFor(C.N),G=sizes.length;
+    if(!C.N){S.groups=[];S.leaderIds=[];S.roleMap={};return;}
+    // 같이 두기 묶음
+    var par=C.P.map(function(s){return s.id;});function f(x){while(par[x]!==x)x=par[x]=par[par[x]];return x;}
+    C.tog.forEach(function(p){par[f(p[0])]=f(p[1]);});
+    var cl={};C.P.forEach(function(s){var r=f(s.id);(cl[r]=cl[r]||[]).push(s.id);});
+    var clusters=Object.keys(cl).map(function(k){return cl[k];});
+    var fixedL=C.fixedL.slice(0,G);
+    var best=null,bc=Infinity;
+    for(var at=0;at<80&&bc>0;at++){
+      var gs=sizes.map(function(){return [];}),locked={};
+      var cs=shuffle(clusters.slice(),R).sort(function(a,b){return b.length-a.length;});
+      // 지정 모둠장 묶음을 먼저 서로 다른 모둠에
+      var order=shuffle(sizes.map(function(_,i){return i;}),R);
+      fixedL.forEach(function(lid,k){var c=cs.filter(function(x){return x.indexOf(lid)>=0;})[0];if(!c||locked[lid]!==undefined)return;var gi=order[k%G];if(gs[gi].length+c.length>sizes[gi])return;cs.splice(cs.indexOf(c),1);c.forEach(function(id){gs[gi].push(id);locked[id]=gi;});});
+      cs.forEach(function(c){
+        var cand=[];for(var i=0;i<G;i++)if(gs[i].length+c.length<=sizes[i])cand.push(i);
+        if(!cand.length)for(i=0;i<G;i++)if(gs[i].length<sizes[i])cand.push(i);
+        var bi=-1,bv=Infinity;shuffle(cand,R).forEach(function(i){gs[i]=gs[i].concat(c);var v=cost(gs,C);gs[i]=gs[i].slice(0,gs[i].length-c.length);if(v<bv){bv=v;bi=i;}});
+        if(bi<0)bi=0;c.forEach(function(id){gs[bi].push(id);});
+        if(c.length>1)c.forEach(function(id){locked[id]=bi;});
+      });
+      var cur=cost(gs,C);
+      var free=C.P.map(function(s){return s.id;}).filter(function(id){return locked[id]===undefined;});
+      for(var it=0;it<700&&cur>0;it++){
+        var a=free[Math.floor(R()*free.length)],b=free[Math.floor(R()*free.length)];
+        var ga=-1,gb=-1;gs.forEach(function(g,i){if(g.indexOf(a)>=0)ga=i;if(g.indexOf(b)>=0)gb=i;});
+        if(ga===gb||ga<0||gb<0)continue;
+        var ia=gs[ga].indexOf(a),ib=gs[gb].indexOf(b);gs[ga][ia]=b;gs[gb][ib]=a;
+        var v=cost(gs,C);
+        if(v<=cur)cur=v;else{gs[ga][ia]=a;gs[gb][ib]=b;}
+      }
+      if(cur<bc){bc=cur;best=gs.map(function(g){return g.slice();});}
+    }
+    S.groups=best;
+    assignRoles(R,C);
+  }
+  var LRANK={상:0,중:1,하:2,'':3};
+  function assignRoles(R,C){
+    C=C||ctx();R=R||rngFrom(String(S.seed)+'|roles|'+Date.now());
+    var roles=String(S.roles||'').split(/[,\n]+/).map(function(x){return x.trim();}).filter(Boolean);if(!roles.length)roles=['모둠장'];
+    S.leaderIds=[];S.roleMap={};
+    S.groups.forEach(function(g){
+      var fl=g.filter(function(id){return C.fixedL.indexOf(id)>=0;});
+      var lead=fl.length?fl[0]:null;
+      if(lead===null&&g.length){var cand=shuffle(g.slice(),R).sort(function(a,b){return LRANK[C.P[a]?C.P[a].l:'']-LRANK[C.P[b]?C.P[b].l:''];});lead=cand[0];}
+      if(lead!==null){S.leaderIds.push(lead);S.roleMap[lead]=roles[0];}
+      var rest=shuffle(g.filter(function(id){return id!==lead;}),R);
+      rest.forEach(function(id,k){S.roleMap[id]=roles[k+1]||'도우미';});
+    });
+  }
+  // ---------- 검증 ----------
+  function verify(){
+    var C=ctx(),gs=S.groups||[],out=[],gi={};gs.forEach(function(g,i){g.forEach(function(id){gi[id]=i;});});
+    var sizes=gs.map(function(g){return g.length;}),mn=Math.min.apply(null,sizes),mx=Math.max.apply(null,sizes);
+    out.push(mx-mn<=1?['ok','인원 '+(mn===mx?mn+'명씩':mn+'-'+mx+'명')]:['bad','인원 차이 '+mn+'-'+mx+'명']);
+    if(C.sep.length){var bs=C.sep.filter(function(p){return gi[p[0]]===gi[p[1]];});out.push(bs.length?['bad','떼어 놓기 어김: '+bs.map(function(p){return C.P[p[0]].name+'·'+C.P[p[1]].name;}).join(', ')]:['ok','떼어 놓기 '+C.sep.length+'쌍 지킴']);}
+    if(C.tog.length){var bt=C.tog.filter(function(p){return gi[p[0]]!==gi[p[1]];});out.push(bt.length?['bad','같이 두기 어김: '+bt.map(function(p){return C.P[p[0]].name+'·'+C.P[p[1]].name;}).join(', ')]:['ok','같이 두기 '+C.tog.length+'쌍 지킴']);}
+    if(S.balG){var bg=[];gs.forEach(function(g,i){var m=g.filter(function(id){return C.P[id]&&C.P[id].g==='남';}).length,b=bounds(g.length,C.M,C.N);if(m<b[0]||m>b[1])bg.push((i+1)+'모둠');});out.push(bg.length?['bad','성비 치우침: '+bg.join(', ')]:['ok','성비 고르게']);}
+    if(S.balL&&(C.LV.상+C.LV.중+C.LV.하)){var bl=[];gs.forEach(function(g,i){['상','중','하'].forEach(function(l){if(!C.LV[l])return;var k=g.filter(function(id){return C.P[id]&&C.P[id].l===l;}).length,b=bounds(g.length,C.LV[l],C.N);if((k<b[0]||k>b[1])&&bl.indexOf((i+1)+'모둠')<0)bl.push((i+1)+'모둠');});});out.push(bl.length?['bad','수준 치우침: '+bl.join(', ')]:['ok','수준 상·중·하 고르게']);}
+    var lc=gs.map(function(g){return g.filter(function(id){return (S.leaderIds||[]).indexOf(id)>=0;}).length;});
+    var badL=lc.map(function(n,i){return n!==1?(i+1)+'모둠 '+n+'명':'';}).filter(Boolean);
+    var lostFixed=C.fixedL.filter(function(id){return (S.leaderIds||[]).indexOf(id)<0;});
+    out.push(badL.length||lostFixed.length?['bad','모둠장 확인: '+badL.concat(lostFixed.map(function(id){return C.P[id].name+' 모둠장 아님';})).join(', ')]:['ok','모둠장 모둠마다 1명']);
+    if(C.unknown.length)out.push(['warn','명단에 없는 이름: '+C.unknown.filter(function(x,i,a){return a.indexOf(x)===i;}).join(', ')]);
+    return out;
+  }
+  // ---------- 화면 ----------
+  var selId=null;
+  function valid(){
+    var C=ctx();if(!S.groups||!Array.isArray(S.groups))return false;
+    var seen={},n=0,ok=true;S.groups.forEach(function(g){if(!Array.isArray(g)){ok=false;return;}g.forEach(function(id){if(typeof id!=='number'||!C.P[id]||seen[id])ok=false;seen[id]=1;n++;});});
+    return ok&&n===C.N&&S.leaderIds&&S.roleMap&&typeof S.roleMap==='object';
+  }
+  function gname(i){var th=THEMES[S.theme]||[];if(S.gnames&&typeof S.gnames[i]==='string'&&S.gnames[i])return S.gnames[i];return th.length?th[i%th.length]:'';}
+  function render(){
+    var C=ctx();
+    $('#roster').value=S.roster;$('#count').value=S.count;$('#size').value=S.size;$('#modeCount').checked=S.mode!=='size';$('#modeSize').checked=S.mode==='size';
+    $('#balG').checked=!!S.balG;$('#balL').checked=!!S.balL;$('#sep').value=S.sep;$('#tog').value=S.tog;$('#leaders').value=S.leaders;$('#roles').value=S.roles;$('#theme').value=S.theme;$('#seed').value=S.seed;
+    if(!valid())make(S.seed);
+    var mC=C.M,fC=C.P.filter(function(s){return s.g==='여';}).length;
+    $('#stat').textContent=C.N+'명 → '+S.groups.length+'모둠 (남 '+mC+' · 여 '+fC+')';
+    var V=verify();
+    $('#verify').innerHTML=V.map(function(v){return '<span class="'+v[0]+'">'+(v[0]==='ok'?'✓ ':v[0]==='bad'?'✗ ':'! ')+esc(v[1])+'</span>';}).join('');
+    var gi={};S.groups.forEach(function(g,i){g.forEach(function(id){gi[id]=i;});});
+    var flagged={};C.sep.forEach(function(p){if(gi[p[0]]===gi[p[1]]){flagged[p[0]]=flagged[p[1]]=1;}});C.tog.forEach(function(p){if(gi[p[0]]!==gi[p[1]]){flagged[p[0]]=flagged[p[1]]=1;}});
+    $('#groups').innerHTML=S.groups.map(function(g,i){
+      var m=g.filter(function(id){return C.P[id].g==='남';}).length,f=g.filter(function(id){return C.P[id].g==='여';}).length;
+      var lv=['상','중','하'].map(function(l){return l+g.filter(function(id){return C.P[id].l===l;}).length;}).join(' ');
+      var ord=g.slice().sort(function(a,b){var la=S.leaderIds.indexOf(a)>=0?0:1,lb=S.leaderIds.indexOf(b)>=0?0:1;return la-lb||(+C.P[a].no||0)-(+C.P[b].no||0);});
+      return '<div class="grp" data-g="'+i+'" style="--gc:'+COLORS[i%COLORS.length]+'"><div class="ghead"><span class="gnum">'+(i+1)+'모둠</span><input class="gname" data-gi="'+i+'" value="'+esc(gname(i))+'" aria-label="'+(i+1)+'모둠 이름"><span class="gsum">남'+m+' 여'+f+(C.LV.상+C.LV.중+C.LV.하?' · '+lv:'')+'</span></div><div class="mems">'+
+        ord.map(function(id){var s=C.P[id];return '<div class="mem'+(S.leaderIds.indexOf(id)>=0?' leader':'')+(selId===id?' sel':'')+(flagged[id]?' flag':'')+'" draggable="true" data-id="'+id+'" title="누르거나 끌어서 바꾸기"><span class="no">'+esc(s.no)+'</span><span class="nm">'+esc(s.name)+'</span>'+
+          (s.g?'<span class="sx '+(s.g==='남'?'m':'f')+'">'+s.g+'</span>':'')+(s.l?'<span class="lv">'+s.l+'</span>':'')+'<span class="role">'+esc(S.roleMap[id]||'')+'</span></div>';}).join('')+'</div></div>';
+    }).join('');
+    $('#ptitle').textContent='모둠 편성표 ('+C.N+'명 · '+S.groups.length+'모둠)';
+    save();
+  }
+  var saveT;
+  function save(){clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}},200);}
+  function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1900);}
+  function swap(a,b){
+    var ga=-1,gb=-1;S.groups.forEach(function(g,i){if(g.indexOf(a)>=0)ga=i;if(g.indexOf(b)>=0)gb=i;});
+    if(ga<0||gb<0||ga===gb)return false;
+    S.groups[ga][S.groups[ga].indexOf(a)]=b;S.groups[gb][S.groups[gb].indexOf(b)]=a;
+    var ra=S.roleMap[a];S.roleMap[a]=S.roleMap[b];S.roleMap[b]=ra;
+    var la=S.leaderIds.indexOf(a),lb=S.leaderIds.indexOf(b);if(la>=0&&lb<0)S.leaderIds[la]=b;else if(lb>=0&&la<0)S.leaderIds[lb]=a;
+    return true;
+  }
+  function moveTo(a,gi){
+    var ga=-1;S.groups.forEach(function(g,i){if(g.indexOf(a)>=0)ga=i;});
+    if(ga<0||ga===gi||!S.groups[gi])return;
+    S.groups[ga].splice(S.groups[ga].indexOf(a),1);S.groups[gi].push(a);
+  }
+  function regen(newSeed){selId=null;if(newSeed){S.seed=Math.random().toString(36).slice(2,8);}make(S.seed);render();}
+  // 이벤트
+  function bindVal(id,key,fn){$(id).addEventListener('change',function(){S[key]=fn?fn(this):this.value;if(key==='roles'){assignRoles(null,null);render();return;}if(key==='theme'){S.gnames=null;render();return;}if(key==='seed')return save();regen(false);});}
+  bindVal('#roster','roster');bindVal('#sep','sep');bindVal('#tog','tog');bindVal('#leaders','leaders');bindVal('#roles','roles');bindVal('#theme','theme');bindVal('#seed','seed');
+  bindVal('#count','count',function(e){return Math.max(1,Math.min(20,+e.value||1));});
+  bindVal('#size','size',function(e){return Math.max(2,Math.min(15,+e.value||4));});
+  bindVal('#balG','balG',function(e){return e.checked;});bindVal('#balL','balL',function(e){return e.checked;});
+  ['#modeCount','#modeSize'].forEach(function(id){$(id).addEventListener('change',function(){S.mode=$('#modeSize').checked?'size':'count';regen(false);});});
+  $('#make').addEventListener('click',function(){S.seed=$('#seed').value.trim()||'햇살';regen(false);toast('시드 "'+S.seed+'"로 편성했어요');});
+  $('#shuffle').addEventListener('click',function(){regen(true);});
+  $('#reroles').addEventListener('click',function(){assignRoles(null,null);render();toast('지금 모둠 그대로 모둠장·역할을 다시 나눴어요');});
+  $('#groups').addEventListener('change',function(e){var g=e.target.closest('.gname');if(!g)return;S.gnames=S.gnames||S.groups.map(function(_,i){return gname(i);});S.gnames[+g.getAttribute('data-gi')]=g.value;save();});
+  $('#groups').addEventListener('click',function(e){
+    var m=e.target.closest('.mem');if(!m)return;var id=+m.getAttribute('data-id');
+    if(selId===null){selId=id;render();return;}
+    if(selId===id){selId=null;render();return;}
+    var a=selId;selId=null;
+    if(swap(a,id))toast('자리를 바꿨어요');
+    render();
+  });
+  var dragId=null;
+  $('#groups').addEventListener('dragstart',function(e){var m=e.target.closest&&e.target.closest('.mem');if(!m)return;dragId=+m.getAttribute('data-id');try{e.dataTransfer.setData('text/plain','m');e.dataTransfer.effectAllowed='move';}catch(x){}});
+  $('#groups').addEventListener('dragover',function(e){if(dragId===null)return;e.preventDefault();var g=e.target.closest&&e.target.closest('.grp');$$('.grp.over').forEach(function(x){if(x!==g)x.classList.remove('over');});if(g)g.classList.add('over');});
+  $('#groups').addEventListener('drop',function(e){
+    if(dragId===null)return;e.preventDefault();
+    var m=e.target.closest&&e.target.closest('.mem'),g=e.target.closest&&e.target.closest('.grp');
+    if(m&&+m.getAttribute('data-id')!==dragId){swap(dragId,+m.getAttribute('data-id'));toast('자리를 바꿨어요');}
+    else if(g&&!m){moveTo(dragId,+g.getAttribute('data-g'));toast('모둠을 옮겼어요');}
+    dragId=null;selId=null;render();
+  });
+  $('#groups').addEventListener('dragend',function(){dragId=null;$$('.grp.over').forEach(function(x){x.classList.remove('over');});});
+  function $$(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
+  function copyText(s){
+    if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(s).catch(fb);
+    return fb();
+    function fb(){return new Promise(function(ok,no){var ta=document.createElement('textarea');ta.value=s;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')?ok():no();}catch(e){no(e);}ta.remove();});}
+  }
+  $('#copy').addEventListener('click',function(){
+    var C=ctx(),L=['모둠\t이름\t역할'];
+    S.groups.forEach(function(g,i){g.forEach(function(id){L.push((i+1)+'모둠 '+gname(i)+'\t'+C.P[id].name+'\t'+(S.roleMap[id]||''));});});
+    copyText(L.join('\n')).then(function(){toast('편성표를 복사했어요. 엑셀·한글에 붙여넣으세요');},function(){toast('복사에 실패했어요');});
+  });
+  $('#printBtn').addEventListener('click',function(){window.print();});
+  $('#wipeAll').addEventListener('click',function(){if(!confirm('이 PC에 저장된 명단과 모둠 기록을 모두 지울까요? 되돌릴 수 없어요.'))return;clearTimeout(saveT);try{localStorage.removeItem(KEY);}catch(e){}S=JSON.parse(JSON.stringify(DEF));selId=null;render();setTimeout(function(){clearTimeout(saveT);try{localStorage.removeItem(KEY);}catch(e){}},300);toast('기록을 지웠어요');});
+  render();
+  window.__gm={state:function(){return S;},make:function(s){S.seed=String(s);make(S.seed);render();},verify:verify,cost:function(){return cost(S.groups,ctx());}};
+})();
+</script>
+</body>
+</html>

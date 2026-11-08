@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>역사 타임머신 - 그 시대 사람과 대화하며 생활 모습 알아보기</title>
+<meta name="description" content="신석기·신라·조선·근대 네 시대로 타임머신을 타고 들어가, 그때 사람과 대화하며 집·그릇·신분 제도·한글·전차 같은 생활 모습을 알아보고 퀴즈로 도장을 모으는 역사 체험.">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#120d2a;color:#2a2235;-webkit-user-select:none;user-select:none}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hud{position:fixed;left:0;right:0;top:0;display:flex;align-items:flex-start;gap:8px;padding:10px 12px;pointer-events:none;z-index:3}
+.hud>*{pointer-events:auto}
+.ttl{background:rgba(255,250,240,.92);border-radius:16px;padding:7px 14px;box-shadow:0 4px 14px rgba(0,0,0,.2);min-width:0}
+.ttl h1{margin:0;font-size:21px;letter-spacing:-.5px}
+.ttl small{display:block;font-size:12px;color:#6b5a7a}
+.sp{flex:1}
+.ib{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,250,240,.92);font-size:20px;box-shadow:0 4px 14px rgba(0,0,0,.2);flex-shrink:0}
+.ib[aria-pressed=true]{background:#ffd76a}
+.back{position:fixed;right:10px;bottom:6px;font-size:12px;color:#fff;background:rgba(0,0,0,.45);padding:4px 10px;border-radius:99px;text-decoration:none;z-index:6}
+.ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:70px 14px 36px;z-index:5;pointer-events:none}
+.ov.on{display:flex}
+.ov.dim{background:rgba(15,10,30,.45)}
+.card{pointer-events:auto;background:#fffaf0;border-radius:22px;padding:18px 20px;width:100%;max-width:560px;box-shadow:0 18px 50px rgba(0,0,0,.4);max-height:100%;overflow:auto;border:3px solid #e6cf9c}
+.card h2{margin:0 0 6px;font-size:23px}
+.card p{margin:6px 0;line-height:1.5}
+.big{border:0;border-radius:14px;padding:11px 18px;font-weight:900;font-size:17px;background:#6a3fd1;color:#fff;margin:8px 6px 0 0}
+.big.alt{background:#ece4f7;color:#3c2a66}
+.clue{font-size:14px;color:#6b5a7a}
+.eras{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.era{border:2px solid #e2d3b0;background:#fff;border-radius:16px;padding:10px;text-align:left;position:relative}
+.era b{display:block;font-size:17px}
+.era span{font-size:13px;color:#6b5a7a}
+.era .em{font-size:26px;float:right;margin-left:6px}
+.era.done{border-color:#c0392b;background:#fff3ef}
+.era.done::after{content:"도장";position:absolute;right:8px;bottom:6px;color:#c0392b;border:2px solid #c0392b;border-radius:50%;width:38px;height:38px;display:grid;place-items:center;font-weight:900;font-size:12px;transform:rotate(-14deg);background:rgba(255,255,255,.8)}
+.era:hover{background:#fbf6ff}
+#talk{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;width:min(760px,calc(100vw - 16px));display:none;z-index:4}
+#talk.on{display:block}
+#say{background:rgba(255,250,240,.96);border-radius:20px;padding:12px 16px 12px;box-shadow:0 10px 30px rgba(0,0,0,.35);border:3px solid #e6cf9c;cursor:pointer;min-height:96px}
+#sayWho{display:inline-block;background:#3c2a66;color:#ffe9a8;font-weight:900;font-size:14px;padding:3px 11px;border-radius:99px;margin-bottom:6px}
+#sayText{font-size:17px;line-height:1.55;min-height:52px}
+#sayText::after{content:"";}
+#more{float:right;font-size:12px;color:#8a7a9a}
+#opts{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+#opts button{border:0;background:rgba(60,42,102,.92);color:#fff;font-weight:800;font-size:15px;text-align:left;padding:10px 14px;border-radius:14px}
+#opts button:hover{background:#5a3fa0}
+#opts button.quiz{background:#c0392b}
+#opts button.home{background:rgba(255,250,240,.9);color:#3c2a66}
+#eraTag{position:fixed;left:50%;top:70px;transform:translateX(-50%);max-width:calc(100vw - 20px);text-align:center;background:rgba(20,14,40,.75);color:#ffe9a8;font-weight:900;font-size:15px;padding:6px 16px;border-radius:99px;z-index:3;display:none}
+#eraTag.on{display:block}
+#qOpts{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+#qOpts button{border:2px solid #e2d3b0;background:#fff;border-radius:14px;padding:10px;font-weight:900;font-size:16px;text-align:left}
+#qOpts button.right{background:#e8f6e6;border-color:#3f9a46}
+#qfb{min-height:22px;color:#b4471b;font-weight:700;font-size:14px;margin-top:6px}
+#stampMsg{color:#2d6a1f;font-weight:900}
+.cert{border:3px double #c0392b;border-radius:16px;padding:10px 14px;background:#fffdf6}
+.cert div{font-size:15px;margin:3px 0}
+@media (min-width:900px){#hub{justify-content:flex-start;padding-left:4vw}#talk{left:3vw;transform:none;width:min(600px,54vw)}}
+@media (max-width:520px){#eraTag{font-size:12px;border-radius:14px;padding:5px 10px}.ttl h1{font-size:18px}.ttl small{font-size:11px}.card{padding:14px}.card h2{font-size:20px}.era b{font-size:15px}.era .em{font-size:20px}#sayText{font-size:15px}#opts button{font-size:14px;padding:8px 11px}.big{font-size:15px;padding:9px 13px}}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="역사 타임머신">
+<meta property="og:description" content="시대를 골라 장면 속으로 들어가 그때 사람과 대화하며 생활 모습을 알아보기">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/81-time-machine.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/time-machine/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<canvas id="cv" aria-label="시대 장면"></canvas>
+<div class="hud">
+  <div class="ttl"><h1>⏳ 역사 타임머신</h1><small id="sub">시대를 골라 출발하세요</small></div>
+  <div class="sp"></div>
+  <button class="ib" id="snd" aria-pressed="false" title="소리 켜기/끄기" aria-label="소리">🔈</button>
+  <button class="ib" id="fs" title="전체화면" aria-label="전체화면">⛶</button>
+</div>
+<div id="eraTag"></div>
+
+<div class="ov" id="hub"><div class="card">
+  <h2>⏳ 역사 타임머신</h2>
+  <p>가고 싶은 시대를 누르면 그 시대 마을로 들어가요. 그곳 사람에게 <b>세 가지</b>를 물어보고, 퀴즈를 풀어 <b>도장 4개</b>를 모아 보세요.</p>
+  <div class="eras" id="eras"></div>
+  <p class="clue">대화 중에는 숫자 키 1·2·3으로 고르고, 말풍선을 누르면 대사가 바로 다 나와요. 화면을 끌면 장면을 둘러볼 수 있어요.</p>
+</div></div>
+
+<div id="talk">
+  <div id="say" role="button" tabindex="0" aria-label="대사 넘기기"><span id="sayWho"></span><span id="more">▼ 눌러서 넘기기</span><div id="sayText" aria-live="polite"></div></div>
+  <div id="opts"></div>
+</div>
+
+<div class="ov dim" id="quiz"><div class="card">
+  <h2>🧧 도장 퀴즈</h2>
+  <p id="qText"></p>
+  <div id="qOpts"></div>
+  <div id="qfb" aria-live="polite"></div>
+  <p id="stampMsg"></p>
+  <button class="big" id="qNext" hidden>⏳ 타임머신으로 돌아가기</button>
+</div></div>
+
+<div class="ov dim" id="end"><div class="card">
+  <h2>🎖️ 시간 여행자 수료증</h2>
+  <div class="cert" id="cert"></div>
+  <p id="endMsg"></p>
+  <button class="big" id="again">🔁 다시 여행하기</button>
+</div></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const KEY = 'edu-expo-time-machine-v1';
+let store = null;
+try { store = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+if (!store || typeof store !== 'object') store = {};
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} };
+
+// 등장인물은 모두 그 시대의 평범한 가상 인물입니다.
+const ERAS = [
+  { id: 'neo', em: '🏺', name: '신석기 시대', when: '약 1만 년 전 무렵부터', place: '큰 강가 마을', year: '약 6000년 전',
+    who: '강가 마을 아이 다미', look: 'neo',
+    hello: '어, 처음 보는 옷을 입었네? 여기는 강가 마을이야. 우리는 이 강 옆에 집을 짓고 모여 살아. 뭐가 궁금해?',
+    qs: [
+      { q: '이 집은 어떻게 지었어?', a: '이건 움집이야. 땅을 둥글게 파고 기둥을 세운 다음, 풀과 갈대로 지붕을 덮었어. 집 가운데 화덕에 불을 피워 음식을 익히고 몸도 녹여.' },
+      { q: '그 그릇은 뭐야?', a: '빗살무늬 토기야! 흙을 빚어 불에 구운 그릇인데, 겉에 빗살 같은 무늬를 새겼어. 밑이 뾰족해서 강가 모래에 꽂아 세워 두고 도토리나 곡식을 담아.' },
+      { q: '먹을 건 어떻게 구해?', a: '조나 피 같은 곡식을 조금씩 농사짓기 시작했어. 강에서 물고기를 잡고 조개도 줍고 사냥도 해. 돌을 갈아 만든 간석기로 곡식을 갈고, 그물추를 달아 그물로 고기를 잡지.' }
+    ],
+    quiz: { q: '신석기 사람들이 곡식을 담아 모래에 꽂아 두던, 밑이 뾰족한 그릇은?', opts: [['빗살무늬 토기', 1], ['고려청자', 0], ['가마솥', 0]], hint: '겉에 빗살 같은 무늬를 새긴 흙그릇이었어요.' } },
+  { id: 'silla', em: '👑', name: '신라', when: '약 1400년 전 (7세기)', place: '서라벌(지금의 경주) 시장', year: '7세기',
+    who: '서라벌 그릇 장수 마루', look: 'silla',
+    hello: '어서 오시오! 여기는 신라의 서울, 서라벌 시장이라오. 구경 왔소? 무엇이든 물어보시오.',
+    qs: [
+      { q: '저 돌로 쌓은 탑은 뭐예요?', a: '저건 첨성대요. 선덕여왕 때 세웠는데, 하늘의 해와 달, 별을 살펴 계절과 날씨를 알아내는 데 썼다고 전해진다오. 농사짓는 데 아주 중요한 일이었지.' },
+      { q: '신라 사람들은 다 똑같이 살아요?', a: '아니라오. 신라에는 골품제라는 신분 제도가 있소. 태어난 신분에 따라 오를 수 있는 벼슬은 물론이고, 집의 크기와 옷 색깔까지 정해져 있지.' },
+      { q: '신라에서 유명한 건 뭐예요?', a: '금관이 유명하지! 큰 무덤에서 나온 금관에는 나뭇가지와 사슴뿔 모양 장식이 달려 있소. 또 화랑이라는 젊은이들이 무리를 지어 무예와 학문을 함께 닦는다오.' }
+    ],
+    quiz: { q: '신라에서 태어난 신분에 따라 벼슬과 집 크기·옷 색깔까지 정한 제도는?', opts: [['골품제', 1], ['과거 시험', 0], ['향약', 0]], hint: '‘골’과 ‘품’으로 신분을 나눈 제도예요.' } },
+  { id: 'joseon', em: '📜', name: '조선', when: '약 250년 전 (조선 후기)', place: '산골 마을 서당', year: '18세기',
+    who: '서당 훈장님', look: 'joseon',
+    hello: '허허, 낯선 아이로구나. 여기는 아이들이 글을 배우는 서당이란다. 궁금한 것이 있으면 물어보거라.',
+    qs: [
+      { q: '서당에서는 무엇을 배워요?', a: '천자문으로 한자를 익히고, 소학 같은 책으로 바른 몸가짐을 배운단다. 책 한 권을 다 떼면 책거리를 하며 떡을 나누어 먹지.' },
+      { q: '한글은 누가 만들었어요?', a: '세종대왕께서 1443년에 훈민정음을 만드시고, 1446년에 널리 펴셨지. 백성 누구나 쉽게 배워 자기 뜻을 글로 쓸 수 있게 하려는 마음이셨단다.' },
+      { q: '물건은 어디서 사요?', a: '닷새마다 서는 장, 오일장에 가지. 보부상들이 이 장 저 장을 돌며 물건을 팔고, 상평통보 같은 엽전이나 쌀·베로 물건값을 치른단다.' }
+    ],
+    quiz: { q: '세종대왕이 만든 우리 글자의 처음 이름은?', opts: [['훈민정음', 1], ['천자문', 0], ['동의보감', 0]], hint: '‘백성을 가르치는 바른 소리’라는 뜻이에요.' } },
+  { id: 'modern', em: '🚋', name: '근대 (대한제국)', when: '약 120년 전 (1900년 무렵)', place: '한성(지금의 서울) 거리', year: '1900년 무렵',
+    who: '신식 학교 학생 순이', look: 'modern',
+    hello: '안녕! 여기는 한성 거리야. 요즘 새로운 물건이 하루가 다르게 생기고 있어. 뭐가 제일 궁금해?',
+    qs: [
+      { q: '길 위를 달리는 저건 뭐야?', a: '전차야! 1899년에 서대문과 청량리 사이를 처음 달리기 시작했어. 전기로 움직이는데, 처음엔 구경하러 온 사람이 엄청 많았대.' },
+      { q: '학교는 어떤 곳이야?', a: '서당과 달리 여러 학생이 한 교실에서 국어·산수·역사·체조 같은 과목을 나눠 배워. 배재학당이나 이화학당 같은 신식 학교가 세워졌고, 나 같은 여자아이도 학교에 다니기 시작했어.' },
+      { q: '밤에도 거리가 밝아?', a: '전깃불이 들어오기 시작했거든. 1887년에 경복궁에서 처음 전등이 켜졌고, 거리에도 하나둘 전등이 생기고 있어. 우편과 전화도 생겨서 소식이 훨씬 빨라졌어.' }
+    ],
+    quiz: { q: '1899년 서울에서 처음 다니기 시작한, 전기로 달리는 탈것은?', opts: [['전차', 1], ['지하철', 0], ['고속버스', 0]], hint: '길 위에 깔린 선로를 따라 전기로 달렸어요.' } }
+];
+
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, dpr = 1, manual = false;
+let rnd = mulberry(11);
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const g = { phase: 'hub', t: 0, era: -1, stamps: [], asked: [], log: [], line: '', typed: 0, who: '', next: null, warp: 0, par: { x: 0, y: 0 }, mouse: { x: 0, y: 0 }, drag: null, tries: 0, wait: 0, stars: [], parts: [] };
+for (let i = 0; i < 260; i++) g.stars.push({ a: rnd() * Math.PI * 2, z: rnd(), s: .5 + rnd() * 1.5, c: rnd() });
+
+function resize() { dpr = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+
+// ---- 그리기 도우미 ----
+const P = (x, y) => [x, y];
+function hills(base, amp, col, k, seed, step) {
+  const px = g.par.x * k, py = g.par.y * k * .3;
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-80, H);
+  for (let x = -80; x <= W + 80; x += step || 24) { const xx = x - px; ctx.lineTo(x, base + py - (Math.sin(xx / 210 + seed) * .5 + .5) * amp - Math.sin(xx / 77 + seed * 2) * amp * .15); }
+  ctx.lineTo(W + 80, H); ctx.fill();
+}
+function sky(top, mid, bot) { const gr = ctx.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, top); gr.addColorStop(.6, mid); gr.addColorStop(1, bot); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H); }
+function sun(x, y, r, col) { const gr = ctx.createRadialGradient(x, y, r * .2, x, y, r * 3); gr.addColorStop(0, col); gr.addColorStop(.3, col.replace(/[\d.]+\)$/, '.35)')); gr.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, r * 3, 0, 7); ctx.fill(); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
+const U = () => Math.max(Math.min(W, H * 1.6), H * .7) / 1000; // 장면 기준 크기
+function lay(k) { return { x: -g.par.x * k, y: -g.par.y * k * .3 }; }
+function smoke(x, y, s) { for (let i = 0; i < 6; i++) { const t = (g.t * .25 + i / 6) % 1; ctx.fillStyle = `rgba(230,230,230,${.45 * (1 - t)})`; ctx.beginPath(); ctx.arc(x + Math.sin(t * 5 + i) * 10 * s + t * 30 * s, y - t * 120 * s, (8 + t * 24) * s, 0, 7); ctx.fill(); } }
+
+function person(x, y, s, look, talking) {
+  const bob = Math.sin(g.t * 2) * 2 * s, blink = (g.t % 3.7) < .12;
+  ctx.save(); ctx.translate(x, y + bob); ctx.scale(s, s);
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(0, 4 - bob / s, 70, 14, 0, 0, 7); ctx.fill();
+  const skin = '#f2c9a0';
+  let body = '#8a6a44', body2 = '#6a4f30', hair = '#2b1d14';
+  if (look === 'silla') { body = '#3f6fa8'; body2 = '#2c4f7a'; }
+  if (look === 'joseon') { body = '#f4f1e8'; body2 = '#d9d3c4'; }
+  if (look === 'modern') { body = '#f8f6ef'; body2 = '#2c2c38'; }
+  // 다리·치마
+  if (look === 'modern') { ctx.fillStyle = body2; ctx.beginPath(); ctx.moveTo(-42, -110); ctx.lineTo(42, -110); ctx.lineTo(58, 0); ctx.lineTo(-58, 0); ctx.fill(); }
+  else if (look === 'joseon') { ctx.fillStyle = body2; ctx.beginPath(); ctx.moveTo(-46, -150); ctx.lineTo(46, -150); ctx.lineTo(62, 0); ctx.lineTo(-62, 0); ctx.fill(); }
+  else { ctx.fillStyle = body2; ctx.fillRect(-34, -70, 26, 70); ctx.fillRect(8, -70, 26, 70); }
+  // 몸통
+  ctx.fillStyle = body; ctx.beginPath(); ctx.moveTo(-44, -190); ctx.quadraticCurveTo(0, -205, 44, -190); ctx.lineTo(look === 'joseon' ? 56 : 48, look === 'modern' ? -105 : -60); ctx.lineTo(look === 'joseon' ? -56 : -48, look === 'modern' ? -105 : -60); ctx.closePath(); ctx.fill();
+  if (look === 'neo') { ctx.strokeStyle = '#5a4128'; ctx.lineWidth = 3; for (let i = -40; i <= 40; i += 9) { ctx.beginPath(); ctx.moveTo(i, -62); ctx.lineTo(i + 2, -48); ctx.stroke(); } ctx.fillStyle = '#d9c39a'; ctx.beginPath(); ctx.arc(0, -168, 6, 0, 7); ctx.fill(); }
+  if (look === 'silla') { ctx.fillStyle = '#d9a43a'; ctx.fillRect(-46, -112, 92, 10); }
+  if (look === 'joseon' || look === 'modern') { ctx.strokeStyle = look === 'joseon' ? '#bdb6a6' : '#d6d0c0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-14, -192); ctx.lineTo(10, -150); ctx.stroke(); ctx.fillStyle = look === 'modern' ? '#a33a3a' : '#7c6a4a'; ctx.beginPath(); ctx.moveTo(8, -152); ctx.lineTo(30, -130); ctx.lineTo(12, -138); ctx.fill(); }
+  // 팔
+  ctx.strokeStyle = body; ctx.lineWidth = 20; ctx.lineCap = 'round';
+  const wave = talking ? Math.sin(g.t * 6) * 8 : 0;
+  ctx.beginPath(); ctx.moveTo(-40, -180); ctx.lineTo(-62, -110 + wave); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(40, -180); ctx.lineTo(60, -112); ctx.stroke();
+  ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(-63, -104 + wave, 10, 0, 7); ctx.arc(61, -106, 10, 0, 7); ctx.fill();
+  if (look === 'modern') { ctx.fillStyle = '#7a4a2a'; ctx.fillRect(48, -120, 34, 26); ctx.fillStyle = '#e8d8b0'; ctx.fillRect(52, -116, 26, 3); }
+  if (look === 'neo') { ctx.fillStyle = '#9a6b45'; ctx.beginPath(); ctx.moveTo(52, -140); ctx.lineTo(84, -140); ctx.quadraticCurveTo(86, -100, 68, -84); ctx.quadraticCurveTo(50, -100, 52, -140); ctx.fill(); ctx.strokeStyle = '#6a4528'; ctx.lineWidth = 2; for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(56, -134 + k * 10); ctx.lineTo(62, -128 + k * 10); ctx.lineTo(68, -134 + k * 10); ctx.lineTo(74, -128 + k * 10); ctx.lineTo(80, -134 + k * 10); ctx.stroke(); } }
+  // 목·얼굴
+  ctx.fillStyle = skin; ctx.fillRect(-10, -212, 20, 22);
+  ctx.beginPath(); ctx.ellipse(0, -245, 34, 38, 0, 0, 7); ctx.fill();
+  // 머리카락·모자
+  ctx.fillStyle = hair;
+  if (look === 'joseon') { ctx.beginPath(); ctx.ellipse(0, -270, 34, 16, 0, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#1b1b1f'; ctx.fillRect(-18, -312, 36, 36); ctx.globalAlpha = .9; ctx.beginPath(); ctx.ellipse(0, -276, 78, 12, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = '#e8e4da'; ctx.beginPath(); ctx.moveTo(-16, -222); ctx.quadraticCurveTo(0, -180, 16, -222); ctx.fill(); }
+  else if (look === 'silla') { ctx.beginPath(); ctx.ellipse(0, -262, 36, 24, 0, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#c94a3a'; ctx.beginPath(); ctx.ellipse(0, -272, 38, 14, 0, Math.PI, 0); ctx.fill(); ctx.fillRect(-38, -274, 76, 6); }
+  else if (look === 'modern') { ctx.beginPath(); ctx.ellipse(0, -258, 37, 30, 0, Math.PI, 0); ctx.fill(); ctx.fillRect(-37, -258, 12, 34); ctx.fillRect(25, -258, 12, 34); ctx.strokeStyle = hair; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(-30, -230); ctx.quadraticCurveTo(-50, -180, -38, -150); ctx.stroke(); ctx.fillStyle = '#c0392b'; ctx.fillRect(-46, -158, 16, 10); }
+  else { ctx.beginPath(); ctx.ellipse(0, -262, 38, 28, 0, Math.PI, 0); ctx.fill(); ctx.fillRect(-38, -262, 10, 40); ctx.fillRect(28, -262, 10, 40); ctx.fillStyle = '#c9b35a'; ctx.fillRect(-36, -268, 72, 5); }
+  // 눈·입
+  ctx.fillStyle = '#2b1d14';
+  if (blink) { ctx.fillRect(-16, -248, 10, 2); ctx.fillRect(6, -248, 10, 2); }
+  else { ctx.beginPath(); ctx.arc(-11, -248, 4, 0, 7); ctx.arc(11, -248, 4, 0, 7); ctx.fill(); }
+  ctx.fillStyle = 'rgba(230,120,110,.35)'; ctx.beginPath(); ctx.arc(-20, -235, 6, 0, 7); ctx.arc(20, -235, 6, 0, 7); ctx.fill();
+  const m = talking ? 2 + Math.abs(Math.sin(g.t * 14)) * 6 : 2;
+  ctx.fillStyle = '#9a3b33'; ctx.beginPath(); ctx.ellipse(0, -226, 7, m, 0, 0, 7); ctx.fill();
+  ctx.restore();
+}
+
+// ---- 시대 장면 ----
+function sceneNeo() {
+  const u = U();
+  sky('#f7b98a', '#fde3c2', '#f7efd8'); sun(W * .72 - g.par.x * 3, H * .3, 40 * u, 'rgba(255,240,200,1)');
+  hills(H * .5, 120 * u, '#a7b6a0', 8, 1); hills(H * .58, 80 * u, '#7f9a72', 18, 3);
+  // 강
+  const ry = H * .66; ctx.fillStyle = '#6fa3c4'; ctx.fillRect(0, ry, W, H * .1);
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2; for (let i = 0; i < 18; i++) { const x = ((i * 137 + g.t * 30) % (W + 100)) - 50, y = ry + 8 + (i % 4) * H * .02; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 30, y); ctx.stroke(); }
+  ctx.fillStyle = '#d9c08a'; ctx.fillRect(0, H * .75, W, H * .25);
+  // 움집
+  const L = lay(30);
+  for (const [fx, sc] of [[.18, 1], [.42, .8], [.6, .65]]) {
+    const x = W * fx + L.x, y = H * .76, s = sc * u * 1.1;
+    ctx.fillStyle = '#9c7a45'; ctx.beginPath(); ctx.moveTo(x - 110 * s, y); ctx.lineTo(x, y - 170 * s); ctx.lineTo(x + 110 * s, y); ctx.fill();
+    ctx.strokeStyle = 'rgba(80,55,25,.6)'; ctx.lineWidth = 2; for (let k = -100; k <= 100; k += 14) { ctx.beginPath(); ctx.moveTo(x, y - 165 * s); ctx.lineTo(x + k * s, y); ctx.stroke(); }
+    ctx.fillStyle = '#3a2614'; ctx.beginPath(); ctx.moveTo(x - 22 * s, y); ctx.lineTo(x, y - 55 * s); ctx.lineTo(x + 22 * s, y); ctx.fill();
+    smoke(x, y - 170 * s, s);
+  }
+  // 토기와 갈대(앞)
+  const F = lay(60);
+  ctx.save(); ctx.translate(W * .33 + F.x, H * .9); ctx.fillStyle = '#a0704a'; ctx.beginPath(); ctx.moveTo(-28 * u, -70 * u); ctx.lineTo(28 * u, -70 * u); ctx.quadraticCurveTo(32 * u, -20 * u, 0, 10 * u); ctx.quadraticCurveTo(-32 * u, -20 * u, -28 * u, -70 * u); ctx.fill();
+  ctx.strokeStyle = '#6a4528'; ctx.lineWidth = 2; for (let k = 0; k < 5; k++) { ctx.beginPath(); for (let j = 0; j < 6; j++) ctx.lineTo((-24 + j * 9.6) * u, (-62 + k * 11 + (j % 2) * 6) * u); ctx.stroke(); } ctx.restore();
+  reeds(F.x, '#8a9a4a');
+}
+function reeds(ox, col) { ctx.strokeStyle = col; ctx.lineWidth = 3; for (let i = 0; i < 26; i++) { const x = (i * 53) % (W + 60) + ox - 30, h = 60 + (i * 37) % 70; ctx.beginPath(); ctx.moveTo(x, H); ctx.quadraticCurveTo(x + 4, H - h * .6, x + 10 + Math.sin(g.t * 1.5 + i) * 8, H - h); ctx.stroke(); } }
+function giwa(x, y, w, h, s) {
+  ctx.fillStyle = '#efe7d6'; ctx.fillRect(x - w / 2, y - h, w, h);
+  ctx.fillStyle = '#7a4a2a'; for (let k = 0; k <= 4; k++) ctx.fillRect(x - w / 2 + k * (w / 4) - 3 * s, y - h, 6 * s, h);
+  ctx.fillStyle = '#3d434c'; ctx.beginPath(); ctx.moveTo(x - w / 2 - 30 * s, y - h + 8 * s); ctx.quadraticCurveTo(x, y - h + 20 * s, x + w / 2 + 30 * s, y - h + 8 * s); ctx.lineTo(x + w / 2 - 10 * s, y - h - 50 * s); ctx.lineTo(x - w / 2 + 10 * s, y - h - 50 * s); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#2a2e35'; ctx.fillRect(x - w / 2 + 4 * s, y - h - 56 * s, w - 8 * s, 8 * s);
+}
+function sceneSilla() {
+  const u = U();
+  sky('#f08a5d', '#f9c58b', '#fde8c4'); sun(W * .25 - g.par.x * 3, H * .42, 46 * u, 'rgba(255,230,170,1)');
+  hills(H * .55, 90 * u, '#b7907a', 8, 2);
+  // 고분(둥근 무덤)
+  const M = lay(14);
+  for (const [fx, r] of [[.1, 120], [.32, 90], [.86, 140]]) { ctx.fillStyle = '#7f9a5a'; ctx.beginPath(); ctx.ellipse(W * fx + M.x, H * .64, r * u * 1.4, r * u * .7, 0, Math.PI, 0); ctx.fill(); }
+  ctx.fillStyle = '#c9b48a'; ctx.fillRect(0, H * .64, W, H);
+  // 첨성대
+  const C = lay(22), cx = W * .55 + C.x, cb = H * .66, s = u * 1.1;
+  ctx.fillStyle = '#c8b9a0'; ctx.fillRect(cx - 60 * s, cb - 16 * s, 120 * s, 16 * s);
+  ctx.beginPath(); ctx.moveTo(cx - 48 * s, cb - 16 * s); ctx.bezierCurveTo(cx - 52 * s, cb - 120 * s, cx - 26 * s, cb - 190 * s, cx - 24 * s, cb - 230 * s); ctx.lineTo(cx + 24 * s, cb - 230 * s); ctx.bezierCurveTo(cx + 26 * s, cb - 190 * s, cx + 52 * s, cb - 120 * s, cx + 48 * s, cb - 16 * s); ctx.fill();
+  ctx.strokeStyle = 'rgba(110,95,70,.5)'; ctx.lineWidth = 1.5; for (let y = cb - 26 * s; y > cb - 228 * s; y -= 10 * s) { ctx.beginPath(); ctx.moveTo(cx - 60 * s, y); ctx.lineTo(cx + 60 * s, y); ctx.stroke(); }
+  ctx.save(); ctx.beginPath(); ctx.moveTo(cx - 48 * s, cb - 16 * s); ctx.bezierCurveTo(cx - 52 * s, cb - 120 * s, cx - 26 * s, cb - 190 * s, cx - 24 * s, cb - 230 * s); ctx.lineTo(cx + 24 * s, cb - 230 * s); ctx.bezierCurveTo(cx + 26 * s, cb - 190 * s, cx + 52 * s, cb - 120 * s, cx + 48 * s, cb - 16 * s); ctx.clip(); ctx.restore();
+  ctx.fillStyle = '#3a2d22'; ctx.fillRect(cx - 12 * s, cb - 130 * s, 24 * s, 24 * s);
+  ctx.fillStyle = '#b8a888'; ctx.fillRect(cx - 32 * s, cb - 246 * s, 64 * s, 16 * s);
+  // 기와집 줄
+  const Hs = lay(34);
+  for (let i = 0; i < 4; i++) giwa(W * (.12 + i * .26) + Hs.x, H * .8, 170 * u, 70 * u, u);
+  // 시장 좌판(앞)
+  const F = lay(60);
+  ctx.fillStyle = '#8a5a34'; ctx.fillRect(W * .05 + F.x, H * .86, W * .32, 14 * u); ctx.fillRect(W * .07 + F.x, H * .86, 10 * u, H * .14); ctx.fillRect(W * .35 + F.x, H * .86, 10 * u, H * .14);
+  for (let k = 0; k < 5; k++) { const x = W * .09 + F.x + k * W * .055, y = H * .86; ctx.fillStyle = k % 2 ? '#6f5a48' : '#8b7660'; ctx.beginPath(); ctx.ellipse(x, y - 20 * u, 22 * u, 22 * u, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#3f3226'; ctx.beginPath(); ctx.ellipse(x, y - 40 * u, 13 * u, 4 * u, 0, 0, 7); ctx.fill(); }
+}
+function sceneJoseon() {
+  const u = U();
+  sky('#7fc2ec', '#cfe9f7', '#f3f6e8');
+  for (let i = 0; i < 3; i++) { const x = ((i * 400 + g.t * 10) % (W + 300)) - 150 - g.par.x * 4; ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.ellipse(x, H * (.12 + i * .06), 80 * u, 18 * u, 0, 0, 7); ctx.ellipse(x + 40 * u, H * (.12 + i * .06) - 10 * u, 50 * u, 16 * u, 0, 0, 7); ctx.fill(); }
+  hills(H * .45, 160 * u, '#93b5a1', 8, 4, 18); hills(H * .55, 110 * u, '#6e9a6c', 16, 1);
+  ctx.fillStyle = '#d7c7a0'; ctx.fillRect(0, H * .7, W, H);
+  // 초가집
+  const L = lay(26);
+  for (const [fx, sc] of [[.08, .7], [.8, .8], [.93, .6]]) {
+    const x = W * fx + L.x, y = H * .72, s = sc * u * 1.2;
+    ctx.fillStyle = '#ece3cf'; ctx.fillRect(x - 70 * s, y - 60 * s, 140 * s, 60 * s);
+    ctx.fillStyle = '#7a5530'; ctx.fillRect(x - 15 * s, y - 50 * s, 30 * s, 50 * s);
+    ctx.fillStyle = '#c9a85a'; ctx.beginPath(); ctx.moveTo(x - 92 * s, y - 52 * s); ctx.quadraticCurveTo(x - 60 * s, y - 120 * s, x, y - 124 * s); ctx.quadraticCurveTo(x + 60 * s, y - 120 * s, x + 92 * s, y - 52 * s); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,90,40,.5)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 80 * s, y - 70 * s); ctx.quadraticCurveTo(x, y - 90 * s, x + 80 * s, y - 70 * s); ctx.stroke();
+  }
+  // 서당(기와, 열린 마루)
+  const S2 = lay(36), sx = W * .5 + S2.x, sy = H * .8, s = u * 1.3;
+  ctx.fillStyle = '#b5ada0'; ctx.fillRect(sx - 230 * s, sy, 460 * s, 20 * s);
+  ctx.fillStyle = '#4a3322'; ctx.fillRect(sx - 200 * s, sy - 120 * s, 400 * s, 120 * s);
+  ctx.fillStyle = '#b07a45'; ctx.fillRect(sx - 200 * s, sy - 26 * s, 400 * s, 26 * s);
+  ctx.fillStyle = '#f6efdc'; ctx.fillRect(sx - 190 * s, sy - 110 * s, 110 * s, 80 * s); ctx.fillRect(sx + 80 * s, sy - 110 * s, 110 * s, 80 * s);
+  ctx.strokeStyle = '#8a5a34'; ctx.lineWidth = 2; for (const ox of [-190, 80]) for (let k = 1; k < 5; k++) { ctx.beginPath(); ctx.moveTo(sx + (ox + k * 22) * s, sy - 110 * s); ctx.lineTo(sx + (ox + k * 22) * s, sy - 30 * s); ctx.stroke(); }
+  // 책상과 아이들(실루엣)
+  for (let k = 0; k < 3; k++) { const x = sx + (-45 + k * 45) * s; ctx.fillStyle = '#6a4426'; ctx.fillRect(x - 16 * s, sy - 44 * s, 32 * s, 8 * s); ctx.fillStyle = '#2b1d14'; ctx.beginPath(); ctx.arc(x, sy - 66 * s + Math.sin(g.t * 3 + k) * 2 * s, 11 * s, 0, 7); ctx.fill(); ctx.fillStyle = '#e9e2d0'; ctx.fillRect(x - 12 * s, sy - 56 * s, 24 * s, 14 * s); }
+  ctx.fillStyle = '#8a5a34'; for (let k = 0; k <= 4; k++) ctx.fillRect(sx - 200 * s + k * 100 * s - 5 * s, sy - 130 * s, 10 * s, 130 * s);
+  ctx.fillStyle = '#3d434c'; ctx.beginPath(); ctx.moveTo(sx - 260 * s, sy - 118 * s); ctx.quadraticCurveTo(sx, sy - 100 * s, sx + 260 * s, sy - 118 * s); ctx.lineTo(sx + 190 * s, sy - 200 * s); ctx.lineTo(sx - 190 * s, sy - 200 * s); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#2a2e35'; ctx.fillRect(sx - 196 * s, sy - 208 * s, 392 * s, 10 * s);
+  // 소나무(앞)
+  const F = lay(64); pine(W * .03 + F.x, H, u * 1.4); pine(W * .97 + F.x, H, u * 1.2);
+}
+function pine(x, y, s) {
+  ctx.fillStyle = '#6b4a2e'; ctx.beginPath(); ctx.moveTo(x - 12 * s, y); ctx.quadraticCurveTo(x + 20 * s, y - 200 * s, x - 6 * s, y - 380 * s); ctx.lineTo(x + 8 * s, y - 380 * s); ctx.quadraticCurveTo(x + 36 * s, y - 200 * s, x + 12 * s, y); ctx.fill();
+  ctx.fillStyle = '#2f5a3a'; for (const [dx, dy, r] of [[-40, -330, 70], [50, -300, 60], [0, -390, 60], [-70, -250, 50], [70, -230, 46]]) { ctx.beginPath(); ctx.ellipse(x + dx * s + Math.sin(g.t + dx) * 3, y + dy * s, r * s, r * .45 * s, 0, 0, 7); ctx.fill(); }
+}
+function sceneModern() {
+  const u = U();
+  sky('#2d3561', '#c06c84', '#f8b195');
+  hills(H * .5, 90 * u, '#6b5b7a', 8, 5);
+  ctx.fillStyle = '#8f8574'; ctx.fillRect(0, H * .68, W, H);
+  // 벽돌 건물
+  const L = lay(20);
+  const bx = W * .62 + L.x, by = H * .68, s = u * 1.2;
+  ctx.fillStyle = '#a2523d'; ctx.fillRect(bx - 160 * s, by - 230 * s, 320 * s, 230 * s);
+  ctx.fillStyle = '#8b4231'; ctx.beginPath(); ctx.moveTo(bx - 175 * s, by - 230 * s); ctx.lineTo(bx, by - 300 * s); ctx.lineTo(bx + 175 * s, by - 230 * s); ctx.fill();
+  ctx.fillStyle = '#e7d9b6'; for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) { const x = bx - 130 * s + c * 60 * s, y = by - 200 * s + r * 90 * s; ctx.fillStyle = (g.t * .5 + r + c) % 3 < 2 ? '#ffe39a' : '#e7d9b6'; ctx.beginPath(); ctx.moveTo(x, y + 60 * s); ctx.lineTo(x, y + 14 * s); ctx.arc(x + 16 * s, y + 14 * s, 16 * s, Math.PI, 0); ctx.lineTo(x + 32 * s, y + 60 * s); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(80,30,20,.35)'; ctx.lineWidth = 1; for (let y = by - 225 * s; y < by; y += 9 * s) { ctx.beginPath(); ctx.moveTo(bx - 160 * s, y); ctx.lineTo(bx + 160 * s, y); ctx.stroke(); }
+  // 기와집(왼쪽)
+  giwa(W * .15 + L.x, H * .68, 200 * u, 70 * u, u);
+  // 전봇대·전선
+  const M = lay(34);
+  ctx.strokeStyle = '#3a2a22'; ctx.lineWidth = 8 * u;
+  const poles = [W * .05, W * .38, W * .72, W * 1.05].map(x => x + M.x);
+  for (const x of poles) { ctx.beginPath(); ctx.moveTo(x, H * .74); ctx.lineTo(x, H * .3); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x - 24 * u, H * .32); ctx.lineTo(x + 24 * u, H * .32); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(30,20,20,.7)'; ctx.lineWidth = 1.5;
+  for (let i = 0; i < poles.length - 1; i++) for (const o of [-20, 20]) { ctx.beginPath(); ctx.moveTo(poles[i] + o * u, H * .32); ctx.quadraticCurveTo((poles[i] + poles[i + 1]) / 2, H * .36, poles[i + 1] + o * u, H * .32); ctx.stroke(); }
+  // 선로와 전차
+  ctx.fillStyle = '#6f6656'; ctx.fillRect(0, H * .75, W, 10 * u); ctx.fillStyle = '#4a4238'; ctx.fillRect(0, H * .752, W, 3 * u); ctx.fillRect(0, H * .76, W, 3 * u);
+  const tx = ((g.t * 60) % (W + 600)) - 300 + M.x, ty = H * .75, ts = u * 1.2;
+  ctx.fillStyle = '#e8d8a8'; ctx.fillRect(tx - 120 * ts, ty - 110 * ts, 240 * ts, 100 * ts);
+  ctx.fillStyle = '#3f6b4a'; ctx.fillRect(tx - 120 * ts, ty - 40 * ts, 240 * ts, 30 * ts);
+  ctx.fillStyle = '#5a3a2a'; ctx.fillRect(tx - 130 * ts, ty - 122 * ts, 260 * ts, 14 * ts);
+  ctx.fillStyle = '#ffe9a0'; for (let k = 0; k < 6; k++) ctx.fillRect(tx - 108 * ts + k * 38 * ts, ty - 98 * ts, 26 * ts, 40 * ts);
+  ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(tx, ty - 122 * ts); ctx.lineTo(tx + 40 * ts, H * .32 + 4); ctx.stroke();
+  ctx.fillStyle = '#222'; for (const o of [-70, 70]) { ctx.beginPath(); ctx.arc(tx + o * ts, ty - 6 * ts, 12 * ts, 0, 7); ctx.fill(); }
+  // 가로등(앞)
+  const F = lay(60);
+  for (const x of [W * .1 + F.x, W * .9 + F.x]) { ctx.fillStyle = '#2a2420'; ctx.fillRect(x - 5 * u, H * .55, 10 * u, H * .45); const gr = ctx.createRadialGradient(x, H * .55, 2, x, H * .55, 80 * u); gr.addColorStop(0, 'rgba(255,230,150,.9)'); gr.addColorStop(1, 'rgba(255,230,150,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, H * .55, 80 * u, 0, 7); ctx.fill(); }
+}
+const SCENES = [sceneNeo, sceneSilla, sceneJoseon, sceneModern];
+
+function drawTunnel(speed) {
+  ctx.fillStyle = '#120d2a'; ctx.fillRect(0, 0, W, H);
+  const cx = W / 2 + g.par.x * 30, cy = H / 2 + g.par.y * 20, R = Math.hypot(W, H) * .6;
+  for (const s of g.stars) {
+    s.z -= (0.002 + speed * 0.03); if (s.z <= 0.02) { s.z = 1; s.a = rnd() * Math.PI * 2; }
+    const r = R * (1 - s.z) * (1 - s.z) + 6, r2 = r * (1 + speed * 0.25 + 0.02);
+    const a = s.a + g.t * .15;
+    ctx.strokeStyle = `hsla(${250 + s.c * 90},90%,${60 + s.c * 20}%,${Math.min(1, (1 - s.z) * 1.4)})`; ctx.lineWidth = s.s * (1 + speed * 2);
+    ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2); ctx.stroke();
+  }
+  for (let k = 0; k < 7; k++) { const rr = ((g.t * (60 + speed * 900) + k * 120) % 840); ctx.strokeStyle = `rgba(160,130,255,${.25 * (1 - rr / 840)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke(); }
+  const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, 120); gr.addColorStop(0, `rgba(255,240,200,${.4 + speed * .6})`); gr.addColorStop(1, 'rgba(255,240,200,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(cx, cy, 120, 0, 7); ctx.fill();
+}
+// 첫 화면: 둥근 창으로 네 시대가 번갈아 보임
+function porthole() {
+  if (W < 900) return;
+  const k = Math.floor(g.t / 4) % 4, cx = W * .74, cy = H * .53, r = Math.min(W * .24, H * .38);
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.clip();
+  ctx.translate(cx - W * .74, cy - H * .5);
+  SCENES[k](); person(W * .78, H * .9, 1.25 * U(), ERAS[k].look, false);
+  const fade = (g.t % 4); if (fade < .4 || fade > 3.6) { ctx.fillStyle = `rgba(18,13,42,${fade < .4 ? 1 - fade / .4 : (fade - 3.6) / .4})`; ctx.fillRect(0, 0, W, H); }
+  ctx.restore();
+  ctx.strokeStyle = '#c9a24a'; ctx.lineWidth = 14; ctx.beginPath(); ctx.arc(cx, cy, r + 7, 0, 7); ctx.stroke();
+  ctx.strokeStyle = '#7a5a1e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, r + 14, 0, 7); ctx.stroke();
+  for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * (r + 7), cy + Math.sin(a) * (r + 7), 3, 0, 7); ctx.fill(); }
+  ctx.fillStyle = 'rgba(20,14,40,.75)'; ctx.font = '900 18px system-ui,sans-serif'; ctx.textAlign = 'center';
+  const lab = ERAS[k].em + ' ' + ERAS[k].name, tw = ctx.measureText(lab).width + 28;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx - tw / 2, cy + r - 10, tw, 32, 16) : ctx.rect(cx - tw / 2, cy + r - 10, tw, 32); ctx.fill();
+  ctx.fillStyle = '#ffe9a8'; ctx.fillText(lab, cx, cy + r + 12);
+}
+function render() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (g.phase === 'hub' || g.phase === 'end') { drawTunnel(0); porthole(); }
+  else if (g.phase === 'warp') {
+    const p = g.warp / 1.8;
+    drawTunnel(Math.sin(Math.min(1, p) * Math.PI));
+    ctx.fillStyle = '#ffe9a8'; ctx.textAlign = 'center'; ctx.font = `900 ${Math.min(64, W / 9)}px system-ui,sans-serif`;
+    ctx.fillText(p < .8 ? '⏳ ' + ERAS[g.era].year + '(으)로…' : ERAS[g.era].name, W / 2, H / 2 + 20);
+    if (p > .8) { ctx.fillStyle = `rgba(255,255,255,${(p - .8) * 5})`; ctx.fillRect(0, 0, W, H); }
+  } else {
+    SCENES[g.era]();
+    const u = U(), talking = g.typing;
+    if (W < 700) person(W * .7, H * .62, .8 * u, ERAS[g.era].look, talking); else person(W * .78, H * .9, 1.25 * u, ERAS[g.era].look, talking);
+    if (g.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${g.flash})`; ctx.fillRect(0, 0, W, H); }
+  }
+}
+
+// ---- 대화 ----
+function setLine(who, text) { g.who = who; g.line = text; g.typed = 0; g.typing = true; $('#sayWho').textContent = who; $('#sayText').textContent = ''; $('#opts').textContent = ''; $('#more').hidden = false; }
+function finishLine() { if (!g.typing) return; g.typed = g.line.length; g.typing = false; $('#sayText').textContent = g.line; $('#more').hidden = true; showOpts(); }
+let pendingOpts = [];
+function showOpts() {
+  const box = $('#opts'); box.textContent = '';
+  pendingOpts.forEach((o, i) => { const b = document.createElement('button'); b.className = o.cls || ''; b.textContent = (i + 1) + '. ' + o.t; b.onclick = () => { if (!g.typing) { blip(); o.fn(); } }; box.appendChild(b); });
+}
+function menu(first) {
+  const E = ERAS[g.era];
+  setLine(E.who, first ? E.hello : (g.asked.length === 3 ? '이제 내 시대를 꽤 알게 됐네! 퀴즈를 풀면 도장을 줄게.' : '또 궁금한 게 있어?'));
+  pendingOpts = [];
+  E.qs.forEach((q, i) => { if (!g.asked.includes(i)) pendingOpts.push({ t: q.q, cls: 'q', fn: () => ask(i) }); });
+  if (g.asked.length === 3) pendingOpts.push({ t: '🧧 퀴즈 풀고 도장 받기', cls: 'quiz', fn: openQuiz });
+  pendingOpts.push({ t: '⏳ 타임머신으로 돌아가기', cls: 'home', fn: toHub });
+}
+function ask(i) {
+  const E = ERAS[g.era];
+  g.asked.push(i); g.log.push(E.qs[i].a);
+  setLine(E.who, E.qs[i].a);
+  pendingOpts = [{ t: '다른 것도 물어볼래요', fn: () => menu(false) }];
+}
+function openQuiz() {
+  const E = ERAS[g.era]; g.phase = 'quiz'; g.tries = 0;
+  $('#qText').textContent = E.quiz.q; $('#qfb').textContent = ''; $('#stampMsg').textContent = ''; $('#qNext').hidden = true;
+  const opts = E.quiz.opts.slice(); for (let k = opts.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [opts[k], opts[j]] = [opts[j], opts[k]]; }
+  const box = $('#qOpts'); box.textContent = '';
+  opts.forEach(([t, okk], i) => { const b = document.createElement('button'); b.textContent = (i + 1) + '. ' + t; b.dataset.ok = okk ? '1' : '0'; b.onclick = () => answer(b, okk); box.appendChild(b); });
+  $('#quiz').classList.add('on'); $('#talk').classList.remove('on');
+}
+function answer(b, okk) {
+  if (g.phase !== 'quiz' || !$('#qNext').hidden) return;
+  const E = ERAS[g.era];
+  if (!okk) { g.tries++; $('#qfb').textContent = '🤔 아니에요. 힌트: ' + E.quiz.hint; tone(160, .25, 'sine', .1); return; }
+  b.classList.add('right'); $('#qfb').textContent = '';
+  if (!g.stamps.includes(g.era)) g.stamps.push(g.era);
+  store.stamps = g.stamps.slice(); save();
+  $('#stampMsg').textContent = `🧧 정답! ${E.name} 도장을 받았어요 (${g.stamps.length}/4)`;
+  $('#qNext').hidden = false; $('#qNext').textContent = g.stamps.length === 4 ? '🎖️ 수료증 받으러 가기' : '⏳ 타임머신으로 돌아가기';
+  [659, 784, 1047].forEach((f, i) => tone(f, .4, 'triangle', .07, i * .1));
+}
+function toHub() {
+  g.phase = 'hub'; g.era = -1; $('#quiz').classList.remove('on'); $('#talk').classList.remove('on'); $('#eraTag').classList.remove('on');
+  $('#sub').textContent = '시대를 골라 출발하세요'; drawEras();
+  if (g.stamps.length === 4) { $('#hub').classList.remove('on'); finish(); } else $('#hub').classList.add('on');
+}
+function finish() {
+  g.phase = 'end';
+  store.done = (store.done || 0) + 1; store.stamps = g.stamps.slice(); save();
+  const c = $('#cert'); c.textContent = '';
+  for (const E of ERAS) { const d = document.createElement('div'); d.textContent = `🧧 ${E.em} ${E.name} — ${E.place}`; c.appendChild(d); }
+  $('#endMsg').textContent = `네 시대를 모두 다녀왔어요! 지금까지 수료 ${store.done}회. 시대마다 집·그릇·글자·탈것이 어떻게 달라졌는지 떠올려 보세요.`;
+  $('#end').classList.add('on');
+  [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .5, 'triangle', .07, i * .12));
+}
+function go(i) {
+  if (g.phase !== 'hub') return;
+  ensureAudio();
+  g.era = i; g.phase = 'warp'; g.warp = 0; g.asked = []; g.log = [];
+  $('#hub').classList.remove('on'); whoosh();
+}
+function arrive() {
+  const E = ERAS[g.era];
+  g.phase = 'talk'; g.flash = 1;
+  $('#eraTag').textContent = `${E.em} ${E.name} · ${E.when} · ${E.place}`; $('#eraTag').classList.add('on');
+  $('#sub').textContent = E.name + '에 와 있어요';
+  $('#talk').classList.add('on');
+  menu(true); ambience(g.era);
+}
+function drawEras() {
+  const box = $('#eras'); box.textContent = '';
+  ERAS.forEach((E, i) => {
+    const b = document.createElement('button'); b.className = 'era' + (g.stamps.includes(i) ? ' done' : ''); b.dataset.i = i;
+    const em = document.createElement('span'); em.className = 'em'; em.textContent = E.em;
+    const n = document.createElement('b'); n.textContent = E.name;
+    const s = document.createElement('span'); s.textContent = E.when;
+    b.append(em, n, s); b.onclick = () => go(i); box.appendChild(b);
+  });
+}
+
+function tick(dt) {
+  g.t += dt;
+  g.par.x += (g.mouse.x - g.par.x) * Math.min(1, dt * 3); g.par.y += (g.mouse.y - g.par.y) * Math.min(1, dt * 3);
+  if (g.phase === 'warp') { g.warp += dt; if (g.warp >= 1.8) arrive(); }
+  if (g.flash > 0) g.flash = Math.max(0, g.flash - dt * 1.5);
+  if (g.typing) {
+    const before = Math.floor(g.typed); g.typed += dt * 34;
+    if (g.typed >= g.line.length) finishLine();
+    else if (Math.floor(g.typed) !== before) { $('#sayText').textContent = g.line.slice(0, Math.floor(g.typed)); if (Math.floor(g.typed) % 3 === 0) blip(true); }
+  }
+  if (g.phase === 'talk' && g.era === 3 && soundOn && Math.floor(g.t / 7) !== Math.floor((g.t - dt) / 7)) { tone(1568, .5, 'sine', .05); tone(1568, .5, 'sine', .05, .25); }
+}
+
+// ---- 입력 ----
+$('#say').addEventListener('click', finishLine);
+cv.addEventListener('pointerdown', e => { g.drag = { x: e.clientX, y: e.clientY, mx: g.mouse.x, my: g.mouse.y }; try { cv.setPointerCapture(e.pointerId); } catch (er) {} });
+cv.addEventListener('pointermove', e => {
+  if (g.drag) { g.mouse.x = Math.max(-1.5, Math.min(1.5, g.drag.mx - (e.clientX - g.drag.x) / (W || 1) * 3)); g.mouse.y = Math.max(-1, Math.min(1, g.drag.my - (e.clientY - g.drag.y) / (H || 1) * 2)); }
+  else if (e.pointerType === 'mouse') { g.mouse.x = (e.clientX / (W || 1) - .5) * 2; g.mouse.y = (e.clientY / (H || 1) - .5) * 2; }
+});
+const up = () => { g.drag = null; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+addEventListener('keydown', e => {
+  const k = e.key;
+  if (g.phase === 'talk') {
+    if (k === ' ' || k === 'Enter') { if (g.typing) { e.preventDefault(); finishLine(); } }
+    if (/^[1-9]$/.test(k) && !g.typing) { const b = $$('#opts button')[+k - 1]; if (b) b.click(); }
+    if (k === 'ArrowLeft') g.mouse.x = Math.max(-1.5, g.mouse.x - .3); if (k === 'ArrowRight') g.mouse.x = Math.min(1.5, g.mouse.x + .3);
+  } else if (g.phase === 'quiz' && /^[1-3]$/.test(k)) { const b = $$('#qOpts button')[+k - 1]; if (b) b.click(); }
+  else if (g.phase === 'hub' && /^[1-4]$/.test(k)) go(+k - 1);
+});
+
+// ---- 소리 ----
+let ac = null, master = null, soundOn = false, amb = null, nbuf = null;
+function ensureAudio() {
+  if (!soundOn) return;
+  if (!ac) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      ac = new AC(); master = ac.createGain(); master.gain.value = .7; master.connect(ac.destination);
+      const len = ac.sampleRate * 2; nbuf = ac.createBuffer(1, len, ac.sampleRate); const d = nbuf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    } catch (e) { ac = null; return; }
+  }
+  if (ac.state === 'suspended') { try { ac.resume().catch(() => {}); } catch (e) {} }
+  if (g.phase === 'talk') ambience(g.era);
+}
+// 시대별 배경음: 강물(신석기)·시장 웅성임(신라)·바람(조선)·도시 웅웅(근대)
+function ambience(i) {
+  if (!soundOn || !ac) return;
+  try {
+    if (amb) { const old = amb; old.g.gain.setTargetAtTime(0, ac.currentTime, .3); setTimeout(() => { try { old.s.stop(); } catch (e) {} }, 1500); amb = null; }
+    if (i < 0) return;
+    const set = [[900, 'bandpass', .8, .1], [600, 'bandpass', 1.5, .07], [400, 'lowpass', .7, .08], [180, 'lowpass', .7, .1]][i];
+    const s = ac.createBufferSource(); s.buffer = nbuf; s.loop = true; const fl = ac.createBiquadFilter(); fl.type = set[1]; fl.frequency.value = set[0]; fl.Q.value = set[2]; const gn = ac.createGain(); gn.gain.value = 0;
+    s.connect(fl); fl.connect(gn); gn.connect(master); s.start(); gn.gain.setTargetAtTime(set[3], ac.currentTime, .5);
+    amb = { s, g: gn };
+  } catch (e) {}
+}
+function tone(f, d, type, vol, delay) {
+  if (!soundOn || !ac) return;
+  try { const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), gn = ac.createGain(); o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); gn.gain.setValueAtTime(vol || .08, t); gn.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(gn); gn.connect(master); o.start(t); o.stop(t + d + .05); } catch (e) {}
+}
+const blip = quiet => tone(quiet ? 520 + Math.random() * 80 : 700, .05, 'square', quiet ? .015 : .03);
+function whoosh() {
+  if (!soundOn || !ac) return;
+  try { const s = ac.createBufferSource(); s.buffer = nbuf; const fl = ac.createBiquadFilter(); fl.type = 'bandpass'; fl.Q.value = 2; const t = ac.currentTime; fl.frequency.setValueAtTime(200, t); fl.frequency.exponentialRampToValueAtTime(3000, t + 1.2); fl.frequency.exponentialRampToValueAtTime(300, t + 1.8); const gn = ac.createGain(); gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(.25, t + .8); gn.gain.exponentialRampToValueAtTime(.0001, t + 1.9); s.connect(fl); fl.connect(gn); gn.connect(master); s.start(t); s.stop(t + 2); } catch (e) {}
+}
+function setSnd() {
+  const b = $('#snd'); b.setAttribute('aria-pressed', String(soundOn)); b.textContent = soundOn ? '🔊' : '🔈';
+  if (master && ac) { try { master.gain.setTargetAtTime(soundOn ? .7 : 0, ac.currentTime, .05); } catch (e) {} }
+}
+$('#snd').onclick = () => { soundOn = !soundOn; ensureAudio(); setSnd(); };
+const fsEl = document.documentElement, fsBtn = $('#fs');
+if (!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen)) fsBtn.hidden = true;
+fsBtn.onclick = () => {
+  try {
+    const d = document, on = d.fullscreenElement || d.webkitFullscreenElement;
+    const fn = on ? (d.exitFullscreen || d.webkitExitFullscreen) : (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+    if (fn) { const p = fn.call(on ? d : fsEl); if (p && p.catch) p.catch(() => {}); }
+  } catch (e) {}
+};
+$('#qNext').onclick = toHub;
+$('#again').onclick = () => { g.stamps = []; store.stamps = []; save(); $('#end').classList.remove('on'); toHub(); };
+
+// ---- 시작 ----
+if (Array.isArray(store.stamps)) g.stamps = store.stamps.filter(i => Number.isInteger(i) && i >= 0 && i < 4 && true).filter((v, i, a) => a.indexOf(v) === i);
+if (g.stamps.length === 4) g.stamps = [];
+addEventListener('resize', resize); resize();
+drawEras(); $('#hub').classList.add('on');
+let last = performance.now();
+function frame(now) {
+  const dt = Math.max(0, Math.min(.05, (now - last) / 1000)); last = now;
+  if (!manual) tick(dt);
+  render(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+window.__test = {
+  step(n) { manual = true; for (let i = 0; i < (n || 1); i++) tick(1 / 60); render(); },
+  state() { return { phase: g.phase, t: g.t, era: g.era, stamps: g.stamps.slice(), asked: g.asked.slice(), log: g.log.slice(), typing: !!g.typing, tries: g.tries, sound: soundOn }; }
+};
+})();
+</script>
+</body>
+</html>

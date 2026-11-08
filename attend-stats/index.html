@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>출결 모으미 - 출결 기록을 붙여넣으면 학생별·월별 집계</title>
+<meta name="description" content="엑셀·메모의 출결 기록(날짜·번호·이름·구분·종류)을 붙여넣으면 학생별·월별 결석·지각·조퇴·결과 집계표와 개근 후보를 바로 만들어 주는 교사용 도구. CSV·인쇄.">
+<style>
+  :root{--bg:#f3f6fb;--card:#fff;--ink:#1d2939;--sub:#667085;--line:#dfe5ee;--pri:#2f6fde;--pri2:#e6eefc;--g:#16a36a;--r:#e0464b;--o:#f08c1a}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink)}
+  button,select,textarea{font:inherit}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--card);border-bottom:2px solid var(--line);flex-wrap:wrap}
+  .logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#2f6fde,#16a36a);display:grid;place-items:center;font-size:24px;flex-shrink:0}
+  header h1{margin:0;font-size:22px}
+  header small{display:block;color:var(--sub);font-size:13px}
+  header .sp{flex:1}
+  .wipe{font-size:12px;font-weight:700;border:1px solid currentColor;background:transparent;color:var(--sub);border-radius:999px;padding:4px 10px;cursor:pointer}
+  main{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:14px;padding:14px 20px;align-items:start}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;min-width:0}
+  .panel h2{margin:0 0 6px;font-size:16px;display:flex;align-items:center;gap:6px}
+  .panel h2 small{font-weight:500;color:var(--sub);font-size:12px}
+  textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13.5px;line-height:1.5;resize:vertical;background:#fbfcfe;font-family:ui-monospace,Consolas,"Malgun Gothic",monospace}
+  #roster{height:150px}#records{height:260px}
+  .help{font-size:12px;color:var(--sub);margin:4px 0 8px;line-height:1.5}
+  .btn{border:0;font-weight:800;font-size:14.5px;padding:9px 13px;border-radius:10px;cursor:pointer;background:var(--pri2);color:var(--pri);white-space:nowrap}
+  .btn.pri{background:var(--pri);color:#fff}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .right{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 11px}
+  .kpi span{font-size:12.5px;color:var(--sub);font-weight:700}
+  .kpi b{display:block;font-size:24px}
+  .kpi.g b{color:var(--g)}
+  .tw{overflow-x:auto;max-width:100%}
+  table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{border:1px solid var(--line);padding:4px 6px;text-align:center;white-space:nowrap}
+  thead th{background:#f0f4fa;font-size:12.5px}
+  thead tr:first-child th.g1{background:#fdecec}thead tr:first-child th.g2{background:#fff4e2}thead tr:first-child th.g3{background:#eaf3ff}thead tr:first-child th.g4{background:#efeafd}
+  td.nz{font-weight:800;color:var(--r)}
+  td.sum{background:#f7f9fc;font-weight:800}
+  #stuTable tbody td:not(.nz):not([data-c="번호"]):not([data-c="이름"]){color:#b3bcc8}
+  td[data-c="이름"]{text-align:left}
+  tbody tr:hover td{background:#f6f9ff}
+  tfoot td{background:#eef3fb;font-weight:800}
+  .chip{display:inline-block;background:#e7f7ef;color:#0d7a4c;border-radius:99px;padding:4px 10px;margin:3px;font-weight:800;font-size:13.5px}
+  #issues ul{margin:4px 0;padding-left:18px;font-size:13px;line-height:1.6}
+  #issues li.err{color:var(--r)}#issues li.warn{color:#b35c00}
+  .ok{color:var(--g);font-weight:700;font-size:13px}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .tools label{font-weight:800;font-size:14px}
+  select{border:1px solid var(--line);border-radius:10px;padding:7px 9px;background:#fff}
+  .note{font-size:12px;color:var(--sub);margin:6px 0 0}
+  .back{display:inline-block;margin:6px 20px 18px;color:var(--sub);font-size:13px;text-decoration:none}
+  #printHead{display:none}
+  @media (max-width:900px){main{grid-template-columns:1fr;padding:10px}.cards{grid-template-columns:repeat(3,minmax(0,1fr))}header{padding:10px 12px}}
+  @media print{
+    header,.left,.tools .btn,.back,.wipe,#issues{display:none!important}
+    body{background:#fff}main{display:block;padding:0}.panel{border:0;padding:4px 0}
+    #printHead{display:block;font-size:18px;font-weight:800;margin:0 0 6px}
+    table{font-size:10.5px}th,td{padding:2px 3px}.tw{overflow:visible}
+    .kpi{border:1px solid #999}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="출결 모으미">
+<meta property="og:description" content="출결 기록을 붙여넣으면 학생별·월별 결석·지각·조퇴 집계와 개근 후보까지">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/89-attend-stats.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/attend-stats/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">📋</div>
+  <div><h1>출결 모으미</h1><small>출결 기록을 붙여넣으면 학생별·월별 집계와 개근 후보를 바로</small></div>
+  <span class="sp"></span>
+  <button type="button" id="wipeAll" class="wipe" title="공용 PC라면 다 쓴 뒤 눌러 주세요">🧹 이 PC 기록 모두 지우기</button>
+</header>
+<main>
+  <section class="left">
+    <div class="panel">
+      <h2>① 학생 명단 <small>번호 이름 (한 줄에 한 명)</small></h2>
+      <textarea id="roster" spellcheck="false" aria-label="학생 명단"></textarea>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <h2>② 출결 기록 붙여넣기 <small>엑셀 칸 그대로 OK</small></h2>
+      <p class="help">한 줄에 한 건: <b>날짜 · 번호 · 이름 · 구분(질병/미인정/기타) · 종류(결석/지각/조퇴/결과)</b><br>날짜는 2026-09-03, 2026.9.3, 9/3, 9월 3일 모두 됩니다. 번호나 이름 중 하나만 있어도 되고, 며칠 결석은 “2일”처럼 적어요.</p>
+      <textarea id="records" spellcheck="false" aria-label="출결 기록"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" id="sampleBtn" type="button">↺ 예시 다시 넣기</button><button class="btn" id="clearRec" type="button">기록 칸 비우기</button></div>
+    </div>
+  </section>
+  <section class="right">
+    <div class="panel">
+      <div id="printHead">출결 집계표</div>
+      <div class="tools"><label for="period">기간</label><select id="period"></select><span class="sp" style="flex:1"></span><button class="btn" id="csvBtn" type="button">⬇ CSV(엑셀)</button><button class="btn pri" id="printBtn" type="button">🖨 인쇄</button></div>
+      <div class="cards" style="margin-top:10px">
+        <div class="kpi"><span>결석</span><b id="kAbs">0</b></div><div class="kpi"><span>지각</span><b id="kLate">0</b></div><div class="kpi"><span>조퇴</span><b id="kEarly">0</b></div><div class="kpi"><span>결과</span><b id="kOut">0</b></div><div class="kpi g"><span>개근 후보</span><b id="kPerf">0</b></div>
+      </div>
+    </div>
+    <div class="panel"><h2>👩‍🎓 학생별 집계 <small>빨간 숫자 = 1 이상</small></h2><div class="tw"><table id="stuTable"></table></div></div>
+    <div class="panel"><h2>📅 월별 집계</h2><div class="tw"><table id="monthTable"></table></div></div>
+    <div class="panel"><h2>🏅 개근 후보 <small>결석·지각·조퇴·결과가 모두 0</small></h2><div id="perfect"></div><p class="note">※ 질병 결석도 개근에서 빠집니다. 최종 확인은 나이스 출결 자료와 학교 규정으로 해 주세요.</p></div>
+    <div class="panel" id="issues"></div>
+  </section>
+</main>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const KEY = 'edu-expo.attend-stats.v1';
+  const KINDS = ['결석', '지각', '조퇴', '결과'], TYPES = ['질병', '미인정', '기타'];
+  const COLS = []; KINDS.forEach(k => { TYPES.forEach(t => COLS.push(k + '-' + t)); COLS.push(k + '-계'); });
+  const MORDER = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2];
+  const SAMPLE_ROSTER = '1 김하늘\n2 박서준\n3 이도윤\n4 최지우\n5 정하은\n6 강민준\n7 조서아\n8 윤시우\n9 장예린\n10 임건우\n11 한소율\n12 오지호';
+  const SAMPLE_REC = ['날짜\t번호\t이름\t구분\t종류', '2026-09-03\t2\t박서준\t질병\t결석', '2026-09-04\t2\t박서준\t질병\t결석', '2026-09-15\t5\t정하은\t미인정\t지각', '9/22\t7\t조서아\t기타\t조퇴',
+    '2026.10.02\t2\t박서준\t질병\t조퇴', '10월 13일\t9\t장예린\t질병\t결과', '2026-10-20\t5\t정하은\t미인정\t지각', '2026-10-21\t5\t정하은\t미인정\t결석', '2026-11-03\t11\t한소율\t기타\t결석\t2일',
+    '2026-11-05\t3\t이도윤\t질병\t지각', '2026-11-05\t3\t이도윤\t질병\t지각', '2026-11-06\t12\t\t질병\t결석', '2026-11-10\t4\t최지오\t질병\t결석', '11/12 박서준 질병 결과', '그냥 메모 줄입니다'].join('\n');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+  // ---- 해석 ----
+  function parseRoster(txt) {
+    const list = [], seen = new Set();
+    String(txt).split(/\r?\n/).forEach(line => { const m = line.trim().match(/^(\d{1,3})\s*(?:번)?[\s,\t.]+(.+)$/); if (!m) return; const no = +m[1], name = m[2].trim().replace(/[\t,]+.*$/, '').trim(); if (!name || seen.has(no)) return; seen.add(no); list.push({ no, name }); });
+    return list.sort((a, b) => a.no - b.no);
+  }
+  const DATE_RES = [
+    [/(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})\.?/, m => [+m[1], +m[2], +m[3]]],
+    [/(?:(\d{4})\s*년\s*)?(\d{1,2})\s*월\s*(\d{1,2})\s*일/, m => [m[1] ? +m[1] : 0, +m[2], +m[3]]],
+    [/(^|[^\d])(\d{1,2})\s*[/.-]\s*(\d{1,2})(?![\d/.-])/, m => [0, +m[2], +m[3]]]
+  ];
+  const TYPE_RE = /(질병|병결|미인정|무단|기타)/, KIND_RE = /(결석|지각|조퇴|결과)/;
+  const KW = /(질병|병결|미인정|무단|기타|결석|지각|조퇴|결과|인정|날짜|번호|이름|구분|종류|비고)/;
+  function parseRecords(txt, roster) {
+    const byNo = new Map(roster.map(s => [s.no, s.name])), byName = new Map(roster.map(s => [s.name, s.no]));
+    const recs = [], errors = [], warns = [], seen = new Set(), extra = new Map();
+    String(txt).split(/\r?\n/).forEach((raw, i) => {
+      const line = raw.trim(); if (!line) return;
+      let rest = line, date = null;
+      for (const [re, f] of DATE_RES) { const m = rest.match(re); if (m) { const d = f(m); if (d[1] >= 1 && d[1] <= 12 && d[2] >= 1 && d[2] <= 31) { date = d; rest = rest.replace(m[0], m[1] !== undefined && re === DATE_RES[2][0] ? m[1] + ' ' : ' '); break; } } }
+      if (!date) { if (!/날짜/.test(line)) errors.push({ line: i + 1, text: line, why: '날짜를 못 찾음' }); return; }
+      const tm = rest.match(TYPE_RE), km = rest.match(KIND_RE);
+      if (!km) { errors.push({ line: i + 1, text: line, why: '종류(결석·지각·조퇴·결과)를 못 찾음' }); return; }
+      const type = !tm ? '기타' : (tm[1] === '병결' ? '질병' : tm[1] === '무단' ? '미인정' : tm[1]);
+      const toks = rest.split(/[\t,]+|\s+/).map(t => t.trim()).filter(Boolean);
+      let no = null, name = '', cnt = 1;
+      for (const t of toks) {
+        const c = t.match(/^(\d{1,2})일$/); if (c) { cnt = Math.max(1, +c[1]); continue; }
+        const nm = t.match(/^(\d{1,3})번?$/); if (nm && no === null) { no = +nm[1]; continue; }
+        if (!name && !KW.test(t) && !/^\d/.test(t)) name = t;
+      }
+      if (no === null && name && byName.has(name)) no = byName.get(name);
+      if (no === null) { errors.push({ line: i + 1, text: line, why: '번호·이름으로 학생을 못 찾음' }); return; }
+      if (byNo.has(no)) { if (name && name !== byNo.get(no)) warns.push(`${i + 1}번째 줄: 번호 ${no}은 명단에 '${byNo.get(no)}'인데 기록은 '${name}' → 번호 기준으로 셈`); name = byNo.get(no); }
+      else { if (!extra.has(no)) { extra.set(no, name || '(이름 없음)'); warns.push(`${i + 1}번째 줄: ${no}번 ${name || ''}은(는) 명단에 없어요 → 표에 추가`); } name = extra.get(no); }
+      const key = [date[0], date[1], date[2], no, type, km[1]].join('|');
+      if (seen.has(key)) { warns.push(`${i + 1}번째 줄: ${date[1]}월 ${date[2]}일 ${no}번 ${name} ${type}${km[1]} 중복 → 한 번만 셈`); return; }
+      seen.add(key);
+      recs.push({ y: date[0], m: date[1], d: date[2], no, name, type, kind: km[1], cnt });
+    });
+    return { recs, errors, warns, extra: [...extra].map(([no, name]) => ({ no, name })) };
+  }
+  function compute(rosterTxt, recTxt, period) {
+    const roster = parseRoster(rosterTxt), p = parseRecords(recTxt, roster);
+    const students = [...roster, ...p.extra].sort((a, b) => a.no - b.no);
+    const rows = new Map(students.map(s => [s.no, { no: s.no, name: s.name, c: Object.fromEntries(COLS.map(k => [k, 0])), total: 0 }]));
+    const months = new Map();
+    const inP = r => period === 'all' || +period === r.m;
+    for (const r of p.recs) {
+      if (!months.has(r.m)) months.set(r.m, { m: r.m, k: { 결석: 0, 지각: 0, 조퇴: 0, 결과: 0 }, total: 0, who: new Set() });
+      const mo = months.get(r.m); mo.k[r.kind] += r.cnt; mo.total += r.cnt; mo.who.add(r.no);
+      if (!inP(r)) continue;
+      const row = rows.get(r.no); row.c[r.kind + '-' + r.type] += r.cnt; row.c[r.kind + '-계'] += r.cnt; row.total += r.cnt;
+    }
+    const list = [...rows.values()];
+    const sum = Object.fromEntries(COLS.map(k => [k, list.reduce((a, r) => a + r.c[k], 0)])); sum.total = list.reduce((a, r) => a + r.total, 0);
+    const monthList = [...months.values()].sort((a, b) => MORDER.indexOf(a.m) - MORDER.indexOf(b.m));
+    return { rows: list, sum, months: monthList, perfect: list.filter(r => r.total === 0), errors: p.errors, warns: p.warns };
+  }
+
+  // ---- 화면 ----
+  let res = null;
+  function render() {
+    const per = $('#period').value || 'all';
+    res = compute($('#roster').value, $('#records').value, per);
+    // 기간 선택지
+    const opts = ['all', ...res.months.map(m => String(m.m))];
+    if (!opts.includes(per)) { res = compute($('#roster').value, $('#records').value, 'all'); }
+    $('#period').innerHTML = opts.map(v => `<option value="${v}">${v === 'all' ? '전체 기간' : v + '월'}</option>`).join('');
+    $('#period').value = opts.includes(per) ? per : 'all';
+    const s = res.sum;
+    $('#kAbs').textContent = s['결석-계']; $('#kLate').textContent = s['지각-계']; $('#kEarly').textContent = s['조퇴-계']; $('#kOut').textContent = s['결과-계']; $('#kPerf').textContent = res.perfect.length;
+    const g = ['g1', 'g2', 'g3', 'g4'];
+    let h = `<thead><tr><th rowspan="2">번호</th><th rowspan="2">이름</th>${KINDS.map((k, i) => `<th colspan="4" class="${g[i]}">${k}</th>`).join('')}<th rowspan="2">합계</th></tr><tr>${KINDS.map(() => TYPES.map(t => `<th>${t}</th>`).join('') + '<th>계</th>').join('')}</tr></thead><tbody>`;
+    h += res.rows.map(r => `<tr data-no="${r.no}"><td data-c="번호">${r.no}</td><td data-c="이름">${esc(r.name)}</td>${COLS.map(k => `<td data-c="${k}" class="${k.endsWith('계') ? 'sum' : ''}${r.c[k] ? ' nz' : ''}">${r.c[k]}</td>`).join('')}<td data-c="합계" class="sum${r.total ? ' nz' : ''}">${r.total}</td></tr>`).join('');
+    h += `</tbody><tfoot><tr><td colspan="2">합계</td>${COLS.map(k => `<td data-c="${k}">${s[k]}</td>`).join('')}<td data-c="합계">${s.total}</td></tr></tfoot>`;
+    $('#stuTable').innerHTML = h;
+    $('#monthTable').innerHTML = `<thead><tr><th>월</th>${KINDS.map(k => `<th>${k}</th>`).join('')}<th>계</th><th>기록 학생 수</th></tr></thead><tbody>` +
+      (res.months.length ? res.months.map(m => `<tr data-m="${m.m}"><td>${m.m}월</td>${KINDS.map(k => `<td class="${m.k[k] ? 'nz' : ''}">${m.k[k]}</td>`).join('')}<td class="sum">${m.total}</td><td>${m.who.size}명</td></tr>`).join('') : '<tr><td colspan="7">기록이 없어요</td></tr>') + '</tbody>';
+    $('#perfect').innerHTML = res.perfect.length ? res.perfect.map(r => `<span class="chip">${r.no} ${esc(r.name)}</span>`).join('') : '<span class="note">해당하는 학생이 없어요</span>';
+    const items = [...res.errors.map(e => `<li class="err">${e.line}번째 줄 “${esc(e.text.slice(0, 40))}” — ${esc(e.why)} (집계에서 빠짐)</li>`), ...res.warns.map(w => `<li class="warn">${esc(w)}</li>`)];
+    $('#issues').innerHTML = '<h2>🔎 확인할 줄</h2>' + (items.length ? `<ul>${items.join('')}</ul>` : '<p class="ok">✔ 모든 줄을 읽었어요</p>');
+    $('#printHead').textContent = '출결 집계표 (' + ($('#period').value === 'all' ? '전체 기간' : $('#period').value + '월') + ')';
+  }
+  let svT = 0;
+  const save = () => { clearTimeout(svT); svT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify({ roster: $('#roster').value, records: $('#records').value, period: $('#period').value })); } catch (e) {} }, 250); };
+  const onEdit = () => { render(); save(); };
+  $('#roster').addEventListener('input', onEdit); $('#records').addEventListener('input', onEdit);
+  $('#period').addEventListener('change', onEdit);
+  $('#sampleBtn').addEventListener('click', () => { $('#roster').value = SAMPLE_ROSTER; $('#records').value = SAMPLE_REC; $('#period').value = 'all'; onEdit(); });
+  $('#clearRec').addEventListener('click', () => { $('#records').value = ''; onEdit(); });
+  $('#printBtn').addEventListener('click', () => window.print());
+  const csvCell = v => { let s = String(v); if (/^[=+\-@]/.test(s)) s = "'" + s; return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  $('#csvBtn').addEventListener('click', () => {
+    const lines = [['번호', '이름', ...COLS, '합계'], ...res.rows.map(r => [r.no, r.name, ...COLS.map(k => r.c[k]), r.total]), ['', '합계', ...COLS.map(k => res.sum[k]), res.sum.total]];
+    const blob = new Blob(['﻿' + lines.map(l => l.map(csvCell).join(',')).join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '출결집계_' + ($('#period').value === 'all' ? '전체' : $('#period').value + '월') + '.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  $('#wipeAll').addEventListener('click', () => { if (!confirm('이 PC에 저장된 출결 명단·기록을 모두 지울까요? 되돌릴 수 없어요.')) return; try { localStorage.removeItem(KEY); } catch (e) {} location.reload(); });
+  // ---- 시작 ----
+  let st = null; try { st = JSON.parse(localStorage.getItem(KEY)); } catch (e) { st = null; }
+  $('#roster').value = st && typeof st.roster === 'string' ? st.roster : SAMPLE_ROSTER;
+  $('#records').value = st && typeof st.records === 'string' ? st.records : SAMPLE_REC;
+  render();
+  if (st && typeof st.period === 'string' && [...$('#period').options].some(o => o.value === st.period)) { $('#period').value = st.period; render(); }
+  window.__as = { result: () => res, compute, parseRecords, parseRoster };
+})();
+</script>
+</body>
+</html>

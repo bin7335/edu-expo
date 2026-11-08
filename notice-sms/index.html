@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>문자 알림 틀 - 학부모 문자 일괄 만들기 · SMS 바이트 확인</title>
+<meta name="description" content="문자 틀에 {이름}·{날짜} 같은 칸을 넣고 엑셀 명단을 붙여 넣으면 학부모별 문구를 한 번에 만들어 줍니다. EUC-KR 기준 바이트로 SMS 90바이트·LMS 2000바이트를 구분하고 빈 칸·넘침을 알려 줍니다. 문자를 보내지 않고 내 PC에서만 처리합니다.">
+<style>
+  :root{--bg:#eef4f8;--panel:#fff;--ink:#1f2933;--sub:#5f6b7a;--line:#d9e2ea;--brand:#1f6feb;--brand2:#3fa7d6;--soft:#e8f1fe;--ok:#22863a;--mid:#b26b00;--bad:#c62828}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.92}
+  .grow{flex:1}
+  .lock{display:inline-flex;align-items:center;gap:6px;background:#fff;color:#0b4a8f;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .wipe{font:inherit;font-size:12px;font-weight:700;border:1px solid currentColor;background:transparent;color:inherit;border-radius:999px;padding:4px 10px;cursor:pointer}
+  main{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:14px;padding:12px 20px 50px;max-width:1400px;margin:0 auto}
+  .col{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .panel h2{font-size:15px;margin:0 0 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .hint{font-size:12px;color:var(--sub);line-height:1.5;font-weight:400}
+  textarea,input{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:0}
+  textarea{width:100%;resize:vertical;line-height:1.6}
+  #tpl{min-height:96px}
+  #roster{min-height:120px;font-size:13px;font-family:ui-monospace,Consolas,"Malgun Gothic",monospace;white-space:pre;overflow:auto}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font:inherit;font-size:13px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;cursor:pointer;color:var(--ink)}
+  .chip:hover{background:var(--soft)}
+  .chip.mine{border-color:#9cc3f5;background:#f3f8ff}
+  .chip.var{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;background:var(--soft);border-color:#b9d3f8;color:#0b4a8f}
+  .btn{border-radius:10px;padding:7px 12px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn:hover{filter:brightness(.96)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .commons{display:grid;grid-template-columns:auto 1fr;gap:6px 8px;align-items:center}
+  .commons label{font-size:13px;font-weight:700;color:#0b4a8f;font-family:ui-monospace,Consolas,monospace}
+  .meterline{font-size:12.5px;color:var(--sub);margin-top:4px}
+  .sum{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .sum span{background:#f4f7fa;border:1px solid var(--line);border-radius:10px;padding:5px 10px;font-size:13px}
+  .sum span b{font-size:18px;margin-left:4px}
+  .sum .s-sms b{color:var(--ok)} .sum .s-lms b{color:var(--mid)} .sum .s-over b,.sum .s-warn b{color:var(--bad)}
+  .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:10px}
+  .card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .card.lms{border-color:#f0cf8f}
+  .card.over{border-color:#f2a7a7;background:#fff7f7}
+  .card .top{display:flex;gap:8px;align-items:center}
+  .card .who{font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+  .card .who small{font-weight:400;color:var(--sub);margin-left:4px}
+  .type{font-size:11.5px;font-weight:800;border-radius:6px;padding:1px 7px;background:#e6f4ea;color:var(--ok);flex:none}
+  .card.lms .type{background:#fff2d9;color:var(--mid)} .card.over .type{background:#fde2e2;color:var(--bad)}
+  .card .body{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;font-size:13.5px;line-height:1.6;background:#f8fafc;border-radius:8px;padding:7px 9px}
+  .card .body mark{background:#ffe0e0;color:var(--bad);border-radius:4px;padding:0 2px;font-weight:700}
+  .card .foot{display:flex;gap:8px;align-items:center}
+  .bytes{font-size:12.5px;color:var(--sub);font-weight:700}
+  .bar{flex:1;height:6px;border-radius:3px;background:#edf1f5;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--ok)}
+  .card.lms .bar i{background:var(--mid)} .card.over .bar i{background:var(--bad)}
+  .warn{font-size:12.5px;font-weight:700;color:var(--bad);background:#fdecec;border-radius:8px;padding:4px 8px}
+  .card button{font:inherit;font-size:12.5px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 10px;cursor:pointer}
+  .empty{color:var(--sub);font-size:14px;padding:20px;text-align:center;border:1px dashed var(--line);border-radius:12px}
+  .note{font-size:12.5px;color:#7a5200;background:#fff8e6;border:1px solid #f1d9a6;border-radius:10px;padding:7px 11px}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.92);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:30}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f2933;color:#fff;padding:9px 16px;border-radius:999px;font-size:13.5px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+  .toast.on{opacity:1}
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;padding:10px}
+    header{padding:10px 12px} header p{display:none} header h1{font-size:19px}
+    .lock{font-size:11.5px;padding:5px 9px}
+    .list{grid-template-columns:1fr}
+  }
+  @media print{
+    header,.col.left,.tools,.back,.toast,.card button,.note{display:none!important}
+    body{background:#fff} main{display:block;padding:0}
+    .panel{border:0;padding:0}
+    .list{display:block} .card{break-inside:avoid;margin-bottom:8px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="문자 알림 틀">
+<meta property="og:description" content="학부모 문자 틀에 이름·날짜를 넣어 한 번에 만들고 SMS 90바이트 넘침 확인">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/96-notice-sms.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/notice-sms/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">💬</div>
+  <div>
+    <h1>문자 알림 틀</h1>
+    <p>틀 하나 + 엑셀 명단 붙여넣기 → 학부모별 문구 한 번에 · SMS/LMS 바이트 확인</p>
+  </div>
+  <div class="grow"></div>
+  <span class="lock" title="이 도구는 문자를 보내지 않고, 입력 내용은 이 브라우저에만 저장됩니다">🔒 발송 없음 · 이 PC에만 저장</span>
+  <button type="button" class="wipe" id="wipeAll" title="공용 PC라면 다 쓴 뒤 눌러 주세요">🧹 이 PC 기록 모두 지우기</button>
+</header>
+<main>
+  <section class="col left">
+    <div class="panel">
+      <h2>① 자주 쓰는 틀 <span class="hint">누르면 아래 틀이 바뀌어요</span></h2>
+      <div class="chips" id="presets"></div>
+    </div>
+    <div class="panel">
+      <h2>② 문자 틀 <span class="hint">{이름}처럼 중괄호로 칸을 만들어요</span></h2>
+      <textarea id="tpl" aria-label="문자 틀"></textarea>
+      <div class="meterline" id="tplBytes"></div>
+      <div class="chips" id="vars" style="margin-top:6px"></div>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn" id="saveMine">⭐ 지금 틀을 내 틀로 저장</button></div>
+    </div>
+    <div class="panel">
+      <h2>③ 공통 값 <span class="hint">명단에 없는 칸은 모두에게 같은 값</span></h2>
+      <div class="commons" id="commons"></div>
+    </div>
+    <div class="panel">
+      <h2>④ 명단 <span class="hint">엑셀에서 열 이름까지 복사해 붙여넣기 (첫 줄 = 열 이름)</span></h2>
+      <textarea id="roster" aria-label="명단" spellcheck="false"></textarea>
+      <div class="meterline" id="rosterInfo"></div>
+    </div>
+  </section>
+  <section class="col">
+    <div class="panel">
+      <div class="sum" id="sum"></div>
+      <div class="row tools" style="margin-top:10px">
+        <button type="button" class="btn primary" id="copyAll">📋 전체 복사</button>
+        <button type="button" class="btn" id="exportTxt">📄 텍스트로 내보내기</button>
+        <button type="button" class="btn" id="exportCsv">📊 CSV 내보내기</button>
+        <button type="button" class="btn" id="printBtn">🖨 인쇄</button>
+      </div>
+      <div class="list" id="list"></div>
+    </div>
+    <div class="note">이 도구는 <b>문자를 보내지 않아요.</b> 만든 문구를 학교 문자 서비스에 복사해 붙여 넣으세요. 바이트는 EUC-KR 기준(한글 2·영문·숫자·공백 1·줄바꿈 1)이며, 서비스마다 조금 다를 수 있어요. 이모지는 SMS에서 깨질 수 있어요.</div>
+  </section>
+</main>
+<a class="back" href="../">← 전체 데모 보기</a>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(function(){
+  'use strict';
+  var KEY = 'edu-expo.notice-sms.v1';
+  var $ = function(s){ return document.querySelector(s); };
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var SMS = 90, LMS = 2000;
+  var PRESETS = [
+    ['준비물', '[햇살초] {이름} 학부모님, 안녕하세요. 내일({날짜}) {과목} 시간 준비물은 {준비물}입니다. 챙겨 보내 주세요.'],
+    ['행사 안내', '[햇살초] {보호자}님, {이름} 학생 담임입니다. {날짜} {행사}이(가) 있습니다. 자세한 내용은 가정통신문을 확인해 주세요. 감사합니다.'],
+    ['결석 확인', '[햇살초] {이름} 학부모님, 오늘 {이름} 학생이 등교하지 않아 연락드립니다. 사유를 회신해 주시면 감사하겠습니다.'],
+    ['하교 지연', '[햇살초] {이름} 학부모님, 오늘 {사유}(으)로 하교가 {시각}경으로 늦어집니다. 양해 부탁드립니다.'],
+    ['상담 주간', '[햇살초] {보호자}님, {날짜} 학부모 상담 주간입니다. {이름} 학생 상담 희망 시간을 회신해 주세요.'],
+    ['우천 변경', '[햇살초] {이름} 학부모님, 비 예보로 {날짜} {행사}이(가) {변경}(으)로 바뀝니다. 우산을 챙겨 주세요.']
+  ];
+  var SAMPLE = {
+    tpl: '[햇살초] {보호자}님, {이름} 학생 {날짜} {행사} 안내. 준비물: {준비물}',
+    roster: ['이름\t보호자\t전화\t준비물', '김하늘\t김민정\t010-1234-0001\t도시락·물', '이바다\t이준호\t010-1234-0002\t도시락·물', '박구름\t\t010-1234-0003\t도시락·물',
+      '최별\t최수아\t010-1234-0004\t도시락·물·상비약(복용 안내문을 보건실에 미리 내 주세요)', '정나래\t정우성\t010-1234-0005\t도시락·물', '한가람\t한지민\t010-1234-0006\t도시락·물·멀미약'].join('\n'),
+    commons: {'날짜':'11/20(금)','행사':'현장체험학습'},
+    mine: []
+  };
+  var state = JSON.parse(JSON.stringify(SAMPLE));
+  try {
+    var st = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (st && typeof st === 'object') {
+      if (typeof st.tpl === 'string') state.tpl = st.tpl;
+      if (typeof st.roster === 'string') state.roster = st.roster;
+      if (st.commons && typeof st.commons === 'object') { state.commons = {}; Object.keys(st.commons).forEach(function(k){ if (typeof st.commons[k] === 'string') state.commons[k] = st.commons[k]; }); }
+      if (Array.isArray(st.mine)) state.mine = st.mine.filter(function(m){ return m && typeof m.name === 'string' && typeof m.tpl === 'string'; }).slice(0, 30);
+    }
+  } catch(e){}
+
+  function bytes(s){ var n = 0; var t = String(s == null ? '' : s).replace(/\r\n/g, '\n'); for (var ch of t) n += ch.codePointAt(0) <= 0x7f ? 1 : 2; return n; }
+  function kind(b){ return b <= SMS ? 'sms' : b <= LMS ? 'lms' : 'over'; }
+  var KNAME = {sms:'SMS', lms:'LMS', over:'넘침'};
+  var VAR_RE = /\{([^{}\s]{1,20})\}/g;
+  function varsOf(t){ var out = [], m; VAR_RE.lastIndex = 0; while ((m = VAR_RE.exec(t))) if (out.indexOf(m[1]) < 0) out.push(m[1]); return out; }
+  function parseRoster(t){
+    var lines = String(t).replace(/\r\n?/g, '\n').split('\n').filter(function(l){ return l.trim() !== ''; });
+    if (!lines.length) return {cols: [], rows: []};
+    var sep = lines[0].indexOf('\t') >= 0 ? '\t' : (lines[0].indexOf(',') >= 0 ? ',' : '\t');
+    var cols = lines[0].split(sep).map(function(c){ return c.trim(); });
+    var rows = lines.slice(1).map(function(l){ var cells = l.split(sep); var o = {}; cols.forEach(function(c, i){ if (c) o[c] = (cells[i] || '').trim(); }); return o; });
+    return {cols: cols.filter(Boolean), rows: rows};
+  }
+  function findCol(cols, re){ for (var i = 0; i < cols.length; i++) if (re.test(cols[i])) return cols[i]; return null; }
+  function fill(tpl, row, cols){
+    var text = '', html = '', missing = [], last = 0, m;
+    VAR_RE.lastIndex = 0;
+    while ((m = VAR_RE.exec(tpl))) {
+      var lit = tpl.slice(last, m.index); text += lit; html += esc(lit);
+      var v = cols.indexOf(m[1]) >= 0 ? row[m[1]] : state.commons[m[1]];
+      if (v == null || v === '') { if (missing.indexOf(m[1]) < 0) missing.push(m[1]); text += m[0]; html += '<mark>' + esc(m[0]) + '</mark>'; }
+      else { text += v; html += esc(v); }
+      last = m.index + m[0].length;
+    }
+    var rest = tpl.slice(last); text += rest; html += esc(rest);
+    return {text: text, html: html, missing: missing};
+  }
+  var built = [];
+  function build(){
+    var r = parseRoster(state.roster);
+    var nameCol = findCol(r.cols, /이름|성명|학생/) || r.cols[0];
+    var phoneCol = findCol(r.cols, /전화|연락|휴대|번호/);
+    var guardCol = findCol(r.cols, /보호자|학부모/);
+    built = r.rows.map(function(row){
+      var f = fill(state.tpl, row, r.cols); var b = bytes(f.text);
+      return {name: nameCol ? row[nameCol] || '' : '', phone: phoneCol ? row[phoneCol] || '' : '', guard: guardCol && guardCol !== nameCol ? row[guardCol] || '' : '', text: f.text, html: f.html, missing: f.missing, bytes: b, kind: kind(b)};
+    });
+    return r;
+  }
+  var lastVarsKey = null;
+  function renderCommons(r){
+    var vs = varsOf(state.tpl).filter(function(v){ return r.cols.indexOf(v) < 0; });
+    var k = vs.join('\u0001');
+    if (k === lastVarsKey) return; lastVarsKey = k;
+    $('#commons').innerHTML = vs.length ? vs.map(function(v){ return '<label for="cv-' + esc(v) + '">{' + esc(v) + '}</label><input id="cv-' + esc(v) + '" data-var="' + esc(v) + '" value="' + esc(state.commons[v] || '') + '" placeholder="모두에게 넣을 값">'; }).join('')
+      : '<span class="hint" style="grid-column:1/-1">명단에 없는 칸이 없어요.</span>';
+  }
+  function renderVars(r){
+    $('#vars').innerHTML = r.cols.length ? '<span class="hint" style="width:100%">명단 열 이름 (누르면 틀에 넣기)</span>' + r.cols.map(function(c){ return '<button type="button" class="chip var" data-ins="' + esc(c) + '">{' + esc(c) + '}</button>'; }).join('') : '';
+  }
+  function renderPresets(){
+    $('#presets').innerHTML = PRESETS.map(function(p, i){ return '<button type="button" class="chip" data-pre="' + i + '">' + esc(p[0]) + '</button>'; }).join('')
+      + state.mine.map(function(m, i){ return '<button type="button" class="chip mine" data-mine="' + i + '" title="' + esc(m.tpl) + '">⭐ ' + esc(m.name) + '</button>'; }).join('');
+  }
+  function render(){
+    var r = build();
+    renderCommons(r); renderVars(r);
+    var tb = bytes(state.tpl);
+    $('#tplBytes').textContent = '틀 자체 ' + tb.toLocaleString() + '바이트 · 칸 ' + varsOf(state.tpl).length + '개' + (/[\uD800-\uDFFF]/.test(state.tpl) ? ' · ⚠ 이모지는 SMS에서 깨질 수 있어요' : '');
+    $('#rosterInfo').textContent = r.rows.length + '명 · 열: ' + (r.cols.join(', ') || '없음');
+    var c = {all: built.length, sms: 0, lms: 0, over: 0, warn: 0};
+    built.forEach(function(x){ c[x.kind]++; if (x.missing.length) c.warn++; });
+    $('#sum').innerHTML = [['all','전체'],['sms','SMS'],['lms','LMS'],['over','넘침'],['warn','빈 칸']].map(function(p){ return '<span class="s-' + p[0] + '" data-k="' + p[0] + '">' + p[1] + '<b>' + c[p[0]] + '</b></span>'; }).join('');
+    $('#list').innerHTML = built.length ? built.map(function(x, i){
+      var lim = x.kind === 'sms' ? SMS : LMS;
+      var w = [];
+      if (x.missing.length) w.push('빈 칸: ' + x.missing.map(function(v){ return '{' + v + '}'; }).join(' '));
+      if (x.kind === 'over') w.push('LMS ' + LMS.toLocaleString() + '바이트를 ' + (x.bytes - LMS).toLocaleString() + '바이트 넘침');
+      return '<div class="card ' + x.kind + '"><div class="top"><span class="who">' + esc(x.name || '(이름 없음)') + (x.guard ? '<small>' + esc(x.guard) + '</small>' : '') + (x.phone ? '<small>' + esc(x.phone) + '</small>' : '') + '</span><span class="type">' + KNAME[x.kind] + '</span></div>'
+        + '<div class="body">' + x.html + '</div>'
+        + (w.length ? '<div class="warn">⚠ ' + esc(w.join(' · ')) + '</div>' : '')
+        + '<div class="foot"><span class="bytes">' + x.bytes.toLocaleString() + ' / ' + lim.toLocaleString() + '바이트</span><span class="bar"><i style="width:' + Math.min(100, Math.round(x.bytes / lim * 100)) + '%"></i></span><button type="button" data-copy="' + i + '">복사</button></div></div>';
+    }).join('') : '<div class="empty">명단을 붙여 넣으면 여기에 학부모별 문구가 만들어져요.</div>';
+    save();
+  }
+  var saveT;
+  function save(){ clearTimeout(saveT); saveT = setTimeout(function(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }, 250); }
+  var toastT;
+  function toast(m){ var t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 1800); }
+  function fallbackCopy(t){ var ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch(e){} ta.remove(); toast(ok ? '복사했어요' : '복사하지 못했어요. 직접 선택해 복사하세요'); }
+  function copyText(t){ if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ toast('복사했어요'); }, function(){ fallbackCopy(t); }); else fallbackCopy(t); }
+  function download(name, text, type){ var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + text], {type: type})); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000); }
+  var csvCell = function(v){ v = String(v == null ? '' : v); if (/^[=+\-@]/.test(v)) v = "'" + v; return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  function exportText(){ build(); return built.map(function(x){ return x.name + (x.phone ? ' (' + x.phone + ')' : '') + ' [' + KNAME[x.kind] + ' ' + x.bytes + '바이트]\n' + x.text; }).join('\n\n'); }
+  function exportCsv(){ build(); return ['이름,전화,종류,바이트,문구'].concat(built.map(function(x){ return [x.name, x.phone, KNAME[x.kind], x.bytes, x.text].map(csvCell).join(','); })).join('\n'); }
+  function stamp(){ var d = new Date(); return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); }
+
+  $('#tpl').addEventListener('input', function(){ state.tpl = this.value; render(); });
+  $('#roster').addEventListener('input', function(){ state.roster = this.value; render(); });
+  $('#commons').addEventListener('input', function(e){ var v = e.target.getAttribute('data-var'); if (v == null) return; state.commons[v] = e.target.value; render(); });
+  $('#vars').addEventListener('click', function(e){
+    var b = e.target.closest('[data-ins]'); if (!b) return;
+    var ta = $('#tpl'), ins = '{' + b.getAttribute('data-ins') + '}';
+    var s = ta.selectionStart == null ? ta.value.length : ta.selectionStart, en = ta.selectionEnd == null ? s : ta.selectionEnd;
+    ta.value = ta.value.slice(0, s) + ins + ta.value.slice(en); ta.selectionStart = ta.selectionEnd = s + ins.length;
+    state.tpl = ta.value; render(); ta.focus();
+  });
+  $('#presets').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    var t = b.hasAttribute('data-pre') ? PRESETS[+b.getAttribute('data-pre')][1] : (state.mine[+b.getAttribute('data-mine')] || {}).tpl;
+    if (typeof t !== 'string') return;
+    state.tpl = t; $('#tpl').value = t; render(); toast('틀을 바꿨어요');
+  });
+  $('#saveMine').addEventListener('click', function(){
+    if (!state.tpl.trim()) return toast('틀이 비어 있어요');
+    var name = state.tpl.replace(/\{[^}]*\}/g, '').replace(/\[[^\]]*\]/g, '').trim().slice(0, 10) || '내 틀';
+    state.mine.push({name: name, tpl: state.tpl}); if (state.mine.length > 30) state.mine.shift();
+    renderPresets(); save(); toast('내 틀로 저장했어요 (⭐)');
+  });
+  $('#list').addEventListener('click', function(e){ var b = e.target.closest('[data-copy]'); if (!b) return; var x = built[+b.getAttribute('data-copy')]; if (x) copyText(x.text); });
+  $('#copyAll').addEventListener('click', function(){ if (!built.length) return toast('만든 문구가 없어요'); copyText(exportText()); });
+  $('#exportTxt').addEventListener('click', function(){ download('문자문구_' + stamp() + '.txt', exportText(), 'text/plain;charset=utf-8'); toast('텍스트 파일로 내보냈어요'); });
+  $('#exportCsv').addEventListener('click', function(){ download('문자문구_' + stamp() + '.csv', exportCsv(), 'text/csv;charset=utf-8'); toast('CSV로 내보냈어요'); });
+  $('#printBtn').addEventListener('click', function(){ window.print(); });
+  $('#wipeAll').addEventListener('click', function(){
+    if (!confirm('이 PC에 저장된 문자 틀·명단·내 틀을 모두 지울까요? 되돌릴 수 없어요.')) return;
+    clearTimeout(saveT); try { localStorage.removeItem(KEY); } catch(e){}
+    location.reload();
+  });
+  window.__sms = {bytes: bytes, exportText: exportText, exportCsv: exportCsv, state: function(){ return state; }};
+  $('#tpl').value = state.tpl; $('#roster').value = state.roster;
+  renderPresets(); render();
+})();
+</script>
+</body>
+</html>

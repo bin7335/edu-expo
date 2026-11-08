@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>구조 드론 - 열화상 카메라로 구조가 필요한 사람을 찾는 드론 임무</title>
+<meta name="description" content="지진·홍수 재난 현장 위를 관성 있는 드론으로 날며 열화상 카메라로 사람(36.5°C)을 찾아 구조 신호를 보내는 임무. 강아지·불길·자동차 엔진 열 구별, 배터리 관리, 기지 귀환과 점수.">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#0d0f14}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#fff;user-select:none;-webkit-user-select:none}
+  button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+  #cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;pointer-events:none;z-index:3;background:linear-gradient(rgba(5,8,14,.7),rgba(5,8,14,0))}
+  header>*{pointer-events:auto}
+  .logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#ff7a3c,#d63a1c);display:grid;place-items:center;font-size:24px;box-shadow:0 4px 0 #7a2410;flex-shrink:0}
+  h1{margin:0;font-size:22px;letter-spacing:-.5px;text-shadow:0 2px 8px #000}
+  h1 small{display:block;font-size:12px;color:#ffd2bf;font-weight:600}
+  .hud{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .pill{background:rgba(10,12,20,.75);border:1px solid rgba(255,200,170,.2);border-radius:99px;padding:5px 11px;font-weight:800;color:#ffc6ad;font-size:13px;white-space:nowrap}
+  .pill b{color:#fff;font-size:16px;margin-left:4px}
+  .pill b.low{color:#ff6a6a}
+  .pill b.hot{color:#ffe24a}
+  .tools{display:flex;gap:5px}
+  .ib{border:1px solid rgba(255,200,170,.25);background:rgba(10,12,20,.75);border-radius:12px;padding:8px 10px;font-weight:800;font-size:14px}
+  .ib[aria-pressed=true]{background:#d6491c;border-color:#ffb08a}
+  #thermal{font-size:15px}
+  .ov{position:fixed;left:50%;transform:translateX(-50%);width:min(94%,490px);background:rgba(12,14,22,.9);border:2px solid rgba(255,200,170,.22);border-radius:22px;padding:18px;text-align:center;display:none;z-index:4}
+  .ov.on{display:block}
+  #ready{bottom:8%}
+  #result{top:50%;transform:translate(-50%,-50%);max-height:92%;overflow:auto}
+  .ov h2{margin:0 0 6px;font-size:24px}
+  .ov p{margin:6px 0;color:#ffe3d6;line-height:1.55;font-size:15px}
+  .tips{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;font-size:13px;color:#ffe3d6;text-align:left}
+  .tips span{background:rgba(255,255,255,.07);border-radius:10px;padding:6px 9px}
+  .go{border:0;border-radius:16px;background:linear-gradient(180deg,#ffb36b,#ff6a2a);color:#2a0d00;font-weight:900;font-size:19px;padding:12px 30px;box-shadow:0 5px 0 #9a3612;margin:6px 4px}
+  .go:active{transform:translateY(3px);box-shadow:0 2px 0 #9a3612}
+  .sub{border:0;border-radius:14px;background:rgba(255,255,255,.14);font-weight:800;padding:11px 18px;margin:6px 4px}
+  #rScore{font-size:40px;font-weight:900;color:#ffd36b;margin:4px 0}
+  #rStars{font-size:30px;letter-spacing:4px}
+  .sum{text-align:left;font-size:14px;color:#ffe3d6;background:rgba(255,255,255,.06);border-radius:12px;padding:8px 12px;line-height:1.7;margin-top:8px}
+  #toast{position:fixed;left:50%;top:100px;transform:translateX(-50%);width:max-content;max-width:min(92%,540px);font-weight:800;font-size:16px;line-height:1.45;background:rgba(10,12,20,.88);border:2px solid rgba(255,255,255,.2);padding:9px 16px;border-radius:16px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:4;text-align:center}
+  #toast.on{opacity:1} #toast.good{border-color:#5cff9d} #toast.bad{border-color:#ff7a4a} #toast.info{border-color:#7ac8ff}
+  .back{position:fixed;right:12px;bottom:8px;font-size:12px;color:#ffe3d6;text-decoration:none;background:rgba(0,0,0,.5);padding:4px 10px;border-radius:99px;z-index:5}
+  @media (max-width:760px){
+    header{padding:6px 8px;gap:5px}
+    .logo{width:34px;height:34px;font-size:19px;border-radius:10px}
+    h1{font-size:18px} h1 small{display:none}
+    .hud{order:3;width:100%;margin:0;gap:3px}
+    .pill{padding:3px 7px;font-size:11px} .pill b{font-size:13px;margin-left:2px}
+    .ib{padding:6px 7px;font-size:12px} #thermal{font-size:12px}
+    .tools{margin-left:auto}
+    #toast{top:118px;font-size:14px}
+    .ov{padding:12px} .ov h2{font-size:20px}
+    .tips{grid-template-columns:1fr;font-size:12px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="구조 드론">
+<meta property="og:description" content="재난 현장 위를 드론으로 날며 열화상으로 구조가 필요한 사람을 찾는 임무">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/85-drone-rescue.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/drone-rescue/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<canvas id="cv" aria-label="드론 카메라 화면"></canvas>
+<header>
+  <div class="logo" aria-hidden="true">🚁</div>
+  <h1>구조 드론<small>열화상 카메라로 구조가 필요한 사람 찾기</small></h1>
+  <div class="hud">
+    <div class="pill">구조<b><span id="resN">0</span>/6</b></div>
+    <div class="pill">배터리<b id="bat">100%</b></div>
+    <div class="pill">중심 온도<b id="temp">--</b></div>
+    <div class="pill">시간<b id="timeT">0:00</b></div>
+  </div>
+  <div class="tools"><button class="ib" id="thermal" aria-pressed="false">🌡️ 열화상</button><button class="ib" id="snd" aria-pressed="false">🔇 소리</button><button class="ib" id="fs" aria-label="전체화면">⛶</button></div>
+</header>
+<div id="toast"></div>
+<div class="ov on" id="ready">
+  <h2>🆘 지진·홍수 현장 수색 임무</h2>
+  <p>연기와 잔해 속에 <b>구조가 필요한 사람 6명</b>이 있어요. <b>열화상</b>으로 36.5°C 사람을 찾아 그 위에서 <b>잠시 멈춰</b> 구조 신호를 보내고, 배터리가 떨어지기 전에 <b>기지(H)</b>로 돌아와요.</p>
+  <div class="tips"><span>⌨️ 방향키 / WASD 비행</span><span>📱 화면을 끌어서 비행</span><span>🌡️ T 키 = 열화상 켜기/끄기</span><span>🐕🔥🚗 사람이 아닌 열도 있어요</span></div>
+  <p id="recLine">최고 점수 -</p>
+  <button class="go" id="start">🚁 이륙!</button>
+</div>
+<div class="ov" id="result">
+  <h2 id="rTitle">임무 완료!</h2>
+  <div id="rStars"></div>
+  <div id="rScore">0점</div>
+  <p id="rStat"></p>
+  <div class="sum" id="rSum"></div>
+  <button class="go" id="again">다시 출동</button><button class="sub" id="home">처음으로</button>
+</div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+'use strict';
+const DT = 1 / 60, WW = 2400, WH = 1600, ACC = 360, DRAG = 1.4, HOVER = 1.5;
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const KEY = 'edu-expo-drone-rescue-v1';
+const BASE = { x: 260, y: 1340 };
+// 재난 현장
+const PEOPLE = [[700, 520, 'rubble'], [1180, 330, 'smoke'], [1650, 900, 'river'], [2050, 380, 'forest'], [950, 1250, 'rubble'], [1500, 640, 'smoke']].map(([x, y, w], i) => ({ id: 'p' + i, x, y, w }));
+const DECOYS = [
+  { id: 'd0', kind: 'dog', x: 820, y: 900, temp: 38.5 }, { id: 'd1', kind: 'dog', x: 1900, y: 1150, temp: 38.5 },
+  { id: 'f0', kind: 'fire', x: 1260, y: 260, temp: 600 }, { id: 'f1', kind: 'fire', x: 600, y: 760, temp: 650 }, { id: 'f2', kind: 'fire', x: 1800, y: 470, temp: 550 },
+  { id: 'c0', kind: 'car', x: 1100, y: 740, temp: 70 }, { id: 'c1', kind: 'car', x: 1440, y: 1020, temp: 65 }, { id: 'c2', kind: 'car', x: 420, y: 1020, temp: 75 }
+];
+const BLD = [[520, 200, 140, 110, 70], [700, 210, 120, 120, 95], [880, 190, 160, 120, 60], [1380, 200, 130, 130, 110], [860, 430, 150, 120, 80], [1250, 450, 110, 100, 70],
+  [530, 600, 100, 90, 60], [1240, 800, 140, 120, 90], [700, 1080, 130, 110, 70], [1080, 1120, 140, 110, 60], [560, 1200, 90, 80, 40], [1300, 1250, 120, 100, 55]].map(([x, y, w, h, ht]) => ({ x, y, w, h, ht }));
+const RUBBLE = [[700, 520, 85], [950, 1250, 75], [560, 450, 70], [1530, 830, 80]].map(([x, y, r], i) => ({ x, y, r, rocks: Array.from({ length: 16 }, (_, k) => ({ a: k * 2.4 + i, d: (k % 5) / 5 * r * 0.9, s: 8 + (k * 7 % 11), c: k % 3 })) }));
+const ROADS = [[450, 360, 1950, 40], [300, 1000, 1500, 40], [450, 720, 1350, 40], [460, 150, 40, 1300], [1180, 150, 40, 1300]];
+const RIVER = [[1500, 1600], [1600, 1300], [1780, 1080], [1980, 900], [2200, 760], [2400, 700], [2400, 1050], [2200, 1080], [2020, 1200], [1880, 1380], [1800, 1600]];
+const TREES = [];
+for (let i = 0; i < 46; i++) TREES.push({ x: 1900 + (i * 97) % 460, y: 140 + (i * 151) % 540, r: 34 + (i % 4) * 8 });
+for (let i = 0; i < 9; i++) TREES.push({ x: 1430 + (i * 53) % 170, y: 560 + (i * 71) % 170, r: 26 + (i % 3) * 6 });
+const SMOKE = [[1220, 300, 150], [1500, 640, 130], [640, 760, 130], [960, 1220, 100], [1800, 470, 120]].map(([x, y, r], i) => ({ x, y, r, puffs: Array.from({ length: 11 }, (_, k) => ({ a: k * 0.57 + i, d: (k % 4) / 4 * r, s: 0.5 + (k % 3) * 0.25, sp: 0.2 + (k % 5) * 0.05 })) }));
+const rec = { best: 0, missions: 0, bestRescued: 0 };
+try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && typeof r === 'object') { rec.best = Math.max(0, Math.floor(Number(r.best) || 0)); rec.missions = Math.max(0, Math.floor(Number(r.missions) || 0)); rec.bestRescued = clamp(Math.floor(Number(r.bestRescued) || 0), 0, 6); } } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} };
+
+// ---- 소리 ----
+let AC = null, master = null, motG = null, motO = null, sound = false;
+function initAudio() {
+  if (AC) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; return; }
+  master = AC.createGain(); master.gain.value = 0; master.connect(AC.destination);
+  motO = AC.createOscillator(); motO.type = 'sawtooth'; motO.frequency.value = 140; const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700;
+  motG = AC.createGain(); motG.gain.value = 0.03; motO.connect(lp); lp.connect(motG); motG.connect(master); motO.start();
+  const len = AC.sampleRate * 2, buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0); let l = 0; for (let i = 0; i < len; i++) { l = l * 0.98 + (Math.random() * 2 - 1) * 0.02; d[i] = l * 5; }
+  const src = AC.createBufferSource(); src.buffer = buf; src.loop = true; const g = AC.createGain(); g.gain.value = 0.25; src.connect(g); g.connect(master); src.start();
+}
+function setSound(on) {
+  sound = on; $('#snd').textContent = on ? '🔊 소리' : '🔇 소리'; $('#snd').setAttribute('aria-pressed', String(on));
+  if (on) initAudio(); if (!AC) return;
+  try { if (on && AC.state === 'suspended') AC.resume().catch(() => {}); master.gain.setTargetAtTime(on ? 0.9 : 0, AC.currentTime, 0.2); } catch (e) {}
+}
+function tone(f1, f2, dur, type, vol, delay) {
+  if (!sound || !AC) return;
+  try { const t = AC.currentTime + (delay || 0), o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05); } catch (e) {}
+}
+const sfx = { rescue: () => [660, 880, 1320].forEach((f, i) => tone(f, f, 0.25, 'square', 0.06, i * 0.1)), info: () => tone(500, 500, 0.15, 'triangle', 0.08), warn: () => { tone(880, 600, 0.2, 'square', 0.06); tone(880, 600, 0.2, 'square', 0.06, 0.25); },
+  therm: on => tone(on ? 400 : 900, on ? 900 : 400, 0.15, 'sine', 0.08), scan: () => tone(1500, 1500, 0.04, 'sine', 0.03), end: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.4, 'triangle', 0.08, i * 0.13)) };
+
+// ---- 화면 ----
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 1280, H = 720, DPR = 1;
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
+
+// ---- 상태 ----
+let phase = 'ready', x = 900, y = 560, vx = 0, vy = 0, tiltX = 0, tiltY = 0, battery = 100, thermal = false, t = 0, fly = 0, manual = false, forced = null;
+let camX = 900, camY = 560, rescued = [], checked = [], hover = null, nearFire = false, toastT = 0, beacons = [], endReason = '', score = 0;
+const keys = { l: 0, r: 0, u: 0, d: 0 }, joy = { on: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 };
+function input() {
+  if (forced) return forced;
+  let ix = keys.r - keys.l, iy = keys.d - keys.u;
+  if (joy.on) { ix += clamp((joy.x - joy.ox) / 60, -1, 1); iy += clamp((joy.y - joy.oy) / 60, -1, 1); }
+  return { x: clamp(ix, -1, 1), y: clamp(iy, -1, 1) };
+}
+function toast(msg, cls) { const el = $('#toast'); el.textContent = msg; el.className = 'on ' + (cls || ''); toastT = 3; }
+const targets = () => [...PEOPLE.map(p => ({ id: p.id, kind: 'person', x: p.x, y: p.y, temp: 36.5 })), ...DECOYS];
+function centerTemp() {
+  let best = null;
+  for (const o of targets()) { const d = Math.hypot(o.x - x, o.y - y); if (d < (o.kind === 'fire' ? 50 : 30) && (!best || o.temp > best.temp)) best = o; }
+  return best ? best.temp : 12;
+}
+function update() {
+  t += DT;
+  if (toastT > 0 && (toastT -= DT) <= 0) $('#toast').classList.remove('on');
+  if (phase === 'ready') { x = 1080 + Math.cos(t * 0.5) * 120; y = 560 + Math.sin(t * 0.5) * 70; vx = -Math.sin(t * 0.5) * 85; vy = Math.cos(t * 0.5) * 55; tiltX = vx / 400; tiltY = vy / 400; follow(0.06); return; }
+  if (phase !== 'fly') return;
+  fly += DT;
+  const inp = input();
+  const wx = Math.sin(t * 0.13) * 8 + Math.sin(t * 0.47) * 4, wy = Math.cos(t * 0.11) * 6;
+  vx += (inp.x * ACC + wx - vx * DRAG) * DT; vy += (inp.y * ACC + wy - vy * DRAG) * DT;
+  x += vx * DT; y += vy * DT;
+  if (x < 30) { x = 30; vx = Math.abs(vx) * 0.3; } if (x > WW - 30) { x = WW - 30; vx = -Math.abs(vx) * 0.3; }
+  if (y < 30) { y = 30; vy = Math.abs(vy) * 0.3; } if (y > WH - 30) { y = WH - 30; vy = -Math.abs(vy) * 0.3; }
+  tiltX += (inp.x * 0.35 - tiltX) * 0.15; tiltY += (inp.y * 0.35 - tiltY) * 0.15;
+  const spd = Math.hypot(vx, vy);
+  // 불길 근처 과열
+  const fire = DECOYS.find(d => d.kind === 'fire' && Math.hypot(d.x - x, d.y - y) < 70);
+  if (fire && !nearFire) { toast('🔥 불길 약 ' + fire.temp + '°C! 사람이 아니에요. 드론이 과열돼요, 빨리 벗어나요!', 'bad'); sfx.warn(); }
+  nearFire = !!fire;
+  battery -= DT * (0.6 + Math.hypot(inp.x, inp.y) * 0.25 + (thermal ? 0.25 : 0) + (fire ? 2 : 0));
+  // 정지 비행 판정
+  let tg = null, bd = 40;
+  for (const o of targets()) { if (o.kind === 'fire') continue; const d = Math.hypot(o.x - x, o.y - y); if (d < bd) { bd = d; tg = o; } }
+  if (tg && spd < 70) { if (!hover || hover.id !== tg.id) hover = { id: tg.id, t: 0 }; hover.t += DT; if (hover.t >= HOVER) resolve(tg); }
+  else hover = null;
+  follow(0.08);
+  if (AC && motO) { try { motO.frequency.setTargetAtTime(130 + spd * 0.25, AC.currentTime, 0.1); } catch (e) {} }
+  if (rescued.length >= 1 && fly > 2 && Math.hypot(x - BASE.x, y - BASE.y) < 50 && spd < 40) return end('home');
+  if (battery <= 0) { battery = 0; return end('battery'); }
+}
+function resolve(o) {
+  if (o.kind === 'person') { if (rescued.includes(o.id)) return; rescued.push(o.id); beacons.push({ x: o.x, y: o.y, t: 0 }); sfx.rescue(); toast('🆘 구조 신호 전송! 구조대가 출동해요 (' + rescued.length + '/6)' + (rescued.length === 6 ? ' — 이제 기지(H)로 돌아와요!' : ''), 'good'); hud(); return; }
+  if (checked.includes(o.id)) return;
+  checked.push(o.id); sfx.info();
+  if (o.kind === 'dog') toast('🐕 강아지예요(약 38.5°C). 사람보다 몸집이 작고 네 발이에요. 구조 대상은 사람!', 'info');
+  else if (o.kind === 'car') toast('🚗 자동차 엔진 열(약 ' + o.temp + '°C)이에요. 사람은 36-37°C로 보여요.', 'info');
+}
+function follow(k) {
+  const tx = clamp(x + vx * 0.35, W / 2 - 80, WW - W / 2 + 80), ty = clamp(y + vy * 0.35, H / 2 - 120, WH - H / 2 + 80);
+  camX += (tx - camX) * k; camY += (ty - camY) * k;
+}
+function end(reason) {
+  phase = 'end'; endReason = reason; sfx.end();
+  const home = reason === 'home';
+  score = rescued.length * 100 + (home ? 100 + Math.round(battery) : 0);
+  rec.missions++; const nb = score > rec.best; if (nb) rec.best = score; rec.bestRescued = Math.max(rec.bestRescued, rescued.length); save();
+  $('#rTitle').textContent = home ? '✅ 임무 완료! 기지 귀환' : '🔋 배터리 방전 — 비상 착륙';
+  $('#rStars').textContent = home && rescued.length === 6 ? '★★★' : rescued.length >= 4 ? '★★☆' : '★☆☆';
+  $('#rScore').textContent = score + '점' + (nb ? ' 🏆' : '');
+  $('#rStat').textContent = '구조 ' + rescued.length + '/6 · 남은 배터리 ' + Math.round(battery) + '% · 비행 ' + Math.floor(fly / 60) + '분 ' + Math.floor(fly % 60) + '초';
+  const sum = $('#rSum'); sum.textContent = '';
+  for (const l of ['🌡️ 열화상 카메라는 물체가 내는 적외선(열)을 보여 줘요. 연기 속이나 밤에도 사람의 체온이 보여요.', '🐕 동물·자동차 엔진·불도 따뜻하게 보여요. 온도와 모양으로 사람인지 확인해요.', '🚁 실제 재난 현장에서도 드론이 위치를 찾고, 구조대가 그 위치로 출동해요.']) { const d = document.createElement('div'); d.textContent = l; sum.append(d); }
+  $('#result').classList.add('on'); hud();
+}
+function start() {
+  phase = 'fly'; x = BASE.x; y = BASE.y; vx = vy = 0; tiltX = tiltY = 0; battery = 100; fly = 0; rescued = []; checked = []; beacons = []; hover = null; nearFire = false; score = 0; camX = x; camY = y;
+  for (const id of ['#ready', '#result']) $(id).classList.remove('on'); hud(); toast('이륙! 연기 너머를 보려면 🌡️ 열화상을 켜 보세요', 'info');
+}
+function home() { phase = 'ready'; $('#result').classList.remove('on'); $('#ready').classList.add('on'); hud(); }
+function setThermal(v) { thermal = v; $('#thermal').setAttribute('aria-pressed', String(v)); $('#thermal').textContent = v ? '🌡️ 열화상 켜짐' : '🌡️ 열화상'; sfx.therm(v); hud(); }
+function hud() {
+  $('#resN').textContent = String(rescued.length);
+  $('#bat').textContent = Math.ceil(battery) + '%'; $('#bat').classList.toggle('low', battery < 25);
+  const tc = phase === 'fly' && thermal ? centerTemp() : null;
+  $('#temp').textContent = tc === null ? '--' : (tc >= 100 ? Math.round(tc) : tc.toFixed(1)) + '°C';
+  $('#temp').classList.toggle('hot', tc !== null && tc > 30);
+  $('#timeT').textContent = Math.floor(fly / 60) + ':' + String(Math.floor(fly % 60)).padStart(2, '0');
+  $('#recLine').textContent = rec.missions ? '최고 점수 ' + rec.best + '점 · 최다 구조 ' + rec.bestRescued + '명 · 출동 ' + rec.missions + '번' : '최고 점수 - (첫 출동!)';
+}
+
+// ---- 그리기 ----
+const NP = { ground: '#3d3a2c', road: '#2b2b2e', line: '#77735f', water: '#25415a', flood: '#3a5568', rubble: ['#6b5a48', '#857160', '#4e4236'], wall: '#55555c', roof: '#7a7a80', tree: '#2c4a26', tree2: '#3a5e30' };
+const TP = { ground: '#16113a', road: '#120e30', line: '#1f1850', water: '#08072a', flood: '#0d0b33', rubble: ['#2a2058', '#30255f', '#241b4e'], wall: '#1f1950', roof: '#2a2262', tree: '#1c1848', tree2: '#221d52' };
+const sx = wx => wx - camX + W / 2, sy = wy => wy - camY + H / 2;
+function heat(cx, cy, r, temp, a) {
+  const k = clamp((temp - 20) / 60, 0, 1);
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, temp > 200 ? 'rgba(255,255,255,1)' : `rgba(255,${200 + k * 55 | 0},${120 + k * 100 | 0},${a})`);
+  g.addColorStop(0.35, temp > 200 ? 'rgba(255,240,120,.95)' : `rgba(255,${150 + k * 60 | 0},40,${a * 0.85})`);
+  g.addColorStop(0.7, `rgba(230,40,90,${a * 0.5})`); g.addColorStop(1, 'rgba(120,20,140,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.fill();
+}
+function person(px, py, p, th) {
+  if (th) { ctx.globalCompositeOperation = 'lighter'; heat(px, py, 30, 36.5, 0.9); ctx.fillStyle = 'rgba(255,250,210,.95)'; ctx.beginPath(); ctx.arc(px, py - 7, 4.5, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.ellipse(px, py + 4, 5, 8, 0, 0, 6.283); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; return; }
+  ctx.fillStyle = ['#d94040', '#3a7ad9', '#e0b030', '#40a060', '#a050c0', '#e07a30'][PEOPLE.indexOf(p)]; ctx.beginPath(); ctx.ellipse(px, py + 4, 5, 8, 0, 0, 6.283); ctx.fill();
+  ctx.fillStyle = '#e8c09a'; ctx.beginPath(); ctx.arc(px, py - 7, 4.5, 0, 6.283); ctx.fill();
+  const wave = Math.sin(t * 6 + px) * 4; ctx.strokeStyle = '#e8c09a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px + 4, py); ctx.lineTo(px + 10, py - 8 + wave); ctx.stroke();
+}
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (phase === 'ready') {
+    const sw = W * (0.55 + Math.sin(t * 0.6) * 0.12);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, sw, H); ctx.clip(); drawScene(false); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(sw, 0, W - sw, H); ctx.clip(); drawScene(true); ctx.restore();
+    ctx.fillStyle = '#ffb36b'; ctx.fillRect(sw - 1.5, 0, 3, H);
+    ctx.font = '900 15px system-ui'; ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.fillText('👁 일반 카메라', sw - 12, H * 0.2); ctx.textAlign = 'left'; ctx.fillStyle = '#ffd36b'; ctx.fillText('🌡️ 열화상', sw + 12, H * 0.2);
+  } else drawScene(thermal && phase === 'fly');
+  drawHud();
+}
+function drawScene(th) {
+  const P = th ? TP : NP;
+  ctx.fillStyle = P.ground; ctx.fillRect(0, 0, W, H);
+  if (!th) { ctx.fillStyle = 'rgba(0,0,0,.08)'; for (let i = 0; i < 60; i++) { const gx = sx((i * 397) % WW), gy = sy((i * 263) % WH); ctx.beginPath(); ctx.arc(gx, gy, 30 + (i % 5) * 12, 0, 6.283); ctx.fill(); } }
+  ctx.fillStyle = P.water; ctx.beginPath(); RIVER.forEach(([a, b], i) => i ? ctx.lineTo(sx(a), sy(b)) : ctx.moveTo(sx(a), sy(b))); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = P.flood; ctx.lineWidth = 50; ctx.globalAlpha = 0.6; ctx.stroke(); ctx.globalAlpha = 1;
+  if (!th) { ctx.strokeStyle = 'rgba(160,200,230,.25)'; ctx.lineWidth = 2; for (let i = 0; i < 12; i++) { const a = sx(1700 + i * 55 + Math.sin(t + i) * 10), b = sy(1250 - i * 45); ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(a + 26, b - 6); ctx.stroke(); } }
+  for (const [rx, ry, rw, rh] of ROADS) { ctx.fillStyle = P.road; ctx.fillRect(sx(rx), sy(ry), rw, rh); ctx.strokeStyle = P.line; ctx.lineWidth = 2; ctx.setLineDash([16, 14]); ctx.beginPath(); if (rw > rh) { ctx.moveTo(sx(rx), sy(ry + rh / 2)); ctx.lineTo(sx(rx + rw), sy(ry + rh / 2)); } else { ctx.moveTo(sx(rx + rw / 2), sy(ry)); ctx.lineTo(sx(rx + rw / 2), sy(ry + rh)); } ctx.stroke(); ctx.setLineDash([]); }
+  // 기지
+  const bx = sx(BASE.x), by = sy(BASE.y);
+  ctx.fillStyle = th ? '#241c58' : '#5a6070'; ctx.beginPath(); ctx.arc(bx, by, 46, 0, 6.283); ctx.fill(); ctx.strokeStyle = th ? '#3a3080' : '#ffd84a'; ctx.lineWidth = 4; ctx.stroke();
+  ctx.fillStyle = th ? '#3a3080' : '#ffd84a'; ctx.font = '900 40px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('H', bx, by + 2); ctx.textBaseline = 'alphabetic';
+  // 사람·동물·차 (지면)
+  for (const p of PEOPLE) { const px = sx(p.x), py = sy(p.y); if (px < -60 || px > W + 60 || py < -60 || py > H + 60) continue; if (!th) person(px, py, p, false); }
+  for (const d of DECOYS) { const px = sx(d.x), py = sy(d.y); if (px < -80 || px > W + 80 || py < -80 || py > H + 80) continue;
+    if (d.kind === 'car') { ctx.save(); ctx.translate(px, py); ctx.rotate(d.id === 'c1' ? 0.5 : 0); ctx.fillStyle = th ? '#2a2262' : ['#b03030', '#3060b0', '#d0d0d0'][+d.id[1]]; ctx.fillRect(-22, -11, 44, 22); ctx.fillStyle = th ? '#1f1950' : 'rgba(0,0,0,.35)'; ctx.fillRect(-8, -9, 16, 18); ctx.restore(); }
+    if (d.kind === 'dog' && !th) { ctx.fillStyle = '#b07a40'; ctx.beginPath(); ctx.ellipse(px, py, 9, 5, 0, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.arc(px + 9, py - 2, 4, 0, 6.283); ctx.fill(); }
+  }
+  // 무너진 잔해
+  for (const r of RUBBLE) for (const k of r.rocks) { const px = sx(r.x + Math.cos(k.a) * k.d), py = sy(r.y + Math.sin(k.a) * k.d); if (px < -40 || px > W + 40 || py < -40 || py > H + 40) continue; if (Math.hypot(Math.cos(k.a) * k.d, Math.sin(k.a) * k.d) < 14 && !th) continue; ctx.fillStyle = P.rubble[k.c]; ctx.save(); ctx.translate(px, py); ctx.rotate(k.a); ctx.fillRect(-k.s, -k.s * 0.6, k.s * 2, k.s * 1.2); ctx.restore(); }
+  // 건물 (2.5D: 화면 가운데에서 멀수록 옆벽이 보임)
+  const bl = BLD.map(b => ({ b, d: (b.y + b.h / 2) })).sort((a, c) => a.d - c.d);
+  for (const { b } of bl) {
+    const x0 = sx(b.x), y0 = sy(b.y); if (x0 > W + 200 || x0 + b.w < -200 || y0 > H + 200 || y0 + b.h < -200) continue;
+    const k = b.ht * 0.0018, ox = (x0 + b.w / 2 - W / 2) * k, oy = (y0 + b.h / 2 - H / 2) * k;
+    const c = [[x0, y0], [x0 + b.w, y0], [x0 + b.w, y0 + b.h], [x0, y0 + b.h]], r = c.map(([a, e]) => [a + ox, e + oy]);
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x0 + 8, y0 + 10, b.w, b.h);
+    ctx.fillStyle = P.wall;
+    for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; ctx.beginPath(); ctx.moveTo(c[i][0], c[i][1]); ctx.lineTo(c[j][0], c[j][1]); ctx.lineTo(r[j][0], r[j][1]); ctx.lineTo(r[i][0], r[i][1]); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = P.roof; ctx.fillRect(r[0][0], r[0][1], b.w, b.h);
+    ctx.strokeStyle = th ? '#342a70' : 'rgba(0,0,0,.25)'; ctx.lineWidth = 1; ctx.strokeRect(r[0][0] + 6, r[0][1] + 6, b.w - 12, b.h - 12);
+  }
+  // 나무
+  for (const tr of TREES) { const px = sx(tr.x), py = sy(tr.y); if (px < -60 || px > W + 60 || py < -60 || py > H + 60) continue; ctx.globalAlpha = th ? 0.55 : 1; ctx.fillStyle = P.tree; ctx.beginPath(); ctx.arc(px, py, tr.r, 0, 6.283); ctx.fill(); ctx.fillStyle = P.tree2; ctx.beginPath(); ctx.arc(px - tr.r * 0.25, py - tr.r * 0.25, tr.r * 0.6, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; }
+  // 열원
+  if (th) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const d of DECOYS) { const px = sx(d.x), py = sy(d.y); if (px < -120 || px > W + 120 || py < -120 || py > H + 120) continue;
+      if (d.kind === 'fire') heat(px, py, 90 + Math.sin(t * 9 + px) * 6, d.temp, 1);
+      else if (d.kind === 'car') heat(px + (d.id === 'c1' ? 12 : 16), py + (d.id === 'c1' ? 7 : 0), 22, d.temp, 0.8);
+      else { heat(px, py, 22, d.temp, 0.85); ctx.fillStyle = 'rgba(255,240,200,.9)'; ctx.beginPath(); ctx.ellipse(px, py, 9, 5, 0, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.arc(px + 9, py - 2, 4, 0, 6.283); ctx.fill(); } }
+    ctx.globalCompositeOperation = 'source-over';
+    for (const p of PEOPLE) { const px = sx(p.x), py = sy(p.y); if (px < -60 || px > W + 60 || py < -60 || py > H + 60) continue; person(px, py, p, true); }
+  } else {
+    for (const d of DECOYS) { if (d.kind !== 'fire') continue; const px = sx(d.x), py = sy(d.y); if (px < -120 || px > W + 120 || py < -120 || py > H + 120) continue;
+      const g = ctx.createRadialGradient(px, py, 0, px, py, 110); g.addColorStop(0, 'rgba(255,170,60,.55)'); g.addColorStop(1, 'rgba(255,90,20,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 110, 0, 6.283); ctx.fill();
+      for (let i = 0; i < 7; i++) { const fx = px + Math.sin(i * 2.1) * 20, fy = py + Math.cos(i * 1.7) * 14, h = 16 + Math.sin(t * 12 + i) * 6; ctx.fillStyle = i % 2 ? '#ffb030' : '#ff5a1a'; ctx.beginPath(); ctx.moveTo(fx - 7, fy); ctx.quadraticCurveTo(fx, fy - h * 1.6, fx + 7, fy); ctx.fill(); } }
+    // 연기
+    for (const s of SMOKE) { const px = sx(s.x), py = sy(s.y); if (px < -300 || px > W + 300 || py < -300 || py > H + 300) continue;
+      for (const pf of s.puffs) { const a = pf.a + t * pf.sp, qx = px + Math.cos(a) * pf.d, qy = py + Math.sin(a) * pf.d * 0.7, r = s.r * pf.s; const g = ctx.createRadialGradient(qx, qy, 0, qx, qy, r); g.addColorStop(0, 'rgba(150,150,155,.62)'); g.addColorStop(1, 'rgba(120,120,125,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(qx, qy, r, 0, 6.283); ctx.fill(); } }
+  }
+  // 구조 표시
+  for (const b of beacons) { const px = sx(b.x), py = sy(b.y), k = (t * 1.5) % 1; ctx.strokeStyle = `rgba(92,255,157,${1 - k})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(px, py, 14 + k * 40, 0, 6.283); ctx.stroke(); ctx.fillStyle = '#5cff9d'; ctx.font = '900 14px system-ui'; ctx.textAlign = 'center'; ctx.fillText('SOS ✓', px, py - 24); }
+  // 저녁 어둠 + 탐조등
+  const dxs = sx(x), dys = sy(y);
+  if (!th) { const g = ctx.createRadialGradient(dxs, dys, 60, dxs, dys, Math.max(W, H) * 0.7); g.addColorStop(0, 'rgba(8,10,24,0)'); g.addColorStop(0.35, 'rgba(8,10,24,.35)'); g.addColorStop(1, 'rgba(8,10,24,.7)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+  else { ctx.fillStyle = 'rgba(255,255,255,.03)'; for (let i = 0; i < H; i += 4) ctx.fillRect(0, i, W, 1); const lg = ctx.createLinearGradient(W - 170, 0, W - 20, 0); lg.addColorStop(0, '#2a1a70'); lg.addColorStop(0.4, '#c02870'); lg.addColorStop(0.7, '#ff9a30'); lg.addColorStop(1, '#fff6c0'); ctx.fillStyle = lg; ctx.fillRect(W - 170, H - 64, 150, 10); ctx.fillStyle = '#ddd'; ctx.font = '700 11px system-ui'; ctx.textAlign = 'left'; ctx.fillText('차가움', W - 170, H - 70); ctx.textAlign = 'right'; ctx.fillText('뜨거움', W - 20, H - 70); ctx.textAlign = 'left'; ctx.fillStyle = '#ff9a30'; ctx.font = '900 14px system-ui'; ctx.fillText('● 열화상', 16, H - 44); }
+}
+function drawHud() {
+  const th = thermal && phase === 'fly', bx = sx(BASE.x), by = sy(BASE.y), dxs = sx(x), dys = sy(y);
+  // 조준·정지 비행 게이지
+  ctx.strokeStyle = th ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(dxs, dys, 30, 0, 6.283); ctx.stroke();
+  for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { ctx.beginPath(); ctx.moveTo(dxs + a * 36, dys + b * 36); ctx.lineTo(dxs + a * 48, dys + b * 48); ctx.stroke(); }
+  if (hover && phase === 'fly') { ctx.strokeStyle = '#5cff9d'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(dxs, dys, 40, -1.57, -1.57 + 6.283 * Math.min(1, hover.t / HOVER)); ctx.stroke(); }
+  // 드론
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(dxs + 22, dys + 30, 26, 18, 0, 0, 6.283); ctx.fill();
+  ctx.save(); ctx.translate(dxs - tiltX * 10, dys - tiltY * 10); ctx.scale(1 - Math.abs(tiltX) * 0.25, 1 - Math.abs(tiltY) * 0.25);
+  ctx.strokeStyle = th ? '#bbb' : '#30343c'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-22, -22); ctx.lineTo(22, 22); ctx.moveTo(22, -22); ctx.lineTo(-22, 22); ctx.stroke();
+  for (const [a, b] of [[-22, -22], [22, -22], [-22, 22], [22, 22]]) { ctx.fillStyle = th ? 'rgba(255,255,255,.25)' : 'rgba(220,230,240,.35)'; ctx.beginPath(); ctx.arc(a, b, 14, 0, 6.283); ctx.fill(); ctx.strokeStyle = th ? '#fff' : '#cfd6e0'; ctx.lineWidth = 2; ctx.beginPath(); const ang = t * 40 + a; ctx.moveTo(a + Math.cos(ang) * 13, b + Math.sin(ang) * 13); ctx.lineTo(a - Math.cos(ang) * 13, b - Math.sin(ang) * 13); ctx.stroke(); }
+  ctx.fillStyle = th ? '#ddd' : '#ff6a2a'; ctx.fillRect(-11, -9, 22, 18); ctx.fillStyle = Math.sin(t * 8) > 0 ? '#5cff9d' : '#1a4030'; ctx.beginPath(); ctx.arc(0, -12, 3, 0, 6.283); ctx.fill();
+  ctx.restore();
+  // 기지 방향
+  if (phase === 'fly' && (bx < 0 || bx > W || by < 0 || by > H)) { const a = Math.atan2(by - dys, bx - dxs), R = Math.min(W, H) * 0.38, ax = W / 2 + Math.cos(a) * R, ay = H / 2 + Math.sin(a) * R; ctx.save(); ctx.translate(ax, ay); ctx.rotate(a); ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-8, -11); ctx.lineTo(-3, 0); ctx.lineTo(-8, 11); ctx.fill(); ctx.restore(); ctx.fillStyle = '#ffd84a'; ctx.font = '800 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText('기지 H', ax, ay + 24); }
+  // 미니맵
+  const mw = W < 760 ? 110 : 170, mh = mw * WH / WW, mx = W - mw - 12, my = W < 760 ? 132 : 72, ms = mw / WW;
+  ctx.fillStyle = 'rgba(10,12,20,.7)'; ctx.fillRect(mx - 3, my - 3, mw + 6, mh + 6);
+  ctx.fillStyle = '#25415a'; ctx.beginPath(); RIVER.forEach(([a, b], i) => i ? ctx.lineTo(mx + a * ms, my + b * ms) : ctx.moveTo(mx + a * ms, my + b * ms)); ctx.fill();
+  ctx.fillStyle = '#666'; for (const b of BLD) ctx.fillRect(mx + b.x * ms, my + b.y * ms, b.w * ms, b.h * ms);
+  ctx.fillStyle = '#ffd84a'; ctx.fillRect(mx + BASE.x * ms - 3, my + BASE.y * ms - 3, 6, 6);
+  ctx.fillStyle = '#5cff9d'; for (const b of beacons) { ctx.beginPath(); ctx.arc(mx + b.x * ms, my + b.y * ms, 3, 0, 6.283); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1; ctx.strokeRect(mx + (camX - W / 2) * ms, my + (camY - H / 2) * ms, W * ms, H * ms);
+  ctx.fillStyle = '#ff6a2a'; ctx.beginPath(); ctx.arc(mx + x * ms, my + y * ms, 3.5, 0, 6.283); ctx.fill();
+  if (joy.on) { ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(joy.ox, joy.oy, 50, 0, 6.283); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.beginPath(); ctx.arc(joy.ox + clamp(joy.x - joy.ox, -50, 50), joy.oy + clamp(joy.y - joy.oy, -50, 50), 20, 0, 6.283); ctx.fill(); }
+}
+let last = 0, acc = 0;
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, last ? (ts - last) / 1000 : 0); last = ts;
+  if (!manual) { acc += dt; let k = 0; while (acc >= DT && k < 6) { update(); acc -= DT; k++; } if (k) hud(); }
+  draw();
+}
+
+// ---- 입력 ----
+cv.addEventListener('pointerdown', e => { if (phase !== 'fly' || joy.on) return; joy.on = true; joy.id = e.pointerId; joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY; try { cv.setPointerCapture(e.pointerId); } catch (er) {} e.preventDefault(); });
+cv.addEventListener('pointermove', e => { if (joy.on && e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
+const up = e => { if (e.pointerId === joy.id) { joy.on = false; joy.id = -1; } };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+const KM = { ArrowLeft: 'l', a: 'l', A: 'l', ArrowRight: 'r', d: 'r', D: 'r', ArrowUp: 'u', w: 'u', W: 'u', ArrowDown: 'd', s: 'd', S: 'd' };
+addEventListener('keydown', e => {
+  if (KM[e.key]) { keys[KM[e.key]] = 1; if (phase === 'fly') e.preventDefault(); }
+  else if ((e.key === 't' || e.key === 'T') && phase === 'fly') setThermal(!thermal);
+  else if ((e.key === 'Enter' || e.key === ' ') && phase === 'ready') { e.preventDefault(); start(); }
+});
+addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = 0; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = 0; joy.on = false; });
+$('#start').addEventListener('click', start);
+$('#again').addEventListener('click', start);
+$('#home').addEventListener('click', home);
+$('#thermal').addEventListener('click', () => setThermal(!thermal));
+$('#snd').addEventListener('click', () => setSound(!sound));
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) $('#fs').hidden = true;
+$('#fs').addEventListener('click', () => {
+  const d = document, el = d.documentElement;
+  try { if (d.fullscreenElement || d.webkitFullscreenElement) { const r = (d.exitFullscreen || d.webkitExitFullscreen).call(d); if (r && r.catch) r.catch(() => {}); }
+    else { const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
+});
+addEventListener('resize', resize);
+
+window.__test = {
+  manual: v => { manual = !!v; },
+  step: (n = 1) => { for (let i = 0; i < n; i++) update(); hud(); },
+  input: o => { forced = o ? { x: clamp(o.x || 0, -1, 1), y: clamp(o.y || 0, -1, 1) } : null; },
+  place: (px, py, pvx, pvy) => { x = px; y = py; vx = pvx || 0; vy = pvy || 0; hover = null; camX = px; camY = py; },
+  setBattery: b => { battery = b; },
+  info: () => ({ people: PEOPLE.map(p => ({ x: p.x, y: p.y })), decoys: DECOYS.map(d => ({ kind: d.kind, x: d.x, y: d.y, temp: d.temp })), base: { ...BASE } }),
+  state: () => ({ phase, x, y, vx, vy, tilt: tiltX, battery, thermal, rescued: rescued.length, score, sound })
+};
+resize(); hud();
+for (let i = 0; i < 30; i++) update();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

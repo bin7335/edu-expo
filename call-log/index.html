@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>상담 기록장 - 학부모·학생 상담 기록과 후속 조치 관리</title>
+<meta name="description" content="학부모·학생 상담을 날짜·방법·주제·내용·후속 조치로 기록하고, 학생별·월별로 모아 보고, 미완료 후속 조치와 상담 통계를 확인합니다. 학생별 상담 일지 인쇄, JSON 백업. 기록은 이 PC에만 저장됩니다.">
+<style>
+  :root{--bg:#f3f1f8;--panel:#fff;--ink:#26222f;--sub:#665f75;--line:#e1dcec;--brand:#6a4fb6;--brand2:#9b7fe0;--soft:#f0ebfb;--ok:#2f855a;--mid:#b7791f;--bad:#c53030}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.92}
+  .grow{flex:1}
+  .lock{display:inline-flex;align-items:center;gap:6px;background:#fff;color:#3d2a7a;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .wipe{font:inherit;font-size:12.5px;font-weight:800;border:2px solid #fff;background:#c53030;color:#fff;border-radius:999px;padding:5px 12px;cursor:pointer}
+  .notice{max-width:1400px;margin:10px auto 0;padding:0 20px}
+  .notice div{background:#fff8e6;border:1px solid #f1d9a6;color:#6b4a00;border-radius:10px;padding:7px 12px;font-size:13px}
+  main{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:14px;padding:10px 20px 50px;max-width:1400px;margin:0 auto}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+  .panel h2{font-size:15px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+  label.f{display:block;font-size:12.5px;font-weight:700;color:var(--sub);margin:7px 0 3px}
+  input,select,textarea{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:0;width:100%}
+  textarea{resize:vertical;line-height:1.55}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font:inherit;font-size:12.5px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;cursor:pointer;color:var(--ink)}
+  .chip.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+  .btn{border-radius:10px;padding:7px 12px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--ink);border:1px solid var(--line);white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .chk{display:flex;align-items:center;gap:6px;font-size:13px;margin-top:6px}
+  .chk input{width:auto}
+  .bar{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}
+  .tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin:10px 0 10px;overflow-x:auto}
+  .tab{font:inherit;font-size:14px;font-weight:700;border:0;background:none;padding:8px 12px;cursor:pointer;color:var(--sub);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+  .tab.on{color:var(--brand);border-bottom-color:var(--brand)}
+  .tab .n{display:inline-block;min-width:20px;font-size:11.5px;background:var(--bad);color:#fff;border-radius:999px;padding:1px 6px;margin-left:4px}
+  .view{display:none}.view.on{display:block}
+  .rec{border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:8px;background:#fff}
+  .rec .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+  .rec .when{color:var(--sub);font-variant-numeric:tabular-nums}
+  .rec .who{font-weight:800;font-size:14.5px}
+  .badge{font-size:11.5px;font-weight:800;border-radius:6px;padding:1px 7px;background:var(--soft);color:var(--brand)}
+  .badge.m-전화{background:#e3f2fd;color:#1565c0}.badge.m-대면{background:#e8f5e9;color:#2e7d32}.badge.m-문자{background:#fff3e0;color:#b45309}.badge.m-온라인{background:#fce4ec;color:#ad1457}
+  .tags{display:inline-flex;gap:4px;flex-wrap:wrap}
+  .tags span{font-size:11.5px;background:#f4f2f8;border-radius:999px;padding:1px 7px;color:var(--sub)}
+  .rec .ct{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;font-size:13.5px;line-height:1.6;margin-top:5px}
+  .rec .fu{font-size:13px;margin-top:5px;padding:4px 8px;border-radius:8px;background:#fff4e5;color:#8a4b00}
+  .rec .fu.done{background:#eaf6ee;color:var(--ok);text-decoration:line-through}
+  .rec .act{margin-left:auto;display:flex;gap:4px}
+  .rec .act button{font:inherit;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 8px;cursor:pointer}
+  .grp{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
+  .grp summary{cursor:pointer;padding:9px 12px;display:flex;gap:10px;align-items:center;background:#faf9fd}
+  .gname{font-weight:800}
+  .gmeta{font-size:12.5px;color:var(--sub)}
+  .grp .mini{padding:6px 12px;font-size:13px;border-top:1px solid var(--line);display:flex;gap:8px}
+  .grp .mini .d{color:var(--sub);flex:none;font-variant-numeric:tabular-nums}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+  .sbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .sbox h3{margin:0 0 6px;font-size:14px}
+  .srow{display:grid;grid-template-columns:72px 1fr 30px;gap:6px;align-items:center;font-size:13px;margin:4px 0}
+  .srow .sb{height:10px;background:#efeaf8;border-radius:5px;overflow:hidden}.srow .sb i{display:block;height:100%;background:var(--brand2)}
+  .srow .sv{text-align:right;font-weight:800}
+  .empty{color:var(--sub);font-size:14px;padding:18px;text-align:center;border:1px dashed var(--line);border-radius:12px}
+  #printArea{display:none}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.92);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:30}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#26222f;color:#fff;padding:9px 16px;border-radius:999px;font-size:13.5px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+  .toast.on{opacity:1}
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;padding:10px} .notice{padding:0 10px}
+    header{padding:10px 12px} header p{display:none} header h1{font-size:19px}
+    .lock{font-size:11.5px;padding:5px 9px}
+    .bar{grid-template-columns:1fr}
+  }
+  @media print{
+    body>*:not(#printArea){display:none!important}
+    body{background:#fff}
+    #printArea{display:block!important;font-size:11pt}
+    #printArea .pg{break-after:page;page-break-after:always}
+    #printArea .pg:last-child{break-after:auto;page-break-after:auto}
+    #printArea h2{font-size:16pt;margin:0 0 4px}
+    #printArea p{margin:0 0 8px;font-size:10pt;color:#444}
+    #printArea table{width:100%;border-collapse:collapse}
+    #printArea th,#printArea td{border:1px solid #555;padding:4px 6px;vertical-align:top;text-align:left;white-space:pre-wrap}
+    #printArea th{background:#eee}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="상담 기록장">
+<meta property="og:description" content="학부모·학생 상담을 날짜·방법·내용으로 남기고 학생별 모아 보기, 내 PC에만 저장">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/97-call-log.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/call-log/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">📒</div>
+  <div>
+    <h1>상담 기록장</h1>
+    <p>학부모·학생 상담을 1분 안에 기록 · 학생별로 모아 보고 후속 조치까지 챙기기</p>
+  </div>
+  <div class="grow"></div>
+  <span class="lock" title="기록은 이 브라우저(localStorage)에만 저장되고 어디로도 전송되지 않습니다">🔒 이 PC에만 저장 · 외부 전송 없음</span>
+  <button type="button" class="wipe" id="wipeAll" title="공용 PC라면 백업 후 꼭 눌러 주세요">🧹 이 PC 기록 모두 지우기</button>
+</header>
+<div class="notice"><div>🔐 상담 기록은 <b>이 PC의 이 브라우저에만</b> 저장돼요. 다른 PC로 옮기려면 <b>JSON 백업</b>을 쓰고, 공용 PC라면 다 쓴 뒤 <b>이 PC 기록 모두 지우기</b>를 눌러 주세요. 화면의 학생·내용은 모두 가상 예시입니다.</div></div>
+<main>
+  <section class="panel" id="formPanel">
+    <h2 id="formTitle">✏️ 새 상담 기록</h2>
+    <div class="two">
+      <div><label class="f" for="fDate">날짜</label><input type="date" id="fDate"></div>
+      <div><label class="f" for="fTime">시간</label><input type="time" id="fTime"></div>
+    </div>
+    <label class="f" for="fStudent">학생</label>
+    <input id="fStudent" list="stuList" placeholder="예: 김하늘" autocomplete="off"><datalist id="stuList"></datalist>
+    <div class="two">
+      <div><label class="f" for="fTarget">대상</label><select id="fTarget"><option>학부모</option><option>학생</option><option>기타</option></select></div>
+      <div><label class="f" for="fMethod">방법</label><select id="fMethod"><option>전화</option><option>대면</option><option>문자</option><option>온라인</option><option>기타</option></select></div>
+    </div>
+    <label class="f">주제 (여러 개 선택)</label>
+    <div class="chips" id="fTags"></div>
+    <label class="f" for="fContent">내용</label>
+    <textarea id="fContent" rows="4" placeholder="상담 내용을 사실 위주로 적어요"></textarea>
+    <label class="f" for="fFollow">후속 조치 (없으면 비워 두기)</label>
+    <input id="fFollow" placeholder="예: 다음 주 화요일 다시 통화">
+    <label class="chk"><input type="checkbox" id="fDone"> 후속 조치 완료</label>
+    <div class="row" style="margin-top:10px">
+      <button type="button" class="btn primary" id="saveBtn">💾 기록 저장</button>
+      <button type="button" class="btn" id="newBtn">새로 쓰기</button>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="bar">
+      <input type="search" id="q" placeholder="🔍 학생·내용·주제 검색" aria-label="검색">
+      <select id="month" aria-label="월"></select>
+      <select id="stu" aria-label="학생"></select>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button type="button" class="btn" id="printBtn">🖨 학생별 상담 일지 인쇄</button>
+      <button type="button" class="btn" id="exportJson">💾 JSON 백업</button>
+      <button type="button" class="btn" id="importBtn">📂 JSON 가져오기</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+    <div class="tabs" id="tabs">
+      <button type="button" class="tab on" data-tab="list">📋 목록 <span class="hint" id="listCnt"></span></button>
+      <button type="button" class="tab" data-tab="students">👥 학생별</button>
+      <button type="button" class="tab" data-tab="follow">⏰ 후속 조치<span class="n" id="followCnt">0</span></button>
+      <button type="button" class="tab" data-tab="stats">📊 통계</button>
+    </div>
+    <div class="view on" id="list"></div>
+    <div class="view" id="students"></div>
+    <div class="view" id="follow"></div>
+    <div class="view" id="stats"></div>
+  </section>
+</main>
+<div id="printArea"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(function(){
+  'use strict';
+  var KEY = 'edu-expo.call-log.v1';
+  var $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var TARGETS = ['학부모', '학생', '기타'], METHODS = ['전화', '대면', '문자', '온라인', '기타'];
+  var TAGS = ['학업', '교우관계', '생활습관', '건강', '진로', '출결', '가정', '정서', '기타'];
+  var pad = function(n){ return String(n).padStart(2, '0'); };
+  var ymd = function(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  function validDate(s){ if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false; var d = new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)); return ymd(d) === s; }
+  var uid = function(){ return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); };
+  function clean(r){
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+    var student = typeof r.student === 'string' ? r.student.trim().slice(0, 40) : '';
+    if (!student || !validDate(r.date)) return null;
+    return {
+      id: typeof r.id === 'string' && r.id.length <= 40 ? r.id : uid(),
+      date: r.date,
+      time: typeof r.time === 'string' && /^\d{2}:\d{2}$/.test(r.time) ? r.time : '',
+      student: student,
+      target: TARGETS.indexOf(r.target) >= 0 ? r.target : '기타',
+      method: METHODS.indexOf(r.method) >= 0 ? r.method : '기타',
+      tags: Array.isArray(r.tags) ? r.tags.filter(function(t){ return typeof t === 'string' && t.trim(); }).map(function(t){ return t.trim().slice(0, 20); }).slice(0, 10) : [],
+      content: typeof r.content === 'string' ? r.content.slice(0, 5000) : '',
+      follow: typeof r.follow === 'string' ? r.follow.slice(0, 500) : '',
+      done: r.done === true
+    };
+  }
+  function sample(){
+    var t = new Date(); t.setHours(12, 0, 0, 0);
+    var d = function(n){ var x = new Date(t); x.setDate(x.getDate() - n); return ymd(x); };
+    return [
+      {date: d(1), time: '15:40', student: '김하늘', target: '학부모', method: '전화', tags: ['교우관계'], content: '쉬는 시간에 친구와 다툰 일로 어머니께서 먼저 전화 주심. 학교에서 있었던 일을 사실대로 안내하고, 두 학생 모두 사과하고 화해했음을 알림.', follow: '이번 주 금요일 다시 상황 공유', done: false},
+      {date: d(2), time: '08:30', student: '이바다', target: '학생', method: '대면', tags: ['학업', '진로'], content: '분수 나눗셈이 어렵다고 함. 방과 후 10분 보충 약속. 과학자가 꿈이라 과학 동아리 안내.', follow: '보충 자료 준비하기', done: false},
+      {date: d(4), time: '17:10', student: '박구름', target: '학부모', method: '문자', tags: ['건강', '출결'], content: '감기로 이틀 결석 예정이라는 문자 받음. 결석계 서식과 과제 안내 회신.', follow: '등교 후 결석계 받기', done: true},
+      {date: d(6), time: '14:20', student: '최별', target: '학부모', method: '온라인', tags: ['학업', '가정'], content: '화상 상담. 가정에서 독서 시간을 늘리고 싶다고 하심. 학급 추천 도서 목록 공유.', follow: '', done: false},
+      {date: d(9), time: '13:00', student: '김하늘', target: '학생', method: '대면', tags: ['정서'], content: '요즘 기분이 어떤지 이야기 나눔. 동생이 태어나 집에서 조금 외롭다고 함. 칭찬과 역할 맡기기.', follow: '학급 도우미 역할 주기', done: true},
+      {date: d(13), time: '16:00', student: '정나래', target: '학부모', method: '전화', tags: ['생활습관'], content: '숙제를 자주 빠뜨려 알림장 확인을 부탁드림. 가정에서도 함께 챙기기로 함.', follow: '2주 뒤 숙제 제출 상황 다시 알리기', done: false},
+      {date: d(20), time: '09:10', student: '이바다', target: '학부모', method: '전화', tags: ['학업'], content: '수학 단원평가 결과 안내. 연산 실수가 많아 검산 습관을 함께 지도하기로 함.', follow: '', done: false},
+      {date: d(33), time: '15:00', student: '한가람', target: '학부모', method: '대면', tags: ['진로', '학업'], content: '1학기 학부모 상담 주간 대면 상담. 발표를 좋아하고 리더십이 있음을 안내.', follow: '', done: false}
+    ].map(function(r){ r.id = uid(); return r; });
+  }
+  var state = {records: []};
+  try {
+    var st = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (st && Array.isArray(st.records)) state.records = st.records.map(clean).filter(Boolean); else state.records = sample();
+  } catch(e){ state.records = sample(); }
+  var editId = null, view = 'list';
+
+  var toastT;
+  function toast(m){ var t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 2200); }
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify({records: state.records})); } catch(e){ toast('저장 공간이 부족해요. JSON 백업 후 정리해 주세요'); } }
+  function sorted(list){ return list.slice().sort(function(a, b){ return (b.date + b.time).localeCompare(a.date + a.time); }); }
+  function filtered(){
+    var q = $('#q').value.trim().toLowerCase(), m = $('#month').value, s = $('#stu').value;
+    return sorted(state.records.filter(function(r){
+      if (m && r.date.slice(0, 7) !== m) return false;
+      if (s && r.student !== s) return false;
+      if (q && (r.student + ' ' + r.content + ' ' + r.follow + ' ' + r.tags.join(' ') + ' ' + r.method + ' ' + r.target).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    }));
+  }
+  function recHtml(r, opt){
+    opt = opt || {};
+    return '<div class="rec" data-id="' + esc(r.id) + '"><div class="hd"><span class="when">' + esc(r.date) + (r.time ? ' ' + esc(r.time) : '') + '</span><span class="who">' + esc(r.student) + '</span>'
+      + '<span class="badge">' + esc(r.target) + '</span><span class="badge m-' + esc(r.method) + '">' + esc(r.method) + '</span>'
+      + '<span class="tags">' + r.tags.map(function(t){ return '<span>#' + esc(t) + '</span>'; }).join('') + '</span>'
+      + '<span class="act">' + (opt.doneBtn ? '<button type="button" data-done="' + esc(r.id) + '">✔ 완료</button>' : '') + '<button type="button" data-edit="' + esc(r.id) + '">수정</button><button type="button" data-del="' + esc(r.id) + '">삭제</button></span></div>'
+      + (r.content ? '<div class="ct">' + esc(r.content) + '</div>' : '')
+      + (r.follow ? '<div class="fu' + (r.done ? ' done' : '') + '">↪ 후속: ' + esc(r.follow) + (r.done ? ' (완료)' : '') + '</div>' : '')
+      + '</div>';
+  }
+  function fillSelect(sel, items, allLabel){
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">' + allLabel + '</option>' + items.map(function(x){ return '<option value="' + esc(x[0]) + '">' + esc(x[1]) + '</option>'; }).join('');
+    if (items.some(function(x){ return x[0] === cur; })) sel.value = cur;
+  }
+  function students(){ var o = {}; state.records.forEach(function(r){ o[r.student] = 1; }); return Object.keys(o).sort(function(a, b){ return a.localeCompare(b, 'ko'); }); }
+  function renderFilters(){
+    var ms = {}; state.records.forEach(function(r){ ms[r.date.slice(0, 7)] = 1; });
+    fillSelect($('#month'), Object.keys(ms).sort().reverse().map(function(m){ return [m, m.slice(0, 4) + '년 ' + (+m.slice(5)) + '월']; }), '📅 모든 달');
+    var ss = students();
+    fillSelect($('#stu'), ss.map(function(s){ return [s, s]; }), '👤 모든 학생');
+    $('#stuList').innerHTML = ss.map(function(s){ return '<option value="' + esc(s) + '"></option>'; }).join('');
+  }
+  function render(){
+    renderFilters();
+    var list = filtered();
+    $('#listCnt').textContent = list.length + '건';
+    $('#list').innerHTML = list.length ? list.map(function(r){ return recHtml(r); }).join('') : '<div class="empty">조건에 맞는 기록이 없어요.</div>';
+    // 학생별
+    var g = {}; list.forEach(function(r){ (g[r.student] = g[r.student] || []).push(r); });
+    var names = Object.keys(g).sort(function(a, b){ return a.localeCompare(b, 'ko'); });
+    $('#students').innerHTML = names.length ? names.map(function(n){
+      var rs = g[n], open = rs.filter(function(r){ return r.follow && !r.done; }).length;
+      return '<details class="grp"><summary><span class="gname">👤 ' + esc(n) + '</span><span class="gmeta">' + rs.length + '건 · 최근 ' + esc(rs[0].date) + (open ? ' · 후속 ' + open + '건 남음' : '') + '</span></summary>'
+        + rs.map(function(r){ return '<div class="mini"><span class="d">' + esc(r.date) + ' ' + esc(r.method) + '</span><span>' + esc(r.content.slice(0, 80)) + (r.content.length > 80 ? '…' : '') + '</span></div>'; }).join('') + '</details>';
+    }).join('') : '<div class="empty">조건에 맞는 기록이 없어요.</div>';
+    // 후속 조치(필터와 무관하게 전체)
+    var fu = state.records.filter(function(r){ return r.follow && !r.done; }).sort(function(a, b){ return (a.date + a.time).localeCompare(b.date + b.time); });
+    $('#followCnt').textContent = String(fu.length);
+    $('#follow').innerHTML = fu.length ? '<p class="gmeta" style="margin:0 0 8px">오래된 것부터 · 완료를 누르면 목록에서 빠져요</p>' + fu.map(function(r){ return recHtml(r, {doneBtn: true}); }).join('') : '<div class="empty">🎉 남은 후속 조치가 없어요.</div>';
+    // 통계
+    var cnt = function(keyFn, keys){ var o = {}; (keys || []).forEach(function(k){ o[k] = 0; }); list.forEach(function(r){ [].concat(keyFn(r)).forEach(function(k){ o[k] = (o[k] || 0) + 1; }); }); return o; };
+    var box = function(g2, title, o, order){
+      var ks = order || Object.keys(o).sort(function(a, b){ return o[b] - o[a]; });
+      var max = Math.max.apply(null, ks.map(function(k){ return o[k]; }).concat([1]));
+      return '<div class="sbox" data-g="' + g2 + '"><h3>' + title + '</h3>' + ks.map(function(k){ return '<div class="srow"><span class="sk">' + esc(k) + '</span><span class="sb"><i style="width:' + Math.round(o[k] / max * 100) + '%"></i></span><span class="sv">' + o[k] + '</span></div>'; }).join('') + '</div>';
+    };
+    var months = cnt(function(r){ return r.date.slice(0, 7); });
+    $('#stats').innerHTML = '<p class="gmeta" style="margin:0 0 8px">위의 검색·월·학생 조건에 맞는 ' + list.length + '건 기준</p><div class="stats">'
+      + box('method', '📞 방법별', cnt(function(r){ return r.method; }, METHODS.slice(0, 4)), null)
+      + box('tag', '🏷 주제별', cnt(function(r){ return r.tags.length ? r.tags : ['(주제 없음)']; }), null)
+      + box('target', '🙋 대상별', cnt(function(r){ return r.target; }, TARGETS.slice(0, 2)), null)
+      + box('month', '📅 월별', months, Object.keys(months).sort())
+      + '</div>';
+  }
+  function renderTags(sel){ $('#fTags').innerHTML = TAGS.map(function(t){ return '<button type="button" class="chip' + (sel.indexOf(t) >= 0 ? ' on' : '') + '" data-tag="' + esc(t) + '">' + esc(t) + '</button>'; }).join(''); }
+  function resetForm(keepDate){
+    editId = null;
+    var now = new Date();
+    if (!keepDate || !$('#fDate').value) $('#fDate').value = ymd(now);
+    $('#fTime').value = pad(now.getHours()) + ':' + pad(Math.floor(now.getMinutes() / 10) * 10);
+    $('#fStudent').value = ''; $('#fContent').value = ''; $('#fFollow').value = ''; $('#fDone').checked = false;
+    $('#fTarget').value = '학부모'; $('#fMethod').value = '전화';
+    renderTags([]);
+    $('#formTitle').textContent = '✏️ 새 상담 기록'; $('#saveBtn').textContent = '💾 기록 저장';
+  }
+  function loadForm(r){
+    editId = r.id;
+    $('#fDate').value = r.date; $('#fTime').value = r.time; $('#fStudent').value = r.student; $('#fTarget').value = r.target; $('#fMethod').value = r.method;
+    $('#fContent').value = r.content; $('#fFollow').value = r.follow; $('#fDone').checked = r.done; renderTags(r.tags);
+    $('#formTitle').textContent = '✏️ 기록 고치기'; $('#saveBtn').textContent = '💾 수정 저장';
+    $('#formPanel').scrollIntoView({block: 'nearest'});
+  }
+  $('#saveBtn').addEventListener('click', function(){
+    var rec = clean({
+      id: editId || uid(), date: $('#fDate').value, time: $('#fTime').value, student: $('#fStudent').value,
+      target: $('#fTarget').value, method: $('#fMethod').value,
+      tags: $$('#fTags .chip.on').map(function(c){ return c.getAttribute('data-tag'); }),
+      content: $('#fContent').value.trim(), follow: $('#fFollow').value.trim(), done: $('#fDone').checked
+    });
+    if (!$('#fStudent').value.trim()) return toast('학생 이름을 적어 주세요');
+    if (!rec) return toast('날짜를 확인해 주세요');
+    var i = state.records.findIndex(function(r){ return r.id === rec.id; });
+    if (editId && i >= 0) state.records[i] = rec; else state.records.push(rec);
+    save(); toast(editId ? '기록을 고쳤어요' : '기록을 저장했어요');
+    resetForm(true); render();
+  });
+  $('#newBtn').addEventListener('click', function(){ resetForm(false); });
+  $('#fTags').addEventListener('click', function(e){ var c = e.target.closest('.chip'); if (c) c.classList.toggle('on'); });
+  ['#q', '#month', '#stu'].forEach(function(s){ $(s).addEventListener('input', render); $(s).addEventListener('change', render); });
+  $('#tabs').addEventListener('click', function(e){
+    var b = e.target.closest('.tab'); if (!b) return; view = b.getAttribute('data-tab');
+    $$('#tabs .tab').forEach(function(x){ x.classList.toggle('on', x === b); });
+    $$('.view').forEach(function(v){ v.classList.toggle('on', v.id === view); });
+  });
+  document.querySelector('main').addEventListener('click', function(e){
+    var b = e.target.closest('[data-edit],[data-del],[data-done]'); if (!b) return;
+    var id = b.getAttribute('data-edit') || b.getAttribute('data-del') || b.getAttribute('data-done');
+    var r = state.records.find(function(x){ return x.id === id; }); if (!r) return;
+    if (b.hasAttribute('data-edit')) return loadForm(r);
+    if (b.hasAttribute('data-done')) { r.done = true; save(); render(); return toast('후속 조치를 완료했어요'); }
+    if (!confirm(r.date + ' ' + r.student + ' 상담 기록을 지울까요?')) return;
+    state.records = state.records.filter(function(x){ return x.id !== id; });
+    if (editId === id) resetForm(true);
+    save(); render(); toast('기록을 지웠어요');
+  });
+  // 인쇄: 학생별 상담 일지(학생 한 명당 한 장)
+  $('#printBtn').addEventListener('click', function(){
+    var s = $('#stu').value, m = $('#month').value;
+    var rs = state.records.filter(function(r){ return (!s || r.student === s) && (!m || r.date.slice(0, 7) === m); });
+    if (!rs.length) return toast('인쇄할 기록이 없어요');
+    var g = {}; rs.forEach(function(r){ (g[r.student] = g[r.student] || []).push(r); });
+    $('#printArea').innerHTML = Object.keys(g).sort(function(a, b){ return a.localeCompare(b, 'ko'); }).map(function(n){
+      var list = g[n].sort(function(a, b){ return (a.date + a.time).localeCompare(b.date + b.time); });
+      return '<section class="pg"><h2>상담 일지 — ' + esc(n) + '</h2><p>' + (m ? esc(m) + ' · ' : '') + '총 ' + list.length + '건 · 출력일 ' + ymd(new Date()) + '</p><table><thead><tr><th style="width:14%">날짜·시간</th><th style="width:8%">대상</th><th style="width:8%">방법</th><th style="width:12%">주제</th><th>내용</th><th style="width:18%">후속 조치</th></tr></thead><tbody>'
+        + list.map(function(r){ return '<tr><td>' + esc(r.date + (r.time ? ' ' + r.time : '')) + '</td><td>' + esc(r.target) + '</td><td>' + esc(r.method) + '</td><td>' + esc(r.tags.join(', ')) + '</td><td>' + esc(r.content) + '</td><td>' + esc(r.follow) + (r.follow ? (r.done ? ' (완료)' : ' (미완료)') : '') + '</td></tr>'; }).join('')
+        + '</tbody></table></section>';
+    }).join('');
+    window.print();
+  });
+  function exportJson(){ return JSON.stringify({app: 'call-log', version: 1, exported: new Date().toISOString(), records: state.records}, null, 1); }
+  $('#exportJson').addEventListener('click', function(){
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([exportJson()], {type: 'application/json'}));
+    a.download = '상담기록_백업_' + ymd(new Date()) + '.json'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000); toast('백업 파일을 만들었어요 (' + state.records.length + '건)');
+  });
+  $('#importBtn').addEventListener('click', function(){ $('#importFile').click(); });
+  function importText(text){
+    var data; try { data = JSON.parse(text); } catch(e){ return toast('파일을 읽을 수 없어요 (JSON 형식이 아님)'); }
+    var arr = Array.isArray(data) ? data : (data && Array.isArray(data.records) ? data.records : null);
+    if (!arr) return toast('파일을 읽을 수 없어요 (상담 기록이 없음)');
+    var ids = {}; state.records.forEach(function(r){ ids[r.id] = 1; });
+    var ok = 0, skip = 0;
+    arr.slice(0, 5000).forEach(function(x){ var r = clean(x); if (!r || ids[r.id]) { skip++; return; } ids[r.id] = 1; state.records.push(r); ok++; });
+    skip += Math.max(0, arr.length - 5000);
+    save(); render(); toast(ok + '건 가져옴' + (skip ? ', ' + skip + '건 건너뜀(형식 오류·중복)' : ''));
+  }
+  $('#importFile').addEventListener('change', function(){
+    var f = this.files && this.files[0]; if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { this.value = ''; return toast('파일이 너무 커요 (5MB 이하)'); }
+    var rd = new FileReader(); rd.onload = function(){ importText(String(rd.result)); }; rd.onerror = function(){ toast('파일을 읽을 수 없어요'); }; rd.readAsText(f);
+    this.value = '';
+  });
+  $('#wipeAll').addEventListener('click', function(){
+    if (!confirm('이 PC에 저장된 상담 기록 ' + state.records.length + '건을 모두 지울까요?\n백업하지 않았다면 되돌릴 수 없어요.')) return;
+    try { localStorage.removeItem(KEY); localStorage.setItem(KEY, JSON.stringify({records: []})); } catch(e){}
+    location.reload();
+  });
+  window.__callLog = {
+    setRecords: function(a){ state.records = (a || []).map(clean).filter(Boolean); save(); render(); },
+    records: function(){ return state.records; }, exportJson: exportJson
+  };
+  resetForm(false); render();
+})();
+</script>
+</body>
+</html>

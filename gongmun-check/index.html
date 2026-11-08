@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>공문 다듬이 - 공문서 날짜·시간·금액·항목 기호 점검과 자동 고침</title>
+<meta name="description" content="공문 초안을 붙여넣으면 날짜(2026. 11. 8.), 24시각제 시간, 금액 한글 병기, 항목 기호 순서와 들여쓰기, 끝 표시, 붙임 표기를 공문서 작성 규칙으로 점검하고 한 번에 고쳐 주는 교직원용 도구. 내 PC에서만 처리됩니다.">
+<style>
+  :root{--bg:#f3f1ec;--panel:#fff;--ink:#22252b;--sub:#666c76;--line:#e1ddd3;--brand:#2f4a3a;--brand2:#3f6a52;--gold:#e8b44a;--ok:#1f7a4a;--bad:#c2412d;
+    --c-date:#2f6fd0;--c-time:#7a46c2;--c-money:#16825a;--c-item:#d06a10;--c-end:#c2412d;--c-att:#0f8a8a;--c-colon:#6b7280}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:linear-gradient(110deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.88}
+  .grow{flex:1}
+  .safe{display:inline-flex;align-items:center;gap:6px;background:#e7f7ee;color:#11603d;border:1px solid #a6dcbf;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .wipe{font:inherit;font-size:12px;font-weight:700;border:1px solid #ffffff88;background:transparent;color:#fff;border-radius:999px;padding:4px 10px;cursor:pointer}
+  .btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 13px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn.small{font-size:12.5px;padding:6px 10px}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.gold{background:var(--gold);color:#3a2a00;border-color:transparent}
+  .btn:disabled{opacity:.45;cursor:default}
+  main{max-width:1400px;margin:0 auto;padding:12px 20px 56px;display:flex;flex-direction:column;gap:12px}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:9px 12px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:12.5px;font-weight:700;border-radius:999px;padding:4px 10px;background:#f4f4f4;color:var(--sub);border:1px solid var(--line)}
+  .chip b{font-size:14px}
+  .chip.on{color:#fff;border-color:transparent}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+  .pane{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;min-width:0}
+  .pane h2{margin:0 0 6px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .pane h2 small{font-weight:500;color:var(--sub);font-size:12px}
+  .mono{font-family:"D2Coding","GulimChe","굴림체","NanumGothicCoding",Consolas,monospace;font-size:14px;line-height:1.75}
+  textarea#src{width:100%;height:440px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;resize:vertical;background:#fffef9;color:var(--ink);tab-size:2}
+  #preview{white-space:pre-wrap;word-break:break-all;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fcfcfa;height:250px;overflow:auto;margin:0}
+  mark{background:transparent;border-bottom:3px solid;padding:0 1px;border-radius:3px;cursor:help}
+  mark.date{border-color:var(--c-date);background:#2f6fd014}
+  mark.time{border-color:var(--c-time);background:#7a46c214}
+  mark.money{border-color:var(--c-money);background:#16825a14}
+  mark.item{border-color:var(--c-item);background:#d06a1018}
+  mark.end{border-color:var(--c-end);background:#c2412d14}
+  mark.att{border-color:var(--c-att);background:#0f8a8a14}
+  mark.colon{border-color:var(--c-colon);background:#6b728014}
+  mark.ins{display:inline-block;min-width:10px;text-align:center;font-size:11px;font-weight:800;color:var(--c-end)}
+  #issues{margin-top:8px;overflow:auto;height:176px;display:flex;flex-direction:column;gap:5px}
+  .iss{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:5px 8px;font-size:12.5px}
+  .iss .tag{font-size:11px;font-weight:800;color:#fff;border-radius:6px;padding:2px 7px;white-space:nowrap}
+  .iss .ch{font-family:"D2Coding","GulimChe",Consolas,monospace;font-size:12.5px;word-break:break-all}
+  .iss .ch del{color:var(--bad);text-decoration:line-through;background:#fdeeee}
+  .iss .ch ins{color:var(--ok);text-decoration:none;background:#e8f6ee;font-weight:700}
+  .iss .why{display:block;color:var(--sub);font-size:11.5px;margin-top:1px}
+  .iss button{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 9px;cursor:pointer}
+  .okmsg{padding:14px;text-align:center;color:var(--ok);font-weight:800;border:1px dashed #a6dcbf;border-radius:10px;background:#f2fbf5}
+  .t-date{background:var(--c-date)}.t-time{background:var(--c-time)}.t-money{background:var(--c-money)}.t-item{background:var(--c-item)}.t-end{background:var(--c-end)}.t-att{background:var(--c-att)}.t-colon{background:var(--c-colon)}
+  .rules{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .rules h2{margin:0 0 8px;font-size:15px}
+  .rgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .rule{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.55}
+  .rule b{display:block;font-size:13.5px;margin-bottom:2px}
+  .rule code{font-family:"D2Coding","GulimChe",Consolas,monospace;background:#f4f2ec;border-radius:4px;padding:0 4px}
+  .rule .src{color:var(--sub);font-size:11.5px;display:block;margin-top:3px}
+  .hint{font-size:12px;color:var(--sub);line-height:1.5}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:20}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.92);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:10}
+  .print-only{display:none}
+  @media (max-width:860px){
+    header{padding:10px 12px}
+    header h1{font-size:19px}
+    main{padding:10px 10px 56px}
+    .grid{grid-template-columns:minmax(0,1fr)}
+    .rgrid{grid-template-columns:minmax(0,1fr)}
+    textarea#src{height:280px}
+    .mono{font-size:13px}
+  }
+  @media print{
+    @page{size:A4;margin:18mm}
+    body{background:#fff}
+    header,.bar,.rules,.back,.toast,#issues,.pane h2,.pane.left,.hint{display:none!important}
+    main{padding:0;max-width:none}
+    .grid{display:block}
+    .pane{border:0;padding:0}
+    #preview{height:auto;overflow:visible;border:0;background:#fff;font-size:12pt}
+    mark{border:0;background:none}
+    mark.ins{display:none}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="공문 다듬이">
+<meta property="og:description" content="공문 초안의 날짜·시간·금액 표기와 항목 기호·끝 표시를 공문서 규칙으로 점검">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/91-gongmun-check.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/gongmun-check/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">📝</div>
+  <div>
+    <h1>공문 다듬이</h1>
+    <p>초안을 붙여넣으면 날짜·시간·금액·항목 기호·끝 표시를 공문서 규칙으로 점검하고 한 번에 고쳐요</p>
+  </div>
+  <span class="safe">🔒 내 PC에서만 처리 · 외부 전송 없음</span>
+  <div class="grow"></div>
+  <button type="button" class="wipe" id="wipeAll" title="공용 PC라면 다 쓴 뒤 눌러 주세요">🧹 이 PC 기록 모두 지우기</button>
+</header>
+<main>
+  <section class="bar">
+    <div class="chips" id="chips"></div>
+    <div class="grow"></div>
+    <button class="btn primary" id="fixAll" type="button">✨ 모두 고치기</button>
+    <button class="btn" id="undo" type="button" disabled>↩ 되돌리기</button>
+    <button class="btn" id="copy" type="button">📋 복사</button>
+    <button class="btn" id="printBtn" type="button">🖨 인쇄</button>
+    <button class="btn small" id="sample" type="button">예시 불러오기</button>
+    <button class="btn small" id="clear" type="button">비우기</button>
+  </section>
+  <section class="grid">
+    <div class="pane left">
+      <h2>✍️ 공문 초안 <small>한글·메일에서 복사해 붙여넣으세요 (고정폭 글꼴로 2타 간격이 보여요)</small></h2>
+      <textarea id="src" class="mono" spellcheck="false" aria-label="공문 초안"></textarea>
+    </div>
+    <div class="pane">
+      <h2>🔍 점검 결과 <small id="sumTxt"></small></h2>
+      <pre id="preview" class="mono" aria-label="점검 미리보기"></pre>
+      <div id="issues"></div>
+    </div>
+  </section>
+  <section class="rules">
+    <h2>📏 점검하는 규칙과 근거</h2>
+    <div class="rgrid" id="rules"></div>
+    <p class="hint">근거: 「행정업무의 운영 및 혁신에 관한 규정」 및 같은 규정 시행규칙(제2조 문서의 표기), 행정안전부 「행정업무운영 편람」의 공문서 작성 예시. 기관마다 세부 서식이 다를 수 있으니 최종 확인은 소속 기관 기준을 따르세요. 시간에 오전·오후가 없으면 1-6시는 오후로 짐작하니 꼭 확인하세요.</p>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(function(){
+  'use strict';
+  var KEY='edu-expo.gongmun-check.v1';
+  var $=function(s){return document.querySelector(s);};
+  var SAMPLE=['수신  수신자 참조','(경유)','제목  2026학년도 학부모 공개수업 안내','',
+    '1.관련 : 햇살초등학교-1234(2026.10.20.)',
+    '2. 우리 학교 학부모 공개수업을 다음과 같이 실시하오니 참석하여 주시기 바랍니다.',
+    '  가. 일시: 2026년 11월 18일(화) 오후 2시~3시 30분',
+    '  나. 장소: 각 학년 교실 및 강당',
+    '  라. 준비물 구입비: 150000원',
+    '      1) 다과비 120,000원',
+    '      2) 인쇄비 3만원',
+    '  마. 문의: 교무실(054-000-0000)',
+    '끝.','',
+    '붙임 : 1. 공개수업 시간표 1부',
+    '2. 참관록 양식 1부.'].join('\n');
+  var CAT={
+    date:{name:'날짜',why:'시행규칙 제2조: 날짜는 숫자로 쓰고 연·월·일 글자 대신 온점(.)을 찍음 (예: 2026. 11. 8.), 요일은 괄호에 한 글자'},
+    time:{name:'시간',why:'시행규칙 제2조: 시·분은 24시각제 숫자로 쓰고 글자 대신 쌍점(:) (예: 14:00)'},
+    money:{name:'금액',why:'시행규칙 제2조: 금액은 숫자로 쓰고 괄호 안에 한글 병기 (예: 금113,560원(금일십일만삼천오백육십원))'},
+    item:{name:'항목',why:'시행규칙 제2조·편람: 1. → 가. → 1) → 가) → (1) → (가) → ① → ㉮, 하위 항목은 2타씩 들여쓰고 기호 뒤 1타'},
+    end:{name:'끝 표시',why:'편람: 본문 마지막 글자 뒤 2타 띄우고 "끝." (붙임이 있으면 붙임 뒤에)'},
+    att:{name:'붙임',why:'편람: "붙임" 뒤 2타 띄우고 붙임물 이름과 수량(1부.), 여러 개면 번호를 붙여 줄 맞춤'},
+    colon:{name:'쌍점',why:'한글 맞춤법 문장 부호: 쌍점은 앞말에 붙이고 뒷말과 1타 띄움 (예: 관련: …)'}
+  };
+  var CATS=['date','time','money','item','end','att','colon'];
+  var INLINE={date:1,time:1,money:1,colon:1};
+  var HG='가나다라마바사아자차카타파하';
+  var WD='일월화수목금토';
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function pad(n){return (n<10?'0':'')+n;}
+  function korMoney(n){
+    n=Math.floor(Number(n)||0); if(!n) return '영';
+    var D='영일이삼사오육칠팔구',P=['','십','백','천'],U=['','만','억','조','경'],s='',g=0;
+    while(n>0){var c=n%10000; if(c){var t='';for(var i=3;i>=0;i--){var d=Math.floor(c/Math.pow(10,i))%10; if(d) t+=D[d]+P[i];} s=t+U[g]+s;} n=Math.floor(n/10000); g++;}
+    return s;
+  }
+  function comma(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+  function validDate(y,m,d){if(m<1||m>12||d<1)return false;return d<=new Date(Date.UTC(y,m,0)).getUTCDate();}
+  function weekday(y,m,d){return WD[new Date(Date.UTC(y,m-1,d)).getUTCDay()];}
+  function h24(ap,h){if(ap==='오후'&&h<12)return h+12; if(ap==='오전'&&h===12)return 0; return h;}
+
+  // ---------- 항목 기호 ----------
+  function parseMk(m){
+    var r;
+    if((r=/^(\d{1,2})\.$/.exec(m))) return {t:1,n:+r[1]};
+    if((r=/^([가-힣])\.$/.exec(m))&&HG.indexOf(r[1])>=0) return {t:2,n:HG.indexOf(r[1])+1};
+    if((r=/^(\d{1,2})\)$/.exec(m))) return {t:3,n:+r[1]};
+    if((r=/^([가-힣])\)$/.exec(m))&&HG.indexOf(r[1])>=0) return {t:4,n:HG.indexOf(r[1])+1};
+    if((r=/^\((\d{1,2})\)$/.exec(m))) return {t:5,n:+r[1]};
+    if((r=/^\(([가-힣])\)$/.exec(m))&&HG.indexOf(r[1])>=0) return {t:6,n:HG.indexOf(r[1])+1};
+    var c=m.charCodeAt(0);
+    if(m.length===1&&c>=0x2460&&c<=0x2473) return {t:7,n:c-0x2460+1};
+    if(m.length===1&&c>=0x326E&&c<=0x327B) return {t:8,n:c-0x326E+1};
+    return null;
+  }
+  function mk(t,n){
+    var h=HG[(n-1)%14];
+    switch(t){case 1:return n+'.';case 2:return h+'.';case 3:return n+')';case 4:return h+')';case 5:return '('+n+')';case 6:return '('+h+')';
+      case 7:return String.fromCharCode(0x2460+Math.min(n,20)-1);default:return String.fromCharCode(0x326E+Math.min(n,14)-1);}
+  }
+  var MK_RE=/^([ \t　]*)(\d{1,2}\.|[가-힣]\.|\d{1,2}\)|[가-힣]\)|\(\d{1,2}\)|\([가-힣]\)|[①-⑳]|[㉮-㉻])([ \t　]*)(?=\S)/;
+  var END_RE=/(\s+끝\.?|\s*끝\.)\s*$/;
+  var ALONE_END=/^\s*끝\.?\s*$/;
+
+  // ---------- 점검: 찾은 문제 목록 {a,b,from,to,cat,msg} ----------
+  function check(t){
+    var F=[],claimed=[];
+    function over(a,b){for(var i=0;i<claimed.length;i++){var c=claimed[i]; if(a===b){if(a>c[0]&&a<c[1])return true;} else if(a<c[1]&&b>c[0])return true;}return false;}
+    function add(a,b,to,cat,msg){if(over(a,b))return false; claimed.push([a,b]); var from=t.slice(a,b); if(from!==to) F.push({a:a,b:b,from:from,to:to,cat:cat,msg:msg,q:F.length}); return true;}
+    var L=[],pos=0; t.split('\n').forEach(function(s){L.push({s:s,start:pos,end:pos+s.length});pos+=s.length+1;});
+    var bi=-1; for(var i=0;i<L.length;i++){if(/^\s*(붙임|첨부)(?![가-힣])/.test(L[i].s)){bi=i;break;}}
+    var lc=-1; for(i=L.length-1;i>=0;i--){if(L[i].s.trim()){lc=i;break;}}
+    var attLines={};
+    // 붙임
+    if(bi>=0){
+      var bl=L[bi],bm=bl.s.match(/^(\s*)(붙임|첨부)\s*[:：]?\s*/);
+      var bmsg=[]; if(bm[2]==='첨부')bmsg.push('"첨부" 대신 "붙임"'); if(/[:：]/.test(bm[0]))bmsg.push('쌍점 없이'); if(bm[1])bmsg.push('왼쪽 기본선에서 시작'); if(!bmsg.length)bmsg.push('"붙임" 뒤 2타 띄움');
+      add(bl.start,bl.start+bm[0].length,'붙임  ','att',bmsg.join(', '));
+      attLines[bi]=bl.start+bm[0].length;
+      for(i=bi+1;i<L.length;i++){
+        var s=L[i].s; if(!s.trim())break;
+        var cm=s.match(/^([ \t　]*)(?=\d{1,2}\.)/);
+        if(!cm)continue;
+        add(L[i].start,L[i].start+cm[1].length,'      ','att','둘째 붙임물부터는 "붙임  " 다음 글자에 줄 맞춤(6타)');
+        attLines[i]=L[i].start+cm[1].length;
+      }
+      Object.keys(attLines).forEach(function(k){
+        var l=L[k],em=l.s.match(END_RE),body=em?l.s.slice(0,em.index):l.s,bt=body.replace(/\s+$/,''),e=l.start+bt.length;
+        if(e<=attLines[k])return;
+        if(/\d+\s*(부|권|매|장|건|개|점|식|책)\.$/.test(bt))return;
+        if(/\d+\s*(부|권|매|장|건|개|점|식|책)$/.test(bt)) add(e,e,'.','att','수량 뒤 온점 (예: 1부.)');
+        else add(e,e,' 1부.','att','붙임물 수량이 없어요 → 1부.로 넣었어요(확인)');
+      });
+      // 붙임 앞에 있는 끝 표시는 지움
+      for(i=0;i<bi;i++){
+        var ls=L[i].s;
+        if(ALONE_END.test(ls)) add(L[i].start,Math.min(L[i].end+1,t.length),'','end','붙임이 있으면 "끝."은 붙임 뒤에 (이 줄은 지움)');
+        else {var m2=ls.match(END_RE); if(m2){var bt2=ls.slice(0,m2.index).replace(/\s+$/,''); add(L[i].start+bt2.length,L[i].end,'','end','붙임이 있으면 "끝."은 붙임 뒤에');}}
+      }
+    }
+    // 끝 표시
+    if(lc>=0){
+      var l=L[lc];
+      if(ALONE_END.test(l.s)){
+        var p=lc-1; while(p>=0&&!L[p].s.trim())p--;
+        if(p>=0){var pe=L[p].start+L[p].s.replace(/\s+$/,'').length; add(pe,l.end,'  끝.','end','"끝."은 따로 줄을 두지 않고 마지막 글자 뒤 2타 띄워 붙임');}
+      } else {
+        var em=l.s.match(END_RE),bt3=(em?l.s.slice(0,em.index):l.s).replace(/\s+$/,'');
+        add(l.start+bt3.length,l.end,'  끝.','end',em?'"끝." 앞은 2타(두 칸) 띄움':'본문 끝에 "  끝." 표시가 없어요');
+      }
+    }
+    // 항목 기호
+    var prev=0,cnt=[0,0,0,0,0,0,0,0,0];
+    for(i=0;i<L.length;i++){
+      if(bi>=0&&i>=bi)break;
+      var mm=L[i].s.match(MK_RE); if(!mm)continue;
+      var nx=L[i].s.charAt(mm[0].length);
+      if(/\d/.test(nx)&&!mm[3])continue;
+      var pk=parseMk(mm[2]); if(!pk)continue;
+      var lv=Math.max(1,Math.min(pk.t,prev+1));
+      for(var j=lv+1;j<cnt.length;j++)cnt[j]=0;
+      var n2=++cnt[lv]; prev=lv;
+      var want=new Array(2*(lv-1)+1).join(' ')+mk(lv,n2)+' ';
+      var msg=[];
+      if(lv!==pk.t) msg.push('단계를 건너뛰었어요 '+mm[2]+' → '+mk(lv,n2));
+      else if(pk.n!==n2) msg.push('번호 순서 '+mm[2]+' → '+mk(lv,n2));
+      if(mm[1]!==new Array(2*(lv-1)+1).join(' ')) msg.push(lv===1?'첫째 항목은 왼쪽 기본선에서':'들여쓰기 '+(2*(lv-1))+'타');
+      if(mm[3]!==' ') msg.push('기호 뒤 1타 띄움');
+      add(L[i].start,L[i].start+mm[0].length,want,'item',msg.join(', ')||'항목 기호');
+    }
+    // 날짜
+    var re=/(^|[^\d])(\d{4})\s*(?:년\s*|[.\-\/]\s*)(\d{1,2})\s*(?:월\s*|[.\-\/]\s*)(\d{1,2})(?:\s*일|\.)?(?:\s*\(\s*([월화수목금토일])(?:요일)?\s*\))?(?!\d)/g,m;
+    while((m=re.exec(t))){
+      var a=m.index+m[1].length,b=m.index+m[0].length,y=+m[2],mo=+m[3],d=+m[4];
+      if(!validDate(y,mo,d))continue;
+      var real=weekday(y,mo,d),to=y+'. '+mo+'. '+d+'.'+(m[5]?'('+real+')':'');
+      add(a,b,to,'date',m[5]&&m[5]!==real?'요일이 달라요 ('+m[5]+') → ('+real+')':'날짜는 "'+y+'. '+mo+'. '+d+'." 꼴');
+    }
+    re=/(^|[^\d])(\d{1,2})\s*월\s*(\d{1,2})\s*일(?:\s*\(\s*([월화수목금토일])(?:요일)?\s*\))?/g;
+    while((m=re.exec(t))){
+      a=m.index+m[1].length;b=m.index+m[0].length;mo=+m[2];d=+m[3];
+      if(mo<1||mo>12||d<1||d>31)continue;
+      add(a,b,mo+'. '+d+'.'+(m[4]?'('+m[4]+')':''),'date','날짜는 숫자와 온점으로 ("월·일" 글자 생략)');
+    }
+    // 시간 범위
+    re=/(오전|오후)\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분|\s*(반))?\s*[~∼\-]\s*(?:(오전|오후)\s*)?(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분|\s*(반))?(?![간각작])/g;
+    while((m=re.exec(t))){
+      var ap1=m[1],x1=+m[2],ap2=m[5]||ap1,x2=+m[6];
+      if(!m[5]&&ap1==='오전'&&x2<x1)ap2='오후';
+      if(x1>12||x2>12)continue;
+      var mi1=m[4]?30:(+m[3]||0),mi2=m[8]?30:(+m[7]||0);
+      add(m.index,m.index+m[0].length,pad(h24(ap1,x1))+':'+pad(mi1)+'~'+pad(h24(ap2,x2))+':'+pad(mi2),'time','24시각제, 시·분 글자 대신 쌍점');
+    }
+    re=/(^|[^\d])(?:(오전|오후)\s*)?(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분|\s*(반))?(?![간각작대])/g;
+    while((m=re.exec(t))){
+      a=m.index+m[1].length;b=m.index+m[0].length;
+      var hh=+m[3],mi=m[5]?30:(+m[4]||0),ap=m[2],guess=false;
+      if(hh>24||mi>59||(ap&&hh>12))continue;
+      if(!ap&&hh>=1&&hh<=6){hh+=12;guess=true;}
+      add(a,b,pad(h24(ap,hh))+':'+pad(mi),'time','24시각제, 시·분 글자 대신 쌍점'+(guess?' (오전·오후가 없어 오후로 짐작, 확인)':''));
+    }
+    re=/(^|[^\d:])(\d{1,2}):(\d{2})(?![\d:])/g;
+    while((m=re.exec(t))){
+      a=m.index+m[1].length;b=m.index+m[0].length;
+      if(+m[2]>24||+m[3]>59)continue;
+      add(a,b,pad(+m[2])+':'+m[3],'time','시는 두 자리 (예: 09:00)');
+    }
+    // 금액
+    re=/(^|[^\d,.])(금\s*)?(\d{1,3}(?:,\d{3})+|\d+)\s*(만\s*)?원(\s*\(\s*금?\s*[영일이삼사오육칠팔구십백천만억조]+\s*원?\s*\))?/g;
+    while((m=re.exec(t))){
+      a=m.index+m[1].length;b=m.index+m[0].length;
+      var v=parseInt(m[3].replace(/,/g,''),10)*(m[4]?10000:1);
+      if(!v||v>9e15)continue;
+      var want2='금'+comma(v)+'원(금'+korMoney(v)+'원)';
+      var why=!m[5]?'괄호 안에 한글 금액 병기':(!m[2]?'숫자 앞에 "금"':'한글 금액을 바로잡음');
+      add(a,b,want2,'money',why);
+    }
+    // 쌍점
+    re=/([가-힣])([ \t]*)[:：]([ \t]*)(?=\S)/g;
+    while((m=re.exec(t))){
+      a=m.index+1;b=m.index+m[0].length;
+      add(a,b,': ','colon','쌍점은 앞말에 붙이고 뒤는 1타');
+    }
+    F.sort(function(x,y){return x.a-y.a||x.b-y.b||x.q-y.q;});
+    return F;
+  }
+  function apply(t,F){
+    var G=F.slice().sort(function(x,y){return (y.a-x.a)||(y.b-x.b)||((y.q||0)-(x.q||0));});
+    G.forEach(function(f){t=t.slice(0,f.a)+f.to+t.slice(f.b);});
+    return t;
+  }
+  function fixAll(t,onlyInline){
+    for(var k=0;k<6;k++){
+      var F=check(t); if(onlyInline)F=F.filter(function(f){return INLINE[f.cat];});
+      if(!F.length)break; t=apply(t,F);
+    }
+    return t;
+  }
+  function convert(s){return fixAll(s,true);}
+
+  // ---------- 화면 ----------
+  var src=$('#src'),last=[],undoStack=[];
+  function render(){
+    var t=src.value; last=check(t);
+    var h='',p=0;
+    last.forEach(function(f,i){
+      h+=esc(t.slice(p,f.a));
+      var tip=CAT[f.cat].name+': '+f.msg+' → '+(f.to.trim()?f.to:'(지움)');
+      if(f.a===f.b) h+='<mark class="'+f.cat+' ins" data-i="'+i+'" title="'+esc(tip)+'">⌃</mark>';
+      else h+='<mark class="'+f.cat+'" data-i="'+i+'" title="'+esc(tip)+'">'+esc(t.slice(f.a,f.b))+'</mark>';
+      p=f.b;
+    });
+    h+=esc(t.slice(p));
+    $('#preview').innerHTML=h||'<span class="hint">왼쪽에 공문 초안을 붙여넣으세요.</span>';
+    var cnt={}; last.forEach(function(f){cnt[f.cat]=(cnt[f.cat]||0)+1;});
+    $('#chips').innerHTML=CATS.map(function(c){return '<span class="chip'+(cnt[c]?' on t-'+c:'')+'">'+CAT[c].name+' <b>'+(cnt[c]||0)+'</b></span>';}).join('');
+    $('#fixAll').textContent='✨ 모두 고치기 ('+last.length+')';
+    $('#fixAll').disabled=!last.length;
+    $('#sumTxt').textContent=last.length?'고칠 곳 '+last.length+'군데 · 밑줄에 마우스를 올리면 이유가 보여요':'';
+    if(!last.length){$('#issues').innerHTML='<div class="okmsg">'+(t.trim()?'🎉 점검한 규칙에서는 문제가 없어요':'초안을 넣으면 여기에 고칠 곳이 나와요')+'</div>';}
+    else $('#issues').innerHTML=last.map(function(f,i){
+      var fr=f.from.replace(/\n/g,'↵'),to=f.to.replace(/\n/g,'↵');
+      return '<div class="iss"><span class="tag t-'+f.cat+'">'+CAT[f.cat].name+'</span><div class="ch">'+
+        (fr?'<del>'+esc(fr.replace(/ /g,'·'))+'</del>':'')+' → '+(to?'<ins>'+esc(to.replace(/ /g,'·'))+'</ins>':'<ins>(지움)</ins>')+
+        '<span class="why">'+esc(f.msg)+'</span></div><button type="button" data-fix="'+i+'">고치기</button></div>';
+    }).join('');
+    $('#undo').disabled=!undoStack.length;
+    save();
+  }
+  var saveT;
+  function save(){clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify({txt:src.value}));}catch(e){}},250);}
+  function setText(v,keepUndo){if(!keepUndo){undoStack.push(src.value);if(undoStack.length>30)undoStack.shift();} src.value=v; render();}
+  function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1800);}
+  function copyText(s){
+    if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(s).catch(fallback);
+    return fallback();
+    function fallback(){return new Promise(function(ok,no){var ta=document.createElement('textarea');ta.value=s;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')?ok():no();}catch(e){no(e);}ta.remove();});}
+  }
+  src.addEventListener('input',function(){if(/\r/.test(src.value))src.value=src.value.replace(/\r\n?/g,'\n');render();});
+  $('#issues').addEventListener('click',function(e){
+    var b=e.target.closest('[data-fix]'); if(!b)return;
+    var f=last[+b.getAttribute('data-fix')]; if(!f)return;
+    setText(apply(src.value,[f])); toast(CAT[f.cat].name+' 한 곳을 고쳤어요');
+  });
+  $('#fixAll').addEventListener('click',function(){var n=last.length; if(!n)return; setText(fixAll(src.value)); toast(n+'군데를 고쳤어요. 마음에 안 들면 되돌리기');});
+  $('#undo').addEventListener('click',function(){if(!undoStack.length)return; src.value=undoStack.pop(); render();});
+  $('#copy').addEventListener('click',function(){copyText(src.value).then(function(){toast('복사했어요. 한글(HWP) 문서에 붙여넣으세요');},function(){toast('복사에 실패했어요');});});
+  $('#printBtn').addEventListener('click',function(){window.print();});
+  $('#sample').addEventListener('click',function(){setText(SAMPLE);});
+  $('#clear').addEventListener('click',function(){setText('');});
+  $('#wipeAll').addEventListener('click',function(){if(!confirm('이 PC에 저장된 공문 초안을 모두 지울까요? 되돌릴 수 없어요.'))return;clearTimeout(saveT);try{localStorage.removeItem(KEY);}catch(e){}undoStack=[];src.value=SAMPLE;render();setTimeout(function(){clearTimeout(saveT);try{localStorage.removeItem(KEY);}catch(e){}},400);toast('기록을 지웠어요');});
+  // 규칙 카드
+  var EX={date:['2026-11-08 → 2026. 11. 8.','2026년 11월 18일(화) → 2026. 11. 18.(수)'],time:['오후 2시 → 14:00','오전 9시 30분 → 09:30'],money:['150000원 → 금150,000원(금일십오만원)'],
+    item:['1. → 가. → 1) → 가) → (1) → (가) → ① → ㉮'],end:['…바랍니다.  끝.'],att:['붙임  1. 계획서 1부.','      2. 신청서 1부.  끝.'],colon:['관련 :교육청 → 관련: 교육청']};
+  $('#rules').innerHTML=CATS.map(function(c){return '<div class="rule"><b><span class="tag t-'+c+'" style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px"></span>'+CAT[c].name+'</b>'+
+    EX[c].map(function(x){return '<code>'+esc(x)+'</code>';}).join('<br>')+'<span class="src">'+esc(CAT[c].why)+'</span></div>';}).join('')+
+    '<div class="rule"><b>💡 사용 팁</b>밑줄 친 곳에 마우스를 올리면 이유가 보이고, 목록의 [고치기]로 한 곳씩, [모두 고치기]로 한 번에 고쳐요. 고친 뒤 [복사]해서 기안문에 붙여넣으세요.</div>';
+  var st=null; try{st=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}
+  src.value=(st&&typeof st.txt==='string')?st.txt:SAMPLE;
+  render();
+  window.__gc={check:check,fixAll:function(s){return fixAll(s);},convert:convert,korMoney:korMoney,apply:apply};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>숲속 쉼표 - 숲 소리를 섞고 1분 숨쉬기</title>
+<meta name="description" content="빗소리·새소리·바람·시냇물 소리를 직접 섞고, 숨쉬기 원을 따라 4초 들이쉬기·4초 멈춤·6초 내쉬기를 네 번 하며 1분 쉬어 가는 소리 명상. 모든 소리는 브라우저에서 직접 만들어요.">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#16302a;color:#1f2d27;-webkit-user-select:none;user-select:none}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hud{position:fixed;left:0;right:0;top:0;display:flex;align-items:flex-start;gap:8px;padding:10px 12px;pointer-events:none;z-index:3}
+.hud>*{pointer-events:auto}
+.ttl{background:rgba(245,252,247,.88);border-radius:16px;padding:7px 14px;box-shadow:0 4px 14px rgba(0,0,0,.18);min-width:0}
+.ttl h1{margin:0;font-size:21px;letter-spacing:-.5px}
+.ttl small{display:block;font-size:12px;color:#4f6b5e}
+.sp{flex:1}
+.ib{width:44px;height:44px;border-radius:50%;border:0;background:rgba(245,252,247,.9);font-size:20px;box-shadow:0 4px 14px rgba(0,0,0,.18);flex-shrink:0}
+.ib[aria-pressed=true]{background:#bfe8c9}
+#audioMsg{position:fixed;top:66px;right:12px;max-width:min(300px,calc(100vw - 24px));background:rgba(30,45,39,.85);color:#fff;font-size:13px;padding:7px 12px;border-radius:12px;z-index:3}
+#audioMsg:empty{display:none}
+.center{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none}
+.ring{position:relative;width:min(300px,62vw);height:min(300px,62vw);display:grid;place-items:center}
+.ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+#breath{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 45% 40%,rgba(255,255,255,.92),rgba(220,248,230,.8) 45%,rgba(160,220,190,.55) 72%,rgba(120,200,170,.2));box-shadow:0 0 60px rgba(200,255,220,.45),inset 0 0 30px rgba(255,255,255,.4);transform:scale(.6);will-change:transform}
+.btxt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#12352a;pointer-events:auto}
+#bText{font-size:clamp(20px,4.5vw,30px);font-weight:900;text-shadow:0 1px 8px rgba(255,255,255,.7)}
+#bNum{font-size:clamp(30px,8vw,54px);font-weight:900;line-height:1.1;text-shadow:0 1px 8px rgba(255,255,255,.7)}
+#cyc{font-size:13px;font-weight:800;color:#24503f;background:rgba(240,252,244,.85);border-radius:99px;padding:3px 10px;margin-top:4px;max-width:90%}
+#go{border:0;border-radius:99px;background:#2f8a5e;color:#fff;font-weight:900;font-size:18px;padding:11px 22px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:auto}
+#go.on{background:rgba(245,252,247,.9);color:#2f5a48;font-size:14px;padding:7px 14px}
+.lead{background:rgba(245,252,247,.85);border-radius:14px;padding:6px 12px;font-size:14px;color:#24503f;text-align:center;max-width:min(420px,90vw)}
+.mix{position:fixed;left:50%;transform:translateX(-50%);bottom:34px;z-index:3;background:rgba(245,252,247,.9);border-radius:20px;padding:10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25);display:grid;grid-template-columns:repeat(4,minmax(120px,1fr)) auto;gap:6px 14px;align-items:center;width:min(820px,calc(100vw - 16px))}
+.mix label{display:flex;justify-content:space-between;font-weight:900;font-size:14px}
+.mix label span{color:#2f8a5e;font-variant-numeric:tabular-nums}
+.mix input{width:100%;accent-color:#2f8a5e;height:24px}
+.presets{display:flex;flex-direction:column;gap:4px}
+.preset{border:0;border-radius:10px;background:#e1f2e7;color:#24503f;font-weight:800;font-size:13px;padding:5px 9px;white-space:nowrap}
+.back{position:fixed;right:10px;bottom:6px;font-size:12px;color:#fff;background:rgba(0,0,0,.4);padding:4px 10px;border-radius:99px;text-decoration:none;z-index:6}
+.ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:70px 14px 36px;z-index:5;background:rgba(10,30,22,.35)}
+.ov.on{display:flex}
+.card{background:#f6fcf8;border-radius:22px;padding:18px 20px;width:100%;max-width:440px;box-shadow:0 18px 50px rgba(0,0,0,.35);max-height:100%;overflow:auto;border:3px solid #bfe0cb;text-align:center}
+.card h2{margin:0 0 6px;font-size:24px}
+.card p{margin:6px 0;line-height:1.5}
+.big{border:0;border-radius:14px;padding:11px 18px;font-weight:900;font-size:17px;background:#2f8a5e;color:#fff;margin:8px 4px 0}
+.big.alt{background:#e1f2e7;color:#24503f}
+#moods{display:flex;gap:8px;justify-content:center;margin:8px 0}
+#moods button{border:2px solid #cfe6d8;background:#fff;border-radius:14px;font-size:26px;padding:6px 12px}
+#moods button.sel{border-color:#2f8a5e;background:#e1f2e7}
+.stat{font-size:14px;color:#4f6b5e}
+@media (max-width:720px){.mix{grid-template-columns:1fr 1fr;padding:8px 12px;gap:2px 12px}.presets{grid-column:1 / -1;flex-direction:row;justify-content:center;flex-wrap:wrap}.center{top:40%}.ttl h1{font-size:18px}.ttl small{font-size:11px}.lead{font-size:12px}}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="숲속 쉼표">
+<meta property="og:description" content="빗소리·새소리·바람을 섞고 숨쉬기 원을 따라 1분 쉬어 가는 소리 명상">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/83-forest-breath.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/forest-breath/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<canvas id="cv" aria-hidden="true"></canvas>
+<div class="hud">
+  <div class="ttl"><h1>🌿 숲속 쉼표</h1><small>숲 소리를 섞고, 원을 따라 1분 숨쉬기</small></div>
+  <div class="sp"></div>
+  <button class="ib" id="snd" aria-pressed="false" title="소리 켜기/끄기" aria-label="소리">🔈</button>
+  <button class="ib" id="fs" title="전체화면" aria-label="전체화면">⛶</button>
+</div>
+<div id="audioMsg" role="status"></div>
+<div class="center">
+  <div class="ring">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/><circle id="prog" cx="50" cy="50" r="48" fill="none" stroke="#e9fff1" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="301.6" stroke-dashoffset="301.6"/></svg>
+    <div id="breath"></div>
+    <div class="btxt"><div id="bText">숨 고르기</div><div id="bNum">1분</div><div id="cyc">들이쉬기 4초 · 멈춤 4초 · 내쉬기 6초</div></div>
+  </div>
+  <button id="go">🌬️ 1분 쉼표 시작</button>
+  <div class="lead" id="lead">🔊를 누르면 숲 소리가 나요. 아래에서 소리를 섞어 보세요. (스페이스: 시작·일시정지)</div>
+</div>
+<div class="mix">
+  <div><label for="rain">🌧️ 빗소리 <span id="rainV">40</span></label><input type="range" id="rain" min="0" max="100" value="40"></div>
+  <div><label for="birds">🐦 새소리 <span id="birdsV">50</span></label><input type="range" id="birds" min="0" max="100" value="50"></div>
+  <div><label for="wind">🍃 바람 <span id="windV">30</span></label><input type="range" id="wind" min="0" max="100" value="30"></div>
+  <div><label for="stream">💧 시냇물 <span id="streamV">45</span></label><input type="range" id="stream" min="0" max="100" value="45"></div>
+  <div class="presets"><button class="preset" data-p="morning">☀️ 아침 숲</button><button class="preset" data-p="rainy">☔ 비 오는 숲</button><button class="preset" data-p="breeze">🌾 바람 부는 언덕</button></div>
+</div>
+
+<div class="ov" id="done"><div class="card">
+  <h2>🌿 1분 쉼표 완료</h2>
+  <p>숨을 네 번 깊게 쉬었어요. 몸과 마음이 조금 가벼워졌나요?</p>
+  <div id="moods"><button data-m="편안" aria-label="편안해요">😌</button><button data-m="좋음" aria-label="좋아요">🙂</button><button data-m="그대로" aria-label="그대로예요">😐</button></div>
+  <p class="stat" id="moodMsg"></p>
+  <p class="stat" id="stat"></p>
+  <button class="big" id="again">🌬️ 한 번 더</button>
+  <button class="big alt" id="close">숲에 더 머물기</button>
+</div></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const KEY = 'edu-expo-forest-breath-v1';
+let store = null;
+try { store = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+if (!store || typeof store !== 'object') store = {};
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} };
+const IDS = ['rain', 'birds', 'wind', 'stream'];
+const STAGES = [['in', 4, '들이쉬어요'], ['hold', 4, '멈춰요'], ['out', 6, '내쉬어요']];
+const CYCLES = 4, TOTAL = CYCLES * 14;
+const PRESETS = { morning: { rain: 0, birds: 80, wind: 20, stream: 50 }, rainy: { rain: 85, birds: 10, wind: 35, stream: 30 }, breeze: { rain: 0, birds: 30, wind: 85, stream: 0 } };
+
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, dpr = 1, manual = false;
+let rnd = mulberry(21);
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const g = { t: 0, phase: 'idle', stage: 0, left: 0, cycle: 0, el: 0, paused: false, scale: .6, mix: {}, drops: [], splashes: [], birds: [], notes: [], motes: [], mouse: { x: 0, y: 0 }, par: { x: 0, y: 0 }, windT: 0, audio: 'off' };
+// 저장된 소리 섞기 불러오기(숫자만)
+for (const id of IDS) { const v = store.mix && Number.isFinite(+store.mix[id]) ? Math.max(0, Math.min(100, Math.round(+store.mix[id]))) : null; if (v !== null) $('#' + id).value = v; g.mix[id] = +$('#' + id).value; }
+
+// ---- 나무 배치 ----
+const layers = [];
+function buildTrees() {
+  const R = mulberry(4); layers.length = 0;
+  for (let L = 0; L < 3; L++) {
+    const trees = [], n = 9 + L * 4;
+    for (let i = 0; i < n; i++) { const x = (i + R() * .8) / n; if (L === 2 && x > .3 && x < .7 && R() < .8) continue; trees.push({ x, h: (.32 + R() * .2) * (1 + L * .35), w: .05 + R() * .03, ph: R() * 6, kind: R() < .65 ? 'pine' : 'round' }); }
+    layers.push({ trees, depth: L });
+  }
+  for (let i = 0; i < 40; i++) g.motes.push({ x: R(), y: .3 + R() * .6, ph: R() * 6, s: 1 + R() * 2 });
+}
+function resize() { dpr = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+
+// ---- 그리기 ----
+const lerp = (a, b, k) => a + (b - a) * k;
+const mixc = (c1, c2, k) => `rgb(${c1.map((v, i) => Math.round(lerp(v, c2[i], k))).join(',')})`;
+function sway(depth) { const w = g.mix.wind / 100; return (Math.sin(g.t * (1.1 + w) + depth) * .6 + Math.sin(g.t * 2.3 + depth * 2) * .4) * (.01 + w * .09) * (1 + depth * .3); }
+function render() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const rk = g.mix.rain / 100, px = g.par.x, py = g.par.y;
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, mixc([126, 196, 222], [104, 124, 132], rk)); sky.addColorStop(.55, mixc([214, 236, 214], [150, 166, 160], rk)); sky.addColorStop(1, mixc([160, 205, 170], [110, 135, 125], rk));
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  // 햇살
+  if (rk < .6) { const a = (.6 - rk) * .5, sx = W * .78 - px * 10; const gr = ctx.createRadialGradient(sx, H * .12, 5, sx, H * .12, H * .6); gr.addColorStop(0, `rgba(255,250,215,${a})`); gr.addColorStop(1, 'rgba(255,250,215,0)'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = `rgba(255,250,220,${a * .25})`; for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(sx - 40 + k * 30, H * .1); ctx.lineTo(sx - 300 + k * 120 + Math.sin(g.t * .2 + k) * 20, H); ctx.lineTo(sx - 220 + k * 120 + Math.sin(g.t * .2 + k) * 20, H); ctx.closePath(); ctx.fill(); } }
+  // 먼 산
+  const hill = (base, amp, col, k, seed) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-60, H); for (let x = -60; x <= W + 60; x += 20) { const xx = x + px * k; ctx.lineTo(x, H * base - (Math.sin(xx / 260 + seed) * .5 + .5) * H * amp - Math.sin(xx / 90 + seed) * H * amp * .1 + py * k * .3); } ctx.lineTo(W + 60, H); ctx.fill(); };
+  hill(.5, .16, mixc([150, 190, 175], [130, 150, 148], rk), -6, 1);
+  hill(.56, .12, mixc([112, 160, 130], [100, 125, 115], rk), -12, 3);
+  // 안개
+  ctx.fillStyle = `rgba(255,255,255,${.12 + rk * .15})`; for (let k = 0; k < 3; k++) { const x = ((g.t * (8 + k * 4) + k * 400) % (W + 600)) - 300; ctx.beginPath(); ctx.ellipse(x, H * (.52 + k * .04), 320, 26, 0, 0, 7); ctx.fill(); }
+  // 나무 층
+  const cols = [[[78, 128, 98], [74, 104, 92]], [[48, 98, 70], [52, 82, 72]], [[26, 66, 46], [34, 56, 48]]];
+  for (const L of layers) {
+    const k = [18, 32, 55][L.depth], base = H * [.64, .74, .9][L.depth] + py * k * .3, col = mixc(cols[L.depth][0], cols[L.depth][1], rk);
+    ctx.fillStyle = col;
+    for (const t of L.trees) {
+      const x = t.x * (W + 160) - 80 - px * k, h = t.h * H, w = Math.max(30, t.w * W, t.kind === 'round' ? t.h * H * .16 : t.h * H * .12), sk = sway(L.depth + t.ph);
+      ctx.save(); ctx.translate(x, base); ctx.transform(1, 0, sk, 1, 0, 0);
+      if (t.kind === 'pine') { for (let j = 0; j < 4; j++) { const y0 = -h * (.25 + j * .2), ww = w * (1 - j * .2); ctx.beginPath(); ctx.moveTo(-ww, y0 + h * .2); ctx.lineTo(0, y0 - h * .12); ctx.lineTo(ww, y0 + h * .2); ctx.fill(); } ctx.fillRect(-w * .08, -h * .25, w * .16, h * .25); }
+      else { ctx.fillRect(-w * .07, -h * .45, w * .14, h * .45); for (const [dx, dy, r] of [[0, -.62, .55], [-.45, -.5, .42], [.45, -.5, .42], [0, -.85, .4]]) { ctx.beginPath(); ctx.arc(dx * w, dy * h, r * w, 0, 7); ctx.fill(); } }
+      ctx.restore();
+    }
+    if (L.depth === 1) { ctx.fillStyle = col; ctx.fillRect(0, base - 2, W, H - base + 2); }
+  }
+  // 시냇물
+  const sk = g.mix.stream / 100, sy = H * .86;
+  if (sk > 0) {
+    const gr = ctx.createLinearGradient(0, sy, 0, H); gr.addColorStop(0, `rgba(120,190,210,${.35 + sk * .5})`); gr.addColorStop(1, `rgba(70,140,170,${.35 + sk * .5})`);
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, sy); for (let x = 0; x <= W; x += 20) ctx.lineTo(x, sy + Math.sin(x / 80 + g.t) * 4); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+    ctx.strokeStyle = `rgba(255,255,255,${.25 + sk * .5})`; ctx.lineWidth = 2;
+    for (let i = 0; i < 14 + sk * 20; i++) { const x = ((i * 97 + g.t * (40 + sk * 90)) % (W + 80)) - 40, y = sy + 10 + (i * 31) % Math.max(10, H - sy - 14); ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 12, y - 3, x + 24, y); ctx.stroke(); }
+  } else { ctx.fillStyle = mixc([60, 100, 70], [54, 80, 66], rk); ctx.fillRect(0, sy, W, H - sy); }
+  // 반딧불·빛 알갱이
+  for (const m of g.motes) { const a = (.3 + .3 * Math.sin(g.t * 1.5 + m.ph)) * (1 - rk * .7); ctx.fillStyle = `rgba(255,255,200,${a})`; ctx.beginPath(); ctx.arc(m.x * W + Math.sin(g.t * .3 + m.ph) * 20 - px * 40, m.y * H + Math.cos(g.t * .4 + m.ph) * 14, m.s, 0, 7); ctx.fill(); }
+  // 새
+  ctx.strokeStyle = '#25352d'; ctx.lineWidth = 2;
+  for (const b of g.birds) { const w = Math.sin(g.t * 12 + b.ph) * 6; ctx.beginPath(); ctx.moveTo(b.x - 9, b.y - w); ctx.quadraticCurveTo(b.x - 4, b.y - 3, b.x, b.y); ctx.quadraticCurveTo(b.x + 4, b.y - 3, b.x + 9, b.y - w); ctx.stroke(); }
+  ctx.fillStyle = '#25352d'; ctx.font = '700 18px system-ui,sans-serif';
+  for (const nt of g.notes) { ctx.globalAlpha = Math.max(0, nt.life); ctx.fillText('♪', nt.x, nt.y); } ctx.globalAlpha = 1;
+  // 비
+  const slant = (g.mix.wind / 100) * 4 + 1;
+  ctx.strokeStyle = 'rgba(220,235,245,.55)'; ctx.lineWidth = 1.3; ctx.beginPath();
+  for (const d of g.drops) { ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - slant * 3, d.y - d.l); } ctx.stroke();
+  ctx.strokeStyle = 'rgba(230,245,255,.5)'; for (const s of g.splashes) { ctx.beginPath(); ctx.ellipse(s.x, s.y, s.r, s.r * .3, 0, 0, 7); ctx.stroke(); }
+  // 가장자리
+  const vg = ctx.createRadialGradient(W / 2, H * .45, Math.min(W, H) * .3, W / 2, H * .45, Math.max(W, H) * .8);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(5,20,14,.35)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+}
+
+// ---- 시간 흐름 ----
+function tick(dt) {
+  g.t += dt;
+  g.par.x += (g.mouse.x - g.par.x) * Math.min(1, dt * 2); g.par.y += (g.mouse.y - g.par.y) * Math.min(1, dt * 2);
+  // 비: 빗소리 크기에 따라 빗방울 수
+  const want = Math.round(g.mix.rain * 3.2);
+  const slant = (g.mix.wind / 100) * 4 + 1;
+  let spawnN = Math.min(want - g.drops.length, Math.ceil(want * dt * 1.6));
+  for (let i = 0; i < spawnN; i++) g.drops.push({ x: rnd() * (W + 200), y: -rnd() * H * .3, v: 700 + rnd() * 400, l: 10 + rnd() * 12 });
+  for (const d of g.drops) { d.y += d.v * dt; d.x -= slant * 3 * d.v / d.l * dt * .5; if (d.y > H * (.86 + rnd() * .14)) { if (g.splashes.length < 80) g.splashes.push({ x: d.x, y: d.y, r: 1, life: .3 }); d.dead = true; } }
+  g.drops = g.drops.filter(d => !d.dead);
+  if (g.drops.length > want) g.drops.splice(0, g.drops.length - want);
+  for (const s of g.splashes) { s.r += 30 * dt; s.life -= dt; } g.splashes = g.splashes.filter(s => s.life > 0);
+  // 새
+  const bk = g.mix.birds / 100;
+  if (g.birds.length < 1 + bk * 4 && bk > 0 && rnd() < dt * bk * .8) { const dir = rnd() < .5 ? 1 : -1; g.birds.push({ x: dir > 0 ? -20 : W + 20, y: H * (.12 + rnd() * .3), vx: dir * (60 + rnd() * 60), ph: rnd() * 6 }); }
+  for (const b of g.birds) { b.x += b.vx * dt; b.y += Math.sin(g.t * 2 + b.ph) * 10 * dt; }
+  g.birds = g.birds.filter(b => b.x > -40 && b.x < W + 40);
+  if (bk > 0 && rnd() < dt * bk * 1.2) { g.notes.push({ x: W * (.1 + rnd() * .8), y: H * (.35 + rnd() * .25), life: 1.2 }); chirp(); }
+  for (const nt of g.notes) { nt.y -= 20 * dt; nt.life -= dt; } g.notes = g.notes.filter(nt => nt.life > 0);
+  if (g.mix.rain > 0 && rnd() < dt * g.mix.rain / 8) drip();
+  windDrift(dt);
+  // 숨쉬기
+  if (g.phase === 'breath' && !g.paused) {
+    g.left -= dt; g.el += dt;
+    while (g.left <= 0 && g.phase === 'breath') {
+      g.stage++;
+      if (g.stage >= 3) { g.stage = 0; g.cycle++; if (g.cycle > CYCLES) { complete(); break; } }
+      g.left += STAGES[g.stage][1]; cue(g.stage);
+    }
+  }
+  let target = .6;
+  if (g.phase === 'breath') {
+    const [k, len] = STAGES[g.stage], p = 1 - Math.max(0, g.left) / len, e = .5 - Math.cos(Math.PI * Math.min(1, p)) / 2;
+    target = k === 'in' ? .55 + .45 * e : k === 'hold' ? 1 : 1 - .45 * e;
+    g.scale = target;
+  } else g.scale += (.6 + Math.sin(g.t * .9) * .04 - g.scale) * Math.min(1, dt * 3);
+  ui();
+}
+let lastUi = '';
+function ui() {
+  $('#breath').style.transform = `scale(${g.scale.toFixed(4)})`;
+  let txt, num, cyc;
+  if (g.phase === 'breath') {
+    txt = g.paused ? '잠깐 쉬는 중' : STAGES[g.stage][2]; num = String(Math.max(1, Math.ceil(g.left - 1e-6))); cyc = `${g.cycle} / ${CYCLES}번째 숨`;
+    $('#prog').style.strokeDashoffset = (301.6 * (1 - Math.min(1, g.el / TOTAL))).toFixed(1);
+  } else { txt = '숨 고르기'; num = '1분'; cyc = '들이쉬기 4초 · 멈춤 4초 · 내쉬기 6초'; $('#prog').style.strokeDashoffset = '301.6'; }
+  const key = txt + num + cyc;
+  if (key !== lastUi) { lastUi = key; $('#bText').textContent = txt; $('#bNum').textContent = num; $('#cyc').textContent = cyc; }
+}
+function startSession() {
+  g.phase = 'breath'; g.stage = 0; g.cycle = 1; g.left = STAGES[0][1]; g.el = 0; g.paused = false;
+  $('#done').classList.remove('on'); $('#go').textContent = '⏸️ 일시정지'; $('#go').classList.add('on');
+  $('#lead').textContent = '원이 커지면 코로 천천히 들이쉬고, 작아지면 입으로 길게 내쉬어요.';
+  cue(0); ui();
+}
+function stopSession() {
+  g.phase = 'idle'; g.paused = false; $('#go').textContent = '🌬️ 1분 쉼표 시작'; $('#go').classList.remove('on');
+  $('#lead').textContent = '🔊를 누르면 숲 소리가 나요. 아래에서 소리를 섞어 보세요. (스페이스: 시작·일시정지)'; ui();
+}
+function complete() {
+  stopSession(); g.phase = 'done';
+  store.sessions = (store.sessions || 0) + 1; store.seconds = (store.seconds || 0) + TOTAL; store.mix = { ...g.mix }; store.last = new Date().toISOString().slice(0, 10); save();
+  $('#stat').textContent = `지금까지 쉼표 ${store.sessions}번 · 모두 ${Math.floor(store.seconds / 60)}분 ${store.seconds % 60}초 쉬었어요`;
+  $('#moodMsg').textContent = ''; $$('#moods button').forEach(b => b.classList.remove('sel'));
+  $('#done').classList.add('on');
+  [392, 523, 659].forEach((f, i) => tone(f, 1.6, 'sine', .05, i * .25));
+}
+function goBtn() {
+  if (g.phase === 'breath') { g.paused = !g.paused; $('#go').textContent = g.paused ? '▶️ 이어 하기' : '⏸️ 일시정지'; }
+  else { ensureAudio(); startSession(); }
+  ui();
+}
+
+// ---- 소리 ----
+let ac = null, master = null, soundOn = false, nodes = {}, nbuf = null;
+const gt = { rain: 0, birds: 0, wind: 0, stream: 0 };
+function ensureAudio() {
+  if (!soundOn) return false;
+  if (!ac) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) throw new Error('no audio');
+      ac = new AC(); master = ac.createGain(); master.gain.value = .8; master.connect(ac.destination);
+      const len = ac.sampleRate * 3; nbuf = ac.createBuffer(1, len, ac.sampleRate); const d = nbuf.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; b0 = .99765 * b0 + w * .099; b1 = .963 * b1 + w * .2965; b2 = .57 * b2 + w * 1.0527; d[i] = (b0 + b1 + b2 + w * .1848) * .2; }
+      const chain = (type, f, q) => { const s = ac.createBufferSource(); s.buffer = nbuf; s.loop = true; s.loopStart = Math.random(); const fl = ac.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; const gn = ac.createGain(); gn.gain.value = 0; s.connect(fl); fl.connect(gn); gn.connect(master); s.start(0, Math.random() * 2); return { s, fl, gn }; };
+      nodes.rain = chain('highpass', 900, .3);
+      nodes.wind = chain('lowpass', 420, .9);
+      nodes.stream = chain('bandpass', 1300, .7);
+      nodes.stream2 = chain('bandpass', 3200, 2);
+      const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 7; lg.gain.value = .03; lfo.connect(lg); lg.connect(nodes.stream2.gn.gain); lfo.start();
+      nodes.lfo = lfo;
+    } catch (e) { ac = null; g.audio = 'unavailable'; soundOn = false; $('#audioMsg').textContent = '이 브라우저에서는 소리를 낼 수 없어요. 화면의 원만 따라 해도 충분해요.'; setSnd(); return false; }
+  }
+  try { if (ac.state === 'suspended') ac.resume().catch(() => {}); } catch (e) {}
+  g.audio = 'on'; $('#audioMsg').textContent = ''; applyMix(); return true;
+}
+function applyMix() {
+  const c = v => Math.pow(v / 100, 1.5);
+  gt.rain = c(g.mix.rain) * .5; gt.wind = c(g.mix.wind) * .5; gt.stream = c(g.mix.stream) * .35; gt.birds = c(g.mix.birds) * .06;
+  if (!ac || !soundOn) return;
+  try {
+    const t = ac.currentTime;
+    nodes.rain.gn.gain.setTargetAtTime(gt.rain, t, .2);
+    nodes.wind.gn.gain.setTargetAtTime(gt.wind, t, .4);
+    nodes.stream.gn.gain.setTargetAtTime(gt.stream, t, .3);
+    nodes.stream2.gn.gain.setTargetAtTime(gt.stream * .3, t, .3);
+  } catch (e) {}
+}
+function windDrift(dt) {
+  if (!ac || !soundOn || !nodes.wind) return;
+  g.windT -= dt; if (g.windT > 0) return; g.windT = 1.5 + rnd() * 2;
+  try { const t = ac.currentTime, w = g.mix.wind / 100; nodes.wind.fl.frequency.setTargetAtTime(250 + rnd() * 500 * (.5 + w), t, 1.2); nodes.wind.gn.gain.setTargetAtTime(gt.wind * (.6 + rnd() * .6), t, 1); } catch (e) {}
+}
+function chirp() {
+  if (!ac || !soundOn || !gt.birds) return;
+  try {
+    const n = 2 + Math.floor(rnd() * 4), base = 2200 + rnd() * 1800, pat = rnd();
+    for (let k = 0; k < n; k++) {
+      const t = ac.currentTime + k * (.09 + rnd() * .05), o = ac.createOscillator(), gn = ac.createGain();
+      const f0 = base * (pat < .5 ? 1 + k * .05 : 1.2 - k * .04);
+      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * (pat < .5 ? 1.6 : .7), t + .07);
+      gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(gt.birds, t + .015); gn.gain.exponentialRampToValueAtTime(.0001, t + .09);
+      o.connect(gn); gn.connect(master); o.start(t); o.stop(t + .1);
+    }
+  } catch (e) {}
+}
+function drip() {
+  if (!ac || !soundOn || !gt.rain) return;
+  try { const t = ac.currentTime, s = ac.createBufferSource(); s.buffer = nbuf; const fl = ac.createBiquadFilter(); fl.type = 'bandpass'; fl.frequency.value = 2000 + rnd() * 4000; fl.Q.value = 8; const gn = ac.createGain(); gn.gain.setValueAtTime(gt.rain * .8, t); gn.gain.exponentialRampToValueAtTime(.0001, t + .04); s.connect(fl); fl.connect(gn); gn.connect(master); s.start(t, rnd() * 2); s.stop(t + .05); } catch (e) {}
+}
+function tone(f, d, type, vol, delay) {
+  if (!ac || !soundOn) return;
+  try { const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), gn = ac.createGain(); o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(vol || .05, t + .1); gn.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(gn); gn.connect(master); o.start(t); o.stop(t + d + .05); } catch (e) {}
+}
+// 숨 단계가 바뀔 때 부드러운 종소리
+function cue(st) { tone([330, 392, 262][st], 1.4, 'sine', .04); }
+function setSnd() {
+  const b = $('#snd'); b.setAttribute('aria-pressed', String(soundOn)); b.textContent = soundOn ? '🔊' : '🔈';
+  if (master && ac) { try { master.gain.setTargetAtTime(soundOn ? .8 : 0, ac.currentTime, .1); } catch (e) {} }
+}
+$('#snd').onclick = () => {
+  soundOn = !soundOn;
+  if (soundOn) ensureAudio(); else g.audio = ac ? 'off' : g.audio === 'unavailable' ? 'unavailable' : 'off';
+  if (!soundOn && g.audio !== 'unavailable') g.audio = 'off';
+  setSnd();
+};
+
+// ---- 입력 ----
+function setMix(id, v) { g.mix[id] = v; $('#' + id + 'V').textContent = String(v); applyMix(); }
+for (const id of IDS) { const el = $('#' + id); el.addEventListener('input', () => setMix(id, Math.max(0, Math.min(100, Math.round(+el.value) || 0)))); setMix(id, g.mix[id]); }
+$$('.preset').forEach(b => b.onclick = () => { const p = PRESETS[b.dataset.p]; for (const id of IDS) { $('#' + id).value = p[id]; setMix(id, p[id]); } });
+$('#go').onclick = goBtn;
+$('#again').onclick = () => { ensureAudio(); startSession(); };
+$('#close').onclick = () => { $('#done').classList.remove('on'); g.phase = 'idle'; };
+$$('#moods button').forEach(b => b.onclick = () => {
+  $$('#moods button').forEach(x => x.classList.toggle('sel', x === b));
+  if (!Array.isArray(store.moods)) store.moods = [];
+  store.moods.push(b.dataset.m); store.moods = store.moods.slice(-30); save();
+  $('#moodMsg').textContent = { 편안: '편안해졌다니 다행이에요. 힘들 때 또 들러 주세요.', 좋음: '좋아요! 하루 중 잠깐씩 쉼표를 찍어 보세요.', 그대로: '괜찮아요. 몇 번 하다 보면 숨이 점점 편해져요.' }[b.dataset.m] || '';
+});
+cv.addEventListener('pointermove', e => { g.mouse.x = (e.clientX / (W || 1) - .5) * 2; g.mouse.y = (e.clientY / (H || 1) - .5) * 2; });
+cv.addEventListener('pointerdown', e => { g.drag = { x: e.clientX, mx: g.mouse.x }; });
+addEventListener('pointerup', () => { g.drag = null; });
+addEventListener('keydown', e => {
+  if (e.target && /INPUT|BUTTON/.test(e.target.tagName) && e.key !== 'Escape') return;
+  if (e.key === ' ') { e.preventDefault(); goBtn(); }
+  if (e.key === 'Escape') { if (g.phase === 'breath') stopSession(); $('#done').classList.remove('on'); if (g.phase === 'done') g.phase = 'idle'; }
+});
+const fsEl = document.documentElement, fsBtn = $('#fs');
+if (!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen)) fsBtn.hidden = true;
+fsBtn.onclick = () => {
+  try {
+    const d = document, on = d.fullscreenElement || d.webkitFullscreenElement;
+    const fn = on ? (d.exitFullscreen || d.webkitExitFullscreen) : (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+    if (fn) { const p = fn.call(on ? d : fsEl); if (p && p.catch) p.catch(() => {}); }
+  } catch (e) {}
+};
+
+// ---- 시작 ----
+buildTrees(); addEventListener('resize', resize); resize(); ui();
+// 첫 화면에 빗방울이 이미 보이게
+for (let i = 0; i < g.mix.rain * 3.2; i++) g.drops.push({ x: rnd() * (W + 200), y: rnd() * H * .9, v: 700 + rnd() * 400, l: 10 + rnd() * 12 });
+let last = performance.now();
+function frame(now) {
+  const dt = Math.max(0, Math.min(.05, (now - last) / 1000)); last = now;
+  if (!manual) tick(dt);
+  render(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+window.__test = {
+  step(n) { manual = true; for (let i = 0; i < (n || 1); i++) tick(1 / 60); render(); },
+  gains() { return { ...gt }; },
+  state() { return { phase: g.phase, t: g.t, stage: STAGES[g.stage][0], left: g.left, cycle: g.cycle, paused: g.paused, scale: g.scale, mix: { ...g.mix }, drops: g.drops.length, sway: .01 + g.mix.wind / 100 * .09, audio: g.audio, sound: soundOn }; }
+};
+})();
+</script>
+</body>
+</html>

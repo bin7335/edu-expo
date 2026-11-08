@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>출장비 계산기 - 관내 출장 여비 자동 계산·월별 합계</title>
+<meta name="description" content="출장 날짜·출발·복귀 시각·공용차량 여부만 적으면 출장 시간과 관내(근무지 내) 출장 여비를 자동 계산하고 월별 합계·건수를 보여 줍니다. 4시간 기준·금액·공용차량 감액은 기준 설정에서 바꿀 수 있고, 같은 날 여러 건은 합산 시간 기준으로도 계산합니다. 인쇄·CSV 내보내기.">
+<style>
+  :root{--bg:#f1f4fa;--panel:#fff;--ink:#1f2633;--sub:#5d6678;--line:#dbe1ec;--brand:#2b4c9b;--brand2:#4f7fd8;--soft:#eaf0fb;--ok:#2f855a;--bad:#c53030}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.92}
+  .grow{flex:1}
+  .lock{display:inline-flex;align-items:center;gap:6px;background:#fff;color:#1e3a7a;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .wipe{font:inherit;font-size:12px;font-weight:700;border:1px solid currentColor;background:transparent;color:inherit;border-radius:999px;padding:4px 10px;cursor:pointer}
+  main{display:grid;grid-template-columns:minmax(0,330px) minmax(0,1fr);gap:12px;padding:10px 20px 50px;max-width:1400px;margin:0 auto}
+  .col{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+  .panel h2{font-size:15px;margin:0 0 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  label.f{display:block;font-size:12.5px;font-weight:700;color:var(--sub);margin:6px 0 3px}
+  input,select,textarea{font:inherit;font-size:14px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:0;width:100%}
+  input[type=checkbox]{width:auto}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .chk{display:flex;align-items:center;gap:6px;font-size:13.5px;margin-top:8px}
+  .btn{border-radius:10px;padding:7px 12px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--ink);border:1px solid var(--line);white-space:nowrap;width:auto}
+  .btn:hover{filter:brightness(.96)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .cfg{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
+  .cfg .full{grid-column:1/-1}
+  .warnnote{font-size:12.5px;background:#fff8e6;border:1px solid #f1d9a6;color:#6b4a00;border-radius:9px;padding:6px 9px;margin-top:8px;line-height:1.5}
+  .sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .sum div{background:var(--soft);border-radius:12px;padding:8px 12px;font-size:13px;color:var(--sub);font-weight:700}
+  .sum b{display:block;font-size:24px;color:var(--ink);letter-spacing:-.5px}
+  .sum .tot b{color:var(--brand)}
+  .tw{overflow-x:auto}
+  table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+  .t th{background:var(--soft);color:var(--sub);font-size:12.5px;text-align:left;padding:7px 8px;white-space:nowrap}
+  .t td{border-top:1px solid var(--line);padding:6px 8px;vertical-align:middle}
+  .t td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .t td.amt{font-weight:800}
+  .t tr.day2 td{border-top:1px dashed var(--line)}
+  .t .sub{color:var(--sub);font-weight:400;font-size:12px}
+  .t tfoot td{font-weight:900;background:#f7f9fd}
+  .car{font-size:11.5px;font-weight:800;border-radius:6px;padding:1px 7px;background:#e8eefc;color:var(--brand)}
+  .act{white-space:nowrap}
+  .act button{font:inherit;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 7px;cursor:pointer}
+  .hint{font-size:12px;color:var(--sub);line-height:1.5;font-weight:400}
+  #bulk{min-height:90px;font-family:ui-monospace,Consolas,"Malgun Gothic",monospace;font-size:12.5px;white-space:pre;overflow:auto}
+  details summary{cursor:pointer;font-weight:800;font-size:14px}
+  .empty{color:var(--sub);text-align:center;padding:16px}
+  #printArea{display:none}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.92);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:30}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f2633;color:#fff;padding:9px 16px;border-radius:999px;font-size:13.5px;opacity:0;transition:.25s;pointer-events:none;z-index:80;max-width:90vw}
+  .toast.on{opacity:1}
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;padding:10px}
+    header{padding:10px 12px} header p{display:none} header h1{font-size:19px}
+    .lock{font-size:11.5px;padding:5px 9px}
+    .sum b{font-size:19px}
+  }
+  @media print{
+    body>*:not(#printArea){display:none!important}
+    body{background:#fff}
+    #printArea{display:block!important;font-size:10.5pt}
+    #printArea h2{text-align:center;font-size:17pt;margin:0 0 6px}
+    #printArea p{margin:0 0 8px}
+    #printArea table{width:100%;border-collapse:collapse}
+    #printArea th,#printArea td{border:1px solid #333;padding:5px;text-align:center}
+    #printArea th{background:#eee}
+    #printArea td.l{text-align:left}
+    #printArea .sign{margin-top:22px;text-align:right;line-height:2.2}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="출장비 계산기">
+<meta property="og:description" content="출장 시간·공용차량 여부로 관내 출장 여비를 계산하고 월별 합계까지">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/100-trip-expense.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/trip-expense/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">🚌</div>
+  <div>
+    <h1>출장비 계산기</h1>
+    <p>출발·복귀 시각만 적으면 출장 시간·관내 여비·월별 합계가 자동으로</p>
+  </div>
+  <div class="grow"></div>
+  <span class="lock" title="출장 기록은 이 브라우저에만 저장됩니다">🔒 이 PC에만 저장 · 외부 전송 없음</span>
+  <button type="button" class="wipe" id="wipeAll" title="이 PC의 출장 기록을 모두 지워요">🧹 이 PC 기록 모두 지우기</button>
+</header>
+<main>
+  <section class="col">
+    <div class="panel">
+      <h2 id="formTitle">➕ 출장 추가</h2>
+      <label class="f" for="fDate">날짜</label><input type="date" id="fDate">
+      <div class="two">
+        <div><label class="f" for="fStart">출발</label><input type="time" id="fStart" value="13:30"></div>
+        <div><label class="f" for="fEnd">복귀</label><input type="time" id="fEnd" value="16:30"></div>
+      </div>
+      <label class="f" for="fPurpose">용무</label><input id="fPurpose" placeholder="예: 교육지원청 업무 협의">
+      <label class="f" for="fPlace">장소</label><input id="fPlace" placeholder="예: 햇살교육지원청">
+      <label class="chk"><input type="checkbox" id="fCar"> 🚗 공용차량(관용차) 이용</label>
+      <div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="addBtn">추가</button><button type="button" class="btn" id="newBtn">새로 쓰기</button></div>
+      <div class="hint" id="preview" style="margin-top:6px"></div>
+    </div>
+    <div class="panel">
+      <h2>⚙ 기준 설정</h2>
+      <div class="cfg">
+        <div><label class="f" for="cTh">기준 시간(시간)</label><input type="number" id="cTh" min="1" max="12" step="0.5"></div>
+        <div><label class="f" for="cCar">공용차량 감액(원)</label><input type="number" id="cCar" min="0" step="1000"></div>
+        <div><label class="f" for="cHi">기준 이상(원)</label><input type="number" id="cHi" min="0" step="1000"></div>
+        <div><label class="f" for="cLo">기준 미만(원)</label><input type="number" id="cLo" min="0" step="1000"></div>
+        <div class="full"><label class="f" for="cMode">같은 날 여러 건</label><select id="cMode"><option value="each">건마다 따로 계산</option><option value="day">하루 출장 시간을 합산해 한 번 계산</option></select></div>
+      </div>
+      <div class="warnnote">⚠ <b>기관별 기준이 다를 수 있으니 확인하세요.</b> 기본값은 공무원 여비 규정의 근무지 내 출장(4시간 이상 20,000원 · 4시간 미만 10,000원 · 공용차량 이용 시 10,000원 감액)을 따랐어요. 합산 계산에서는 그날 공용차량을 쓴 출장이 있으면 한 번 감액해요.</div>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn" id="cfgReset">기본값으로</button></div>
+    </div>
+    <div class="panel">
+      <details>
+        <summary>📥 엑셀에서 여러 건 붙여넣기</summary>
+        <p class="hint">열 순서: 날짜 · 출발 · 복귀 · 용무 · 장소 · 공용차량(O/X). 날짜는 2027-01-05, 2027.1.5, 2027/1/5 모두 돼요.</p>
+        <textarea id="bulk" aria-label="붙여 넣을 출장 목록"></textarea>
+        <div class="row" style="margin-top:6px"><button type="button" class="btn primary" id="bulkAdd">붙여넣은 출장 추가</button></div>
+      </details>
+    </div>
+  </section>
+  <section class="col">
+    <div class="panel">
+      <div class="row" style="margin-bottom:10px">
+        <select id="month" aria-label="달" style="width:auto;font-weight:800;font-size:15px"></select>
+        <span class="grow"></span>
+        <button type="button" class="btn" id="printBtn">🖨 출장 목록 인쇄</button>
+        <button type="button" class="btn" id="csvBtn">📊 CSV</button>
+      </div>
+      <div class="sum" id="sum"></div>
+      <div class="tw" style="margin-top:10px"><table class="t" id="trips"></table></div>
+    </div>
+    <div class="panel">
+      <h2>📅 월별 합계</h2>
+      <div class="tw"><table class="t" id="monthly"></table></div>
+    </div>
+  </section>
+</main>
+<div id="printArea"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(function(){
+  'use strict';
+  var KEY = 'edu-expo.trip-expense.v1';
+  var DEF = {th: 4, hi: 20000, lo: 10000, car: 10000, mode: 'each'};
+  var $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var WD = ['일', '월', '화', '수', '목', '금', '토'];
+  var pad = function(n){ return String(n).padStart(2, '0'); };
+  var ymd = function(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  var parse = function(s){ return new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10), 12); };
+  var validDate = function(s){ return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && ymd(parse(s)) === s; };
+  var validTime = function(s){ return typeof s === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s); };
+  var mins = function(s){ return +s.slice(0, 2) * 60 + +s.slice(3, 5); };
+  var won = function(n){ return n.toLocaleString('ko-KR'); };
+  var hm = function(m){ var h = Math.floor(m / 60), r = m % 60; return h && r ? h + '시간 ' + r + '분' : h ? h + '시간' : r + '분'; };
+  var uid = function(){ return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); };
+  var str = function(v, n){ return typeof v === 'string' ? v.trim().slice(0, n) : ''; };
+  var num = function(v, lo, hi){ return typeof v === 'number' && isFinite(v) && v >= lo && v <= hi; };
+  function cleanTrip(t){
+    if (!t || !validDate(t.date) || !validTime(t.start) || !validTime(t.end) || mins(t.end) <= mins(t.start)) return null;
+    return {id: str(t.id, 40) || uid(), date: t.date, start: t.start, end: t.end, purpose: str(t.purpose, 80), place: str(t.place, 60), car: t.car === true};
+  }
+  function cleanCfg(c){
+    c = c || {};
+    return {th: num(c.th, 0.5, 24) ? c.th : DEF.th, hi: num(c.hi, 0, 1e7) ? c.hi : DEF.hi, lo: num(c.lo, 0, 1e7) ? c.lo : DEF.lo, car: num(c.car, 0, 1e7) ? c.car : DEF.car, mode: c.mode === 'day' ? 'day' : 'each'};
+  }
+  function sample(){
+    var t = new Date(), y = t.getFullYear(), m = t.getMonth();
+    var d = function(day){ return ymd(new Date(y, m, day, 12)); };
+    return [
+      [3, '14:00', '17:00', '교육과정 협의회', '햇살교육지원청', false], [5, '09:00', '16:30', '교원 연수 (수업 나눔)', '도교육연수원', false],
+      [5, '17:00', '18:00', '학부모 상담 협조 방문', '햇살동 주민센터', false], [10, '13:30', '15:00', '현장체험학습 사전 답사', '국립과학관', true],
+      [12, '09:30', '15:30', '과학 교육 실무 협의', '달빛초등학교', true], [17, '15:00', '17:30', '학교폭력 예방 업무 협의', '햇살교육지원청', false],
+      [24, '13:00', '17:30', '정보 교육 연구회', '별빛중학교', false]
+    ].map(function(a){ return {id: uid(), date: d(a[0]), start: a[1], end: a[2], purpose: a[3], place: a[4], car: a[5]}; });
+  }
+  var state = {cfg: cleanCfg(DEF), trips: sample()};
+  try {
+    var st = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (st && Array.isArray(st.trips)) state = {cfg: cleanCfg(st.cfg), trips: st.trips.map(cleanTrip).filter(Boolean)};
+  } catch(e){}
+  var editId = null;
+  var curMonth = ymd(new Date()).slice(0, 7);
+
+  var toastT;
+  function toast(m){ var t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 2400); }
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+  var dur = function(t){ return mins(t.end) - mins(t.start); };
+  function baseAmt(m, car){ var c = state.cfg; return Math.max(0, (m >= c.th * 60 ? c.hi : c.lo) - (car ? c.car : 0)); }
+  // trips → 각 출장의 여비와 표시. 합산 모드에서는 그날 첫 출장에 하루 여비를 붙인다
+  function compute(list){
+    var sorted = list.slice().sort(function(a, b){ return (a.date + a.start).localeCompare(b.date + b.start); });
+    var out = [];
+    if (state.cfg.mode === 'day') {
+      var byDay = {}; sorted.forEach(function(t){ (byDay[t.date] = byDay[t.date] || []).push(t); });
+      sorted.forEach(function(t){
+        var ds = byDay[t.date], first = ds[0] === t;
+        var total = ds.reduce(function(s, x){ return s + dur(x); }, 0), car = ds.some(function(x){ return x.car; });
+        out.push({t: t, mins: dur(t), amt: first ? baseAmt(total, car) : 0, label: first ? won(baseAmt(total, car)) : '↑ 같은 날 합산', note: first && ds.length > 1 ? '하루 ' + hm(total) + ' 합산' : '', same: !first});
+      });
+    } else sorted.forEach(function(t){ var a = baseAmt(dur(t), t.car); out.push({t: t, mins: dur(t), amt: a, label: won(a), note: '', same: false}); });
+    return out;
+  }
+  function monthsOf(){ var o = {}; state.trips.forEach(function(t){ o[t.date.slice(0, 7)] = 1; }); o[curMonth] = 1; return Object.keys(o).sort().reverse(); }
+  function ml(m){ return m.slice(0, 4) + '년 ' + (+m.slice(5)) + '월'; }
+  function inMonth(){ return state.trips.filter(function(t){ return !curMonth || t.date.slice(0, 7) === curMonth; }); }
+  function render(){
+    var c = state.cfg;
+    $('#cTh').value = String(c.th); $('#cHi').value = String(c.hi); $('#cLo').value = String(c.lo); $('#cCar').value = String(c.car); $('#cMode').value = c.mode;
+    var ms = monthsOf();
+    $('#month').innerHTML = ms.map(function(m){ return '<option value="' + m + '">📅 ' + ml(m) + '</option>'; }).join('') + '<option value="">📅 전체 기간</option>';
+    $('#month').value = curMonth;
+    var rows = compute(inMonth());
+    var total = rows.reduce(function(s, r){ return s + r.amt; }, 0), tm = rows.reduce(function(s, r){ return s + r.mins; }, 0);
+    $('#sum').innerHTML = '<div data-k="cnt">출장 건수<b>' + rows.length + '</b></div><div data-k="time">총 출장 시간<b>' + hm(tm) + '</b></div><div class="tot" data-k="total">여비 합계(원)<b>' + won(total) + '</b></div>';
+    var prev = '';
+    $('#trips').innerHTML = '<thead><tr><th>날짜</th><th>출발-복귀</th><th>출장 시간</th><th>용무 · 장소</th><th>차량</th><th>여비(원)</th><th></th></tr></thead><tbody>'
+      + (rows.length ? rows.map(function(r){ var t = r.t, d = parse(t.date), same = t.date === prev; prev = t.date;
+        return '<tr data-id="' + esc(t.id) + '"' + (same ? ' class="day2"' : '') + '><td class="n">' + (same ? '' : (d.getMonth() + 1) + '/' + d.getDate() + '(' + WD[d.getDay()] + ')') + '</td><td class="n">' + esc(t.start) + '-' + esc(t.end) + '</td><td class="n" data-k="dur">' + hm(r.mins) + '</td>'
+          + '<td>' + esc(t.purpose || '(용무 없음)') + '<br><span class="sub">' + esc(t.place) + '</span></td><td>' + (t.car ? '<span class="car">공용차량</span>' : '') + '</td>'
+          + '<td class="n amt" data-k="amt">' + r.label + '</td><td class="act"><button type="button" data-edit="' + esc(t.id) + '">수정</button> <button type="button" data-del="' + esc(t.id) + '">삭제</button></td></tr>'
+          + (r.note ? '' : ''); }).join('') : '<tr><td colspan="7" class="empty">이 달 출장 기록이 없어요. 왼쪽에서 추가하세요.</td></tr>')
+      + '</tbody>' + (rows.length ? '<tfoot><tr><td colspan="2">합계 ' + rows.length + '건</td><td class="n">' + hm(tm) + '</td><td colspan="2">' + (c.mode === 'day' ? '같은 날 합산 기준' : '건별 계산') + '</td><td class="n">' + won(total) + '</td><td></td></tr></tfoot>' : '');
+    // 월별 합계
+    var all = {}; compute(state.trips).forEach(function(r){ var m = r.t.date.slice(0, 7); all[m] = all[m] || {n: 0, mins: 0, amt: 0}; all[m].n++; all[m].mins += r.mins; all[m].amt += r.amt; });
+    var keys = Object.keys(all).sort().reverse();
+    $('#monthly').innerHTML = '<thead><tr><th>달</th><th>건수</th><th>총 출장 시간</th><th>여비 합계(원)</th></tr></thead><tbody>'
+      + (keys.length ? keys.map(function(m){ return '<tr><td>' + ml(m) + '</td><td class="n">' + all[m].n + '건</td><td class="n">' + hm(all[m].mins) + '</td><td class="n amt">' + won(all[m].amt) + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">기록이 없어요.</td></tr>') + '</tbody>';
+    preview();
+  }
+  function preview(){
+    var s = $('#fStart').value, e = $('#fEnd').value;
+    if (!validTime(s) || !validTime(e)) { $('#preview').textContent = ''; return; }
+    var m = mins(e) - mins(s);
+    $('#preview').textContent = m > 0 ? '⏱ ' + hm(m) + ' → 이 건만 따로 계산하면 ' + won(baseAmt(m, $('#fCar').checked)) + '원' : '⚠ 복귀 시각이 출발보다 늦어야 해요';
+  }
+  function resetForm(){ editId = null; $('#fPurpose').value = ''; $('#fPlace').value = ''; $('#fCar').checked = false; $('#formTitle').textContent = '➕ 출장 추가'; $('#addBtn').textContent = '추가'; preview(); }
+  $('#addBtn').addEventListener('click', function(){
+    var raw = {id: editId || uid(), date: $('#fDate').value, start: $('#fStart').value, end: $('#fEnd').value, purpose: $('#fPurpose').value, place: $('#fPlace').value, car: $('#fCar').checked};
+    if (!validDate(raw.date)) return toast('날짜를 확인해 주세요');
+    if (!validTime(raw.start) || !validTime(raw.end)) return toast('출발·복귀 시각을 확인해 주세요');
+    if (mins(raw.end) <= mins(raw.start)) return toast('복귀 시각이 출발보다 늦어야 해요');
+    var t = cleanTrip(raw), i = state.trips.findIndex(function(x){ return x.id === t.id; });
+    if (editId && i >= 0) { state.trips[i] = t; toast('수정했어요'); } else { state.trips.push(t); toast(t.date + ' 출장을 추가했어요'); }
+    curMonth = t.date.slice(0, 7);
+    resetForm(); save(); render();
+  });
+  $('#newBtn').addEventListener('click', resetForm);
+  ['#fStart', '#fEnd', '#fCar'].forEach(function(s){ $(s).addEventListener('input', preview); $(s).addEventListener('change', preview); });
+  $('#trips').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    var id = b.getAttribute('data-edit') || b.getAttribute('data-del'), t = state.trips.find(function(x){ return x.id === id; }); if (!t) return;
+    if (b.hasAttribute('data-edit')) { editId = id; $('#fDate').value = t.date; $('#fStart').value = t.start; $('#fEnd').value = t.end; $('#fPurpose').value = t.purpose; $('#fPlace').value = t.place; $('#fCar').checked = t.car; $('#formTitle').textContent = '✏️ 출장 수정'; $('#addBtn').textContent = '수정 저장'; preview(); return; }
+    if (!confirm(t.date + ' ' + (t.purpose || '출장') + ' 기록을 지울까요?')) return;
+    state.trips = state.trips.filter(function(x){ return x.id !== id; }); if (editId === id) resetForm();
+    save(); render(); toast('지웠어요');
+  });
+  $('#month').addEventListener('change', function(){ curMonth = this.value; render(); });
+  // 기준 설정
+  function readCfg(){
+    var v = function(s){ var x = parseFloat($(s).value); return isFinite(x) ? x : NaN; };
+    var c = cleanCfg({th: v('#cTh'), hi: v('#cHi'), lo: v('#cLo'), car: v('#cCar'), mode: $('#cMode').value});
+    state.cfg = c; save();
+  }
+  ['#cTh', '#cHi', '#cLo', '#cCar', '#cMode'].forEach(function(s){ $(s).addEventListener('change', function(){ readCfg(); render(); }); $(s).addEventListener('input', function(){ if (s !== '#cMode' && !isFinite(parseFloat($(s).value))) return; readCfg(); var a = document.activeElement; render(); if (a && a.focus) a.focus(); }); });
+  $('#cfgReset').addEventListener('click', function(){ state.cfg = cleanCfg(DEF); save(); render(); toast('기본값으로 되돌렸어요'); });
+  // 붙여넣기
+  function normDate(s){
+    var m = String(s || '').trim().match(/^(\d{4})[-./\s]+(\d{1,2})[-./\s]+(\d{1,2})\.?$/);
+    if (!m) return '';
+    var d = m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3]); return validDate(d) ? d : '';
+  }
+  function normTime(s){ var m = String(s || '').trim().match(/^(\d{1,2})[:시]\s*(\d{2})/); if (!m) return ''; var t = pad(+m[1]) + ':' + m[2]; return validTime(t) ? t : ''; }
+  var isCar = function(s){ return /^(o|y|yes|예|○|◯|1|true)$|관용|공용/i.test(String(s || '').trim()); };
+  $('#bulkAdd').addEventListener('click', function(){
+    var lines = $('#bulk').value.replace(/\r\n?/g, '\n').split('\n').filter(function(l){ return l.trim(); });
+    var add = 0, bad = 0, last = '';
+    lines.forEach(function(l, i){
+      var c = l.split(l.indexOf('\t') >= 0 ? '\t' : ',');
+      if (i === 0 && !normDate(c[0]) && /날짜|일자/.test(l)) return;
+      var t = cleanTrip({date: normDate(c[0]), start: normTime(c[1]), end: normTime(c[2]), purpose: c[3] || '', place: c[4] || '', car: isCar(c[5])});
+      if (!t) { bad++; return; }
+      state.trips.push(t); add++; last = t.date;
+    });
+    if (!add) return toast(lines.length ? '추가할 수 있는 줄이 없어요 (형식 확인: 날짜·출발·복귀)' : '엑셀에서 복사한 표를 붙여 넣어 주세요');
+    curMonth = last.slice(0, 7);
+    save(); render(); toast(add + '건 추가' + (bad ? ' · ' + bad + '줄은 날짜·시각 오류로 건너뜀' : ''));
+  });
+  // CSV·인쇄
+  var csvCell = function(v){ v = String(v == null ? '' : v); if (/^[=+\-@]/.test(v)) v = "'" + v; return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  function csv(){ return ['날짜,출발,복귀,출장 시간(분),용무,장소,공용차량,여비(원)'].concat(compute(inMonth()).map(function(r){ var t = r.t; return [t.date, t.start, t.end, r.mins, t.purpose, t.place, t.car ? 'O' : 'X', r.amt].map(csvCell).join(','); })).join('\n'); }
+  $('#csvBtn').addEventListener('click', function(){
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv()], {type: 'text/csv;charset=utf-8'}));
+    a.download = '출장목록_' + (curMonth || '전체') + '.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+    toast('CSV로 내보냈어요');
+  });
+  $('#printBtn').addEventListener('click', function(){
+    var rows = compute(inMonth()); if (!rows.length) return toast('인쇄할 출장이 없어요');
+    var total = rows.reduce(function(s, r){ return s + r.amt; }, 0), tm = rows.reduce(function(s, r){ return s + r.mins; }, 0), c = state.cfg;
+    $('#printArea').innerHTML = '<h2>관내 출장 목록 (' + (curMonth ? ml(curMonth) : '전체 기간') + ')</h2><p>소속: 햇살초등학교 · 기준: ' + c.th + '시간 이상 ' + won(c.hi) + '원 / 미만 ' + won(c.lo) + '원 / 공용차량 ' + won(c.car) + '원 감액 · ' + (c.mode === 'day' ? '같은 날 합산' : '건별 계산') + '</p>'
+      + '<table><thead><tr><th>번호</th><th>날짜</th><th>출발</th><th>복귀</th><th>출장 시간</th><th>용무</th><th>장소</th><th>공용차량</th><th>여비(원)</th></tr></thead><tbody>'
+      + rows.map(function(r, i){ var t = r.t; return '<tr><td>' + (i + 1) + '</td><td>' + t.date + '</td><td>' + t.start + '</td><td>' + t.end + '</td><td>' + hm(r.mins) + '</td><td class="l">' + esc(t.purpose) + '</td><td class="l">' + esc(t.place) + '</td><td>' + (t.car ? 'O' : '') + '</td><td>' + (r.same ? '합산' : won(r.amt)) + '</td></tr>'; }).join('')
+      + '</tbody><tfoot><tr><th colspan="4">합계 ' + rows.length + '건</th><th>' + hm(tm) + '</th><th colspan="3"></th><th>' + won(total) + '</th></tr></tfoot></table><div class="sign">출장자: ____________ (인)　　확인자: ____________ (인)</div>';
+    window.print();
+  });
+  $('#wipeAll').addEventListener('click', function(){
+    if (!confirm('이 PC에 저장된 출장 기록과 기준 설정을 모두 지울까요? 되돌릴 수 없어요.')) return;
+    try { localStorage.setItem(KEY, JSON.stringify({cfg: DEF, trips: []})); } catch(e){}
+    location.reload();
+  });
+  window.__trip = {state: function(){ return state; }, csv: csv, setData: function(d){ state.trips = ((d && d.trips) || []).map(cleanTrip).filter(Boolean); if (d && d.cfg) state.cfg = cleanCfg(d.cfg); save(); render(); }};
+  $('#fDate').value = ymd(new Date());
+  render();
+})();
+</script>
+</body>
+</html>

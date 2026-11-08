@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>학급비 장부 - 학급운영비 예산·지출 관리와 집행률</title>
+<meta name="description" content="학급운영비 예산을 항목별로 배정하고 지출을 적으면 항목별 잔액·집행률 막대, 초과 경고, 월별 합계를 자동으로 보여 주고 지출 목록을 인쇄·CSV로 내보내는 교사용 장부. 엑셀에서 복사해 붙여넣기 가능, 내 PC에만 저장됩니다.">
+<style>
+  :root{--bg:#f2f5f4;--panel:#fff;--ink:#1f2a2a;--sub:#5f6b6b;--line:#dbe3e1;--brand:#1d6b5f;--brand2:#2a8a7a;--gold:#f0b43c;--ok:#1f7a4a;--bad:#c8402c;--soft:#e7f3f0}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:linear-gradient(110deg,var(--brand),var(--brand2));color:#fff;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:22px;flex:none}
+  header h1{margin:0;font-size:22px;letter-spacing:-.5px}
+  header p{margin:0;font-size:13px;opacity:.88}
+  .grow{flex:1}
+  .safe{display:inline-flex;align-items:center;gap:6px;background:#e7f7ee;color:#11603d;border:1px solid #a6dcbf;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+  .wipe{font:inherit;font-size:12px;font-weight:700;border:1px solid #ffffff88;background:transparent;color:#fff;border-radius:999px;padding:4px 10px;cursor:pointer}
+  .btn{font:inherit;font-size:14px;font-weight:700;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 13px;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(.96)}
+  .btn.small{font-size:12.5px;padding:6px 10px}
+  .btn.primary{background:var(--brand);color:#fff;border-color:transparent}
+  .btn.gold{background:var(--gold);color:#3a2a00;border-color:transparent}
+  .btn.ghost{background:#ffffff22;color:#fff;border-color:#ffffff66}
+  main{max-width:1400px;margin:0 auto;padding:12px 20px 56px;display:flex;flex-direction:column;gap:12px}
+  .titlebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .titlebar input{font:inherit;font-size:17px;font-weight:800;border:1px solid transparent;border-radius:8px;padding:4px 8px;background:transparent;color:var(--ink);width:min(420px,100%)}
+  .titlebar input:hover,.titlebar input:focus{border-color:var(--line);background:#fff;outline:none}
+  .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:9px 14px}
+  .card .k{font-size:12.5px;color:var(--sub);font-weight:700}
+  .card .v{font-size:24px;font-weight:900;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+  .card .v small{font-size:13px;font-weight:600;color:var(--sub)}
+  .card.rate .track{height:8px;border-radius:99px;background:#e6ecea;overflow:hidden;margin-top:4px}
+  .card.rate .track i{display:block;height:100%;background:var(--brand2)}
+  #warn{display:none;background:#fff1ee;border:1px solid #f2b8ab;color:var(--bad);border-radius:12px;padding:8px 12px;font-weight:700;font-size:13.5px}
+  #warn.on{display:block}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:12px;align-items:start}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-width:0}
+  .panel h2{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .panel h2 small{font-weight:500;color:var(--sub);font-size:12px}
+  .irow{display:grid;grid-template-columns:minmax(0,1.1fr) 92px minmax(0,1.6fr) 26px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--line)}
+  .irow:last-child{border-bottom:0}
+  .irow input{font:inherit;font-size:13.5px;border:1px solid transparent;border-radius:6px;padding:3px 5px;width:100%;background:transparent;color:var(--ink)}
+  .irow input:hover,.irow input:focus{border-color:var(--line);background:#fff;outline:none}
+  .irow .iname{font-weight:800}
+  .irow .ibud{text-align:right;font-variant-numeric:tabular-nums}
+  .bar{height:16px;border-radius:99px;background:#e6ecea;overflow:hidden;position:relative}
+  .bar .fill{height:100%;background:linear-gradient(90deg,var(--brand2),#46b29c);border-radius:99px}
+  .irow.over .bar .fill{background:linear-gradient(90deg,#e5735d,var(--bad))}
+  .irow.mid .bar .fill{background:linear-gradient(90deg,#e7b53c,#e09a1c)}
+  .nums{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;color:var(--sub);margin-top:2px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
+  .nums b{color:var(--ink)}
+  .irow.over .ovr{color:var(--bad);font-weight:800}
+  .x{border:0;background:none;cursor:pointer;color:#a3adab;font-size:14px}
+  .months{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;align-items:end;height:118px;margin-top:4px}
+  .mcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10.5px;color:var(--sub);min-width:0}
+  .mcol .mb{width:70%;background:var(--brand2);border-radius:5px 5px 0 0;min-height:2px}
+  .mcol .mv{font-size:9.5px;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;max-width:100%}
+  .form{display:grid;grid-template-columns:128px minmax(112px,1fr) minmax(0,1.2fr) 90px 104px auto;gap:6px;align-items:center}
+  .form input,.form select,.panel select{font:inherit;font-size:13.5px;border:1px solid var(--line);border-radius:8px;padding:6px 7px;width:100%;background:#fff;color:var(--ink);min-width:0}
+  .form #fAmt{text-align:right}
+  details.pastebox{margin-top:8px;font-size:13px}
+  details.pastebox summary{cursor:pointer;color:var(--brand);font-weight:700}
+  details.pastebox textarea{width:100%;height:84px;border:1px solid var(--line);border-radius:8px;padding:7px;font:inherit;font-size:12.5px;margin:6px 0}
+  .listbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 6px}
+  .listbar select{width:auto}
+  .tw{overflow:auto;max-height:262px;border:1px solid var(--line);border-radius:10px}
+  table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:600px}
+  table.t th,table.t td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left}
+  table.t thead th{background:#f3f7f6;color:var(--sub);font-size:12px;position:sticky;top:0;z-index:1}
+  table.t td input,table.t td select{font:inherit;font-size:13px;border:1px solid transparent;border-radius:6px;padding:3px 4px;width:100%;background:transparent;color:var(--ink)}
+  table.t td input:hover,table.t td input:focus,table.t td select:hover{border-color:var(--line);background:#fff;outline:none}
+  table.t td.amt input{text-align:right;font-variant-numeric:tabular-nums}
+  table.t td.d{width:132px}table.t td.a{width:96px}table.t td.p{width:110px}table.t td.del{width:28px}
+  #listSum{font-size:13px;font-weight:800}
+  .hint{font-size:12px;color:var(--sub);line-height:1.5}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:20;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .back{position:fixed;right:12px;bottom:10px;font-size:12px;color:var(--sub);background:rgba(255,255,255,.92);padding:5px 10px;border-radius:20px;text-decoration:none;border:1px solid var(--line);z-index:10}
+  .print-only{display:none}
+  @media (max-width:900px){
+    header{padding:10px 12px} header h1{font-size:19px}
+    main{padding:10px 10px 56px}
+    .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .card .v{font-size:19px}
+    .grid{grid-template-columns:minmax(0,1fr)}
+    .form{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .irow{grid-template-columns:minmax(0,1fr) 84px 24px}
+    .irow .bwrap{grid-column:1 / -1}
+    .months .mv{display:none}
+  }
+  @media print{
+    @page{size:A4;margin:14mm}
+    body{background:#fff;font-size:12px}
+    header,.back,.toast,.form,details,.listbar select,.listbar .btn,.x,#warn,th.del,td.del,.months-panel,.hint{display:none!important}
+    main{padding:0;max-width:none;gap:6px}
+    .print-only{display:block}
+    .titlebar input{border:0;font-size:20px;text-align:center;width:100%}
+    .grid{display:block}
+    .panel{border:0;padding:0;margin-bottom:8px}
+    .cards{grid-template-columns:repeat(4,1fr)}
+    .card{border:1px solid #444;border-radius:0}
+    .card .v{font-size:16px}
+    .tw{max-height:none;overflow:visible;border:0}
+    table.t{min-width:0}
+    table.t th,table.t td{border:1px solid #444!important}
+    table.t td input,table.t td select{border:0!important;appearance:none;-webkit-appearance:none;padding:0}
+    .bar{border:1px solid #888;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .bar .fill{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .psign{margin-top:14px;display:flex;justify-content:flex-end}
+    .psign div{border:1px solid #444;width:84px;height:64px;font-size:11px;text-align:center;padding-top:3px}
+  }
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="학급비 장부">
+<meta property="og:description" content="학급운영비 예산·지출을 적으면 항목별 잔액과 집행률, 지출 목록 인쇄까지">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/92-class-budget.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/class-budget/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">💰</div>
+  <div>
+    <h1>학급비 장부</h1>
+    <p>항목별 예산을 정하고 쓴 돈을 적으면 잔액·집행률·초과 경고·월별 합계가 저절로</p>
+  </div>
+  <span class="safe">🔒 내 PC에만 저장 · 외부 전송 없음</span>
+  <div class="grow"></div>
+  <button class="btn small ghost" id="csvBtn" type="button">⬇ CSV</button>
+  <button class="btn small gold" id="printBtn" type="button">🖨 장부 인쇄</button>
+  <button type="button" class="wipe" id="wipeAll" title="공용 PC라면 다 쓴 뒤 눌러 주세요">🧹 이 PC 기록 모두 지우기</button>
+</header>
+<main>
+  <div class="titlebar"><input id="title" type="text" aria-label="장부 이름"><span class="hint">이름을 눌러 고칠 수 있어요</span></div>
+  <section class="cards">
+    <div class="card"><div class="k">총 예산</div><div class="v"><span id="sumBudget">0</span> <small>원</small></div></div>
+    <div class="card"><div class="k">쓴 돈</div><div class="v"><span id="sumSpent">0</span> <small>원</small></div></div>
+    <div class="card"><div class="k">남은 돈</div><div class="v"><span id="sumLeft">0</span> <small>원</small></div></div>
+    <div class="card rate"><div class="k">집행률</div><div class="v" id="sumRate">0%</div><div class="track"><i id="sumTrack"></i></div></div>
+  </section>
+  <div id="warn" role="alert"></div>
+  <section class="grid">
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="panel">
+        <h2>📊 항목별 집행 <small>항목 이름·배정액을 바로 고칠 수 있어요</small><span class="grow"></span><button class="btn small" id="addItem" type="button">＋ 항목</button></h2>
+        <div id="items"></div>
+      </div>
+      <div class="panel months-panel">
+        <h2>📅 월별 지출 합계 <small>3월-다음 해 2월</small></h2>
+        <div class="months" id="months"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>🧾 지출 적기</h2>
+      <div class="form">
+        <input type="date" id="fDate" aria-label="날짜">
+        <select id="fItem" aria-label="항목"></select>
+        <input type="text" id="fDesc" placeholder="내용 (예: 색연필 32인분)" aria-label="내용">
+        <input type="text" id="fAmt" placeholder="금액" inputmode="numeric" aria-label="금액">
+        <select id="fProof" aria-label="증빙"><option>카드영수증</option><option>세금계산서</option><option>간이영수증</option><option>계좌이체</option><option>기타</option></select>
+        <button class="btn primary" id="addBtn" type="button">＋ 추가</button>
+      </div>
+      <details class="pastebox">
+        <summary>📋 엑셀에서 여러 줄 한꺼번에 붙여넣기</summary>
+        <div class="hint">열 순서: 날짜 · 항목 · 내용 · 금액 · 증빙(생략 가능). 엑셀에서 칸을 골라 복사(Ctrl+C) 후 아래에 붙여넣으세요. 없는 항목은 예산 0원으로 새로 만들어요.</div>
+        <textarea id="paste" placeholder="2026-11-05&#9;학생 격려&#9;학기말 간식&#9;12,000&#9;카드영수증"></textarea>
+        <button class="btn small" id="pasteBtn" type="button">붙여넣은 줄 넣기</button>
+      </details>
+      <div class="listbar">
+        <b>지출 목록</b>
+        <select id="filter" aria-label="항목 거르기"></select>
+        <select id="mfilter" aria-label="월 거르기"></select>
+        <span class="grow"></span>
+        <span id="listSum"></span>
+      </div>
+      <div class="tw"><table class="t" id="list"></table></div>
+    </div>
+  </section>
+  <div class="print-only psign"><div>담임</div><div>학년부장</div><div>교감</div><div>교장</div></div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(function(){
+  'use strict';
+  var KEY='edu-expo.class-budget.v1';
+  var $=function(s){return document.querySelector(s);};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function won(n){return Math.round(n).toLocaleString('en-US');}
+  function num(v){var s=String(v==null?'':v).replace(/[^\d\-]/g,'');var n=parseInt(s,10);return isFinite(n)?n:0;}
+  function pct(a,b){return b>0?Math.round(a/b*1000)/10:(a>0?999:0);}
+  var SAMPLE={title:'2026학년도 햇살초 3학년 2반 학급운영비',
+    items:[{name:'학습 준비물',budget:250000},{name:'학급 행사',budget:150000},{name:'환경 꾸미기',budget:100000},{name:'학생 격려',budget:100000}],
+    spends:[
+      ['2026-03-05','학습 준비물','색연필·스케치북 32인분',86400,'카드영수증'],
+      ['2026-03-18','환경 꾸미기','게시판 꾸미기 재료',42000,'카드영수증'],
+      ['2026-04-10','학급 행사','과학의 날 행사 재료',38500,'카드영수증'],
+      ['2026-04-24','학습 준비물','수학 교구(분수 막대)',64000,'세금계산서'],
+      ['2026-05-04','학급 행사','어린이날 간식',96000,'카드영수증'],
+      ['2026-05-20','학생 격려','칭찬 스티커·상장 용지',27300,'간이영수증'],
+      ['2026-06-12','환경 꾸미기','교실 화분·분갈이 흙',55000,'카드영수증'],
+      ['2026-07-08','학생 격려','1학기 마무리 격려품',52000,'카드영수증'],
+      ['2026-09-09','학습 준비물','2학기 공책·연필',58800,'카드영수증'],
+      ['2026-10-15','학급 행사','체육대회 응원 도구',31000,'카드영수증']
+    ].map(function(r){return {date:r[0],item:r[1],desc:r[2],amount:r[3],proof:r[4]};})};
+  var S;
+  function clean(o){
+    var s={title:typeof o.title==='string'?o.title:'학급운영비',items:[],spends:[]};
+    (Array.isArray(o.items)?o.items:[]).forEach(function(i){if(i&&typeof i.name==='string'&&i.name.trim()&&!s.items.some(function(x){return x.name===i.name;}))s.items.push({name:i.name,budget:Math.max(0,num(i.budget))});});
+    (Array.isArray(o.spends)?o.spends:[]).forEach(function(p){if(p&&typeof p.item==='string')s.spends.push({date:typeof p.date==='string'?p.date:'',item:p.item,desc:typeof p.desc==='string'?p.desc:'',amount:num(p.amount),proof:typeof p.proof==='string'?p.proof:''});});
+    return s;
+  }
+  try{var raw=JSON.parse(localStorage.getItem(KEY)||'null'); if(raw&&typeof raw==='object')S=clean(raw);}catch(e){}
+  if(!S)S=clean(JSON.parse(JSON.stringify(SAMPLE)));
+  var saveT;
+  function save(){clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}},200);}
+  function sortSp(){S.spends.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});}
+  function ensureItem(name){if(!S.items.some(function(i){return i.name===name;})){S.items.push({name:name,budget:0});return true;}return false;}
+  function normDate(v){
+    v=String(v||'').trim(); var m;
+    if((m=/^(\d{4})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/.exec(v))) return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);
+    if((m=/^(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/.exec(v))){var y=new Date().getFullYear();return y+'-'+('0'+m[1]).slice(-2)+'-'+('0'+m[2]).slice(-2);}
+    return '';
+  }
+  function calc(){
+    var by={};S.items.forEach(function(i){by[i.name]=0;});
+    var months={};for(var m=1;m<=12;m++)months[m]=0;
+    var spent=0;
+    S.spends.forEach(function(p){by[p.item]=(by[p.item]||0)+p.amount;spent+=p.amount;var mm=+(p.date||'').slice(5,7);if(mm>=1&&mm<=12)months[mm]+=p.amount;});
+    var budget=S.items.reduce(function(a,i){return a+i.budget;},0);
+    return {by:by,months:months,spent:spent,budget:budget};
+  }
+  function overMsg(C){return S.items.filter(function(i){return C.by[i.name]>i.budget;}).map(function(i){return i.name+' '+won(C.by[i.name]-i.budget)+'원';});}
+  function render(){
+    sortSp();
+    var C=calc();
+    $('#title').value=S.title;
+    $('#sumBudget').textContent=won(C.budget);
+    $('#sumSpent').textContent=won(C.spent);
+    $('#sumLeft').textContent=won(C.budget-C.spent);
+    var r=pct(C.spent,C.budget);
+    $('#sumRate').textContent=r+'%';
+    $('#sumTrack').style.width=Math.min(100,r)+'%';
+    var ov=overMsg(C);
+    $('#warn').className=ov.length?'on':'';
+    $('#warn').textContent=ov.length?'⚠ 예산 초과: '+ov.join(', ')+' — 다른 항목 예산을 옮기거나 지출을 확인하세요.':'';
+    $('#items').innerHTML=S.items.map(function(i,k){
+      var sp=C.by[i.name]||0,left=i.budget-sp,rr=pct(sp,i.budget),cls=sp>i.budget?'over':(rr>=90?'mid':'');
+      return '<div class="irow '+cls+'" data-k="'+k+'"><input class="iname" value="'+esc(i.name)+'" aria-label="항목 이름">'+
+        '<input class="ibud" value="'+won(i.budget)+'" inputmode="numeric" aria-label="배정액">'+
+        '<div class="bwrap"><div class="bar"><div class="fill" style="width:'+Math.min(100,rr)+'%"></div></div>'+
+        '<div class="nums"><span>집행 <b class="ispent">'+won(sp)+'</b></span><span class="irate">'+rr+'%</span>'+
+        (sp>i.budget?'<span class="ovr">⚠ '+won(sp-i.budget)+'원 초과</span>':'<span>잔액 <b class="ileft">'+won(left)+'</b></span>')+'</div></div>'+
+        '<button class="x" type="button" data-delitem="'+k+'" title="항목 삭제">✕</button></div>';
+    }).join('')||'<div class="hint">＋ 항목으로 예산 항목을 만드세요.</div>';
+    var max=0,M=[3,4,5,6,7,8,9,10,11,12,1,2];M.forEach(function(m){max=Math.max(max,C.months[m]);});
+    $('#months').innerHTML=M.map(function(m){var v=C.months[m];return '<div class="mcol" id="m-'+m+'" title="'+m+'월 '+won(v)+'원"><span class="mv">'+won(v)+'</span><div class="mb" style="height:'+(max?Math.round(v/max*80):0)+'px"></div><span>'+m+'월</span></div>';}).join('');
+    var opts=S.items.map(function(i){return '<option>'+esc(i.name)+'</option>';}).join('');
+    var cur=$('#fItem').value;$('#fItem').innerHTML=opts;if(cur&&S.items.some(function(i){return i.name===cur;}))$('#fItem').value=cur;
+    var fv=$('#filter').value;$('#filter').innerHTML='<option value="">전체 항목</option>'+opts;$('#filter').value=S.items.some(function(i){return i.name===fv;})?fv:'';
+    var mv=$('#mfilter').value;$('#mfilter').innerHTML='<option value="">전체 월</option>'+M.map(function(m){return '<option value="'+m+'">'+m+'월</option>';}).join('');$('#mfilter').value=mv;
+    renderList();
+    save();
+  }
+  function renderList(){
+    var f=$('#filter').value,mf=$('#mfilter').value,sum=0,n=0;
+    var itemOpts=function(sel){return S.items.map(function(i){return '<option'+(i.name===sel?' selected':'')+'>'+esc(i.name)+'</option>';}).join('')+(S.items.some(function(i){return i.name===sel;})?'':'<option selected>'+esc(sel)+'</option>');};
+    var proofs=['카드영수증','세금계산서','간이영수증','계좌이체','기타'];
+    var rows=S.spends.map(function(p,k){
+      if(f&&p.item!==f)return '';
+      if(mf&&+(p.date||'').slice(5,7)!==+mf)return '';
+      sum+=p.amount;n++;
+      return '<tr data-k="'+k+'"><td class="d"><input type="date" data-f="date" value="'+esc(p.date)+'" aria-label="날짜"></td>'+
+        '<td><select data-f="item" aria-label="항목">'+itemOpts(p.item)+'</select></td>'+
+        '<td><input data-f="desc" value="'+esc(p.desc)+'" aria-label="내용"></td>'+
+        '<td class="amt a"><input data-f="amount" value="'+won(p.amount)+'" inputmode="numeric" aria-label="금액"></td>'+
+        '<td class="p"><select data-f="proof" aria-label="증빙">'+proofs.concat(proofs.indexOf(p.proof)<0&&p.proof?[p.proof]:[]).map(function(x){return '<option'+(x===p.proof?' selected':'')+'>'+esc(x)+'</option>';}).join('')+'</select></td>'+
+        '<td class="del"><button class="x" type="button" data-del="'+k+'" title="이 지출 삭제">✕</button></td></tr>';
+    }).join('');
+    $('#list').innerHTML='<thead><tr><th>날짜</th><th>항목</th><th>내용</th><th style="text-align:right">금액</th><th>증빙</th><th class="del"></th></tr></thead><tbody>'+rows+'</tbody>';
+    $('#listSum').textContent=n+'건 · 합계 '+won(sum)+'원';
+  }
+  function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},2600);}
+  function checkOver(item){var C=calc(),it=S.items.filter(function(i){return i.name===item;})[0];if(it&&C.by[item]>it.budget){toast('⚠ '+item+' 예산을 '+won(C.by[item]-it.budget)+'원 넘었어요');return true;}return false;}
+  // 이벤트
+  $('#title').addEventListener('change',function(){S.title=this.value;save();});
+  $('#addItem').addEventListener('click',function(){var n=1,nm;do{nm='새 항목'+(n>1?' '+n:'');n++;}while(S.items.some(function(i){return i.name===nm;}));S.items.push({name:nm,budget:0});render();});
+  $('#items').addEventListener('change',function(e){
+    var row=e.target.closest('.irow');if(!row)return;var it=S.items[+row.getAttribute('data-k')];if(!it)return;
+    if(e.target.classList.contains('ibud')){it.budget=Math.max(0,num(e.target.value));}
+    else if(e.target.classList.contains('iname')){var nv=e.target.value.trim();if(!nv||S.items.some(function(i){return i!==it&&i.name===nv;})){toast('비어 있거나 같은 이름의 항목이 있어요');}else{S.spends.forEach(function(p){if(p.item===it.name)p.item=nv;});it.name=nv;}}
+    render();
+  });
+  $('#items').addEventListener('click',function(e){
+    var b=e.target.closest('[data-delitem]');if(!b)return;var it=S.items[+b.getAttribute('data-delitem')];if(!it)return;
+    var used=S.spends.filter(function(p){return p.item===it.name;}).length;
+    if(used&&!confirm(it.name+' 항목에 지출 '+used+'건이 있어요. 항목만 지우고 지출은 남길까요?'))return;
+    S.items.splice(S.items.indexOf(it),1);render();
+  });
+  $('#addBtn').addEventListener('click',function(){
+    var amt=num($('#fAmt').value),item=$('#fItem').value;
+    if(!item){toast('먼저 예산 항목을 만드세요');return;}
+    if(amt<=0){toast('금액을 적어 주세요');$('#fAmt').focus();return;}
+    S.spends.push({date:normDate($('#fDate').value)||today(),item:item,desc:$('#fDesc').value.trim(),amount:amt,proof:$('#fProof').value});
+    $('#fDesc').value='';$('#fAmt').value='';
+    render();
+    if(!checkOver(item))toast('지출을 적었어요');
+  });
+  $('#fAmt').addEventListener('keydown',function(e){if(e.key==='Enter')$('#addBtn').click();});
+  $('#pasteBtn').addEventListener('click',function(){
+    var lines=$('#paste').value.replace(/\r/g,'').split('\n'),added=0,skip=0,newItems=[];
+    lines.forEach(function(l){
+      if(!l.trim())return;
+      var c=l.indexOf('\t')>=0?l.split('\t'):l.split(',');
+      c=c.map(function(x){return x.trim();});
+      if(c.length<4){skip++;return;}
+      if(/날짜|일자/.test(c[0])&&/금액/.test(c[3]))return;
+      var d=normDate(c[0]),amt=num(c[3]);
+      if(!d||amt<=0||!c[1]){skip++;return;}
+      if(ensureItem(c[1]))newItems.push(c[1]);
+      S.spends.push({date:d,item:c[1],desc:c[2]||'',amount:amt,proof:c[4]||'기타'});added++;
+    });
+    if(added)$('#paste').value='';
+    render();
+    toast(added+'건을 넣었어요'+(skip?' · '+skip+'줄은 건너뜀':'')+(newItems.length?' · 새 항목: '+newItems.join(', '):''));
+  });
+  $('#list').addEventListener('change',function(e){
+    var tr=e.target.closest('tr[data-k]');if(!tr)return;var p=S.spends[+tr.getAttribute('data-k')];if(!p)return;
+    var f=e.target.getAttribute('data-f');
+    if(f==='amount')p.amount=Math.max(0,num(e.target.value));
+    else if(f==='date')p.date=normDate(e.target.value)||p.date;
+    else if(f==='item'||f==='desc'||f==='proof')p[f]=e.target.value;
+    render();
+    if(f==='amount'||f==='item')checkOver(p.item);
+  });
+  $('#list').addEventListener('click',function(e){var b=e.target.closest('[data-del]');if(!b)return;S.spends.splice(+b.getAttribute('data-del'),1);render();toast('지출 1건을 지웠어요');});
+  $('#filter').addEventListener('change',renderList);
+  $('#mfilter').addEventListener('change',renderList);
+  function cell(v){v=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+  function csv(){
+    var L=[['날짜','항목','내용','금액','증빙'].join(',')];
+    S.spends.forEach(function(p){L.push([p.date,p.item,p.desc,p.amount,p.proof].map(cell).join(','));});
+    L.push('');
+    L.push(['항목','배정액','집행액','잔액','집행률(%)'].join(','));
+    var C=calc();S.items.forEach(function(i){var sp=C.by[i.name]||0;L.push([i.name,i.budget,sp,i.budget-sp,pct(sp,i.budget)].map(cell).join(','));});
+    return '﻿'+L.join('\r\n');
+  }
+  $('#csvBtn').addEventListener('click',function(){
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv()],{type:'text/csv;charset=utf-8'}));a.download=(S.title||'학급비 장부').replace(/[\\\/:*?"<>|]/g,'_')+'.csv';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},2000);toast('CSV를 내려받았어요(엑셀에서 열기)');
+  });
+  $('#printBtn').addEventListener('click',function(){$('#filter').value='';$('#mfilter').value='';renderList();window.print();});
+  $('#wipeAll').addEventListener('click',function(){if(!confirm('이 PC에 저장된 학급비 장부를 모두 지우고 예시로 되돌릴까요? 되돌릴 수 없어요.'))return;clearTimeout(saveT);try{localStorage.removeItem(KEY);}catch(e){}S=clean(JSON.parse(JSON.stringify(SAMPLE)));render();setTimeout(function(){clearTimeout(saveT);try{localStorage.removeItem(KEY);}catch(e){}},300);toast('기록을 지웠어요');});
+  function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+  $('#fDate').value=today();
+  render();
+  window.__cb={state:function(){return S;},calc:calc,csv:csv,normDate:normDate};
+})();
+</script>
+</body>
+</html>

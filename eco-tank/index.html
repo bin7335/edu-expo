@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>생태 수조 - 수초·물고기·달팽이로 균형 잡힌 수조 만들기</title>
+<meta name="description" content="수초·물고기·달팽이 수와 조명을 조절해 산소·먹이·깨끗함이 균형 잡힌 수조를 만들고 7일 버티기에 도전하는 생태계 시뮬레이션.">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#06202e;color:#e8f6fb;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+  button{font:inherit}
+  header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(3,22,33,.9);border-bottom:1px solid #12465c;flex-wrap:wrap}
+  header h1{margin:0;font-size:20px;white-space:nowrap}
+  header small{color:#8fc3d6;font-size:13px}
+  header .sp{flex:1}
+  .hb{border:0;background:#123c50;color:#e8f6fb;font-weight:800;font-size:14px;padding:7px 11px;border-radius:10px;cursor:pointer;white-space:nowrap}
+  .hb[aria-pressed="true"]{background:#f5b83d;color:#2a1b00}
+  main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 330px;min-height:0}
+  #stage{position:relative;min-height:340px;overflow:hidden}
+  #tank{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
+  #dayBox{position:absolute;left:14px;top:12px;background:rgba(2,18,28,.7);border-radius:14px;padding:8px 12px;backdrop-filter:blur(4px)}
+  #day{font-weight:900;font-size:18px}
+  #dayBar{display:flex;gap:3px;margin-top:6px}
+  #dayBar i{width:22px;height:8px;border-radius:4px;background:#25495a}
+  #dayBar i.on{background:#5fd39a}#dayBar i.cur{background:#f5b83d}
+  #msg{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(2,18,28,.78);padding:8px 14px;border-radius:12px;font-weight:700;font-size:14px;max-width:90%;text-align:center}
+  aside{background:#082a3b;border-left:1px solid #12465c;padding:12px 14px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+  .sec h2{margin:0 0 6px;font-size:15px;color:#9fd6ea}
+  .ctl{display:flex;align-items:center;gap:8px;background:#0c3448;border-radius:12px;padding:6px 8px;margin-bottom:6px}
+  .ctl .ic{font-size:24px;width:32px;text-align:center}
+  .ctl .nm{flex:1;font-weight:800;font-size:14px;line-height:1.2}
+  .ctl .nm small{display:block;font-weight:500;color:#8fc3d6;font-size:11.5px}
+  .ctl button{width:34px;height:34px;border-radius:10px;border:0;background:#185a76;color:#fff;font-size:20px;font-weight:900;cursor:pointer}
+  .ctl button:disabled{opacity:.35;cursor:default}
+  .ctl b{min-width:22px;text-align:center;font-size:20px}
+  .gauge{margin-bottom:7px}
+  .gauge .lb{display:flex;justify-content:space-between;font-size:13px;font-weight:700}
+  .gauge .bar{height:12px;border-radius:6px;background:#0c3448;overflow:hidden;margin-top:3px;position:relative}
+  .gauge .bar i{display:block;height:100%;border-radius:6px;transition:width .3s}
+  .gauge .bar s{position:absolute;top:0;bottom:0;width:2px;background:#ff6b6b}
+  .gauge.warn .lb{color:#ffb3a7}
+  .btn{border:0;font-weight:900;font-size:16px;padding:11px 16px;border-radius:12px;cursor:pointer;background:#185a76;color:#fff}
+  .btn.pri{background:#2bb673;color:#fff}
+  .btn:disabled{opacity:.4;cursor:default}
+  .rowb{display:flex;gap:8px;flex-wrap:wrap}
+  .rowb .btn{flex:1}
+  .tip{font-size:12.5px;color:#9fc7d6;line-height:1.5;margin:0}
+  .back{color:#9fd6ea;font-size:13px;text-decoration:none}
+  .ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,14,22,.6);z-index:20;padding:14px}
+  .ov.on{display:flex}
+  .card{background:#f4fbfd;color:#123;border-radius:20px;padding:20px 22px;max-width:540px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.5);max-height:92vh;overflow:auto;animation:pop .25s}
+  @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+  .card h2{margin:0 0 6px;font-size:23px}
+  .card .big{font-size:50px;text-align:center}
+  #rWhy{margin:8px 0;padding-left:20px;line-height:1.6}
+  #rWhy li{margin-bottom:4px}
+  .card .btn{background:#185a76}
+  .card .btn.pri{background:#2bb673}
+  @media (max-width:820px){main{grid-template-columns:1fr}#stage{min-height:56vh}aside{border-left:0;border-top:1px solid #12465c}header small{display:none}}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="생태 수조">
+<meta property="og:description" content="수초·물고기·달팽이 수를 조절하며 산소와 먹이가 균형 잡힌 수조 만들기">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/87-eco-tank.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/eco-tank/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <h1>🐟 생태 수조</h1><small>수초·물고기·달팽이의 균형을 맞춰 7일 버티기</small>
+  <span class="sp"></span>
+  <button class="hb" id="snd" type="button" aria-pressed="false" title="물소리">🔇</button>
+  <button class="hb" id="fsBtn" type="button" title="전체 화면">⛶</button>
+</header>
+<main>
+  <div id="stage">
+    <canvas id="tank" aria-label="수조 그림"></canvas>
+    <div id="dayBox"><div id="day">준비 · 1일째 0시</div><div id="dayBar"></div></div>
+    <div id="msg">개수를 정하고 ▶ 7일 버티기를 눌러요</div>
+  </div>
+  <aside>
+    <div class="sec"><h2>① 수조 꾸미기</h2>
+      <div class="ctl"><span class="ic">🌿</span><span class="nm">수초<small>낮에 광합성 → 산소·먹이</small></span><button type="button" data-k="P" data-d="-1" aria-label="수초 빼기">−</button><b id="nP">2</b><button type="button" data-k="P" data-d="1" aria-label="수초 더하기">+</button></div>
+      <div class="ctl"><span class="ic">🐠</span><span class="nm">물고기<small>산소·먹이를 쓰고 배설물</small></span><button type="button" data-k="F" data-d="-1" aria-label="물고기 빼기">−</button><b id="nF">5</b><button type="button" data-k="F" data-d="1" aria-label="물고기 더하기">+</button></div>
+      <div class="ctl"><span class="ic">🐌</span><span class="nm">달팽이<small>찌꺼기·이끼 청소</small></span><button type="button" data-k="S" data-d="-1" aria-label="달팽이 빼기">−</button><b id="nS">1</b><button type="button" data-k="S" data-d="1" aria-label="달팽이 더하기">+</button></div>
+      <div class="rowb"><button class="btn" id="lightBtn" type="button" aria-pressed="true">💡 조명 켜짐 (낮 12시간)</button></div>
+    </div>
+    <div class="sec"><h2>② 수조 상태</h2>
+      <div class="gauge" id="gO2"><div class="lb"><span>🫧 산소</span><span><span id="vO2">60</span>%</span></div><div class="bar"><i style="background:#4fc3f7"></i><s style="left:20%"></s></div></div>
+      <div class="gauge" id="gFood"><div class="lb"><span>🍃 먹이</span><span><span id="vFood">40</span>%</span></div><div class="bar"><i style="background:#8bd17c"></i></div></div>
+      <div class="gauge" id="gClean"><div class="lb"><span>💧 깨끗함</span><span><span id="vClean">90</span>%</span></div><div class="bar"><i style="background:#b39ddb"></i><s style="left:20%"></s></div></div>
+      <div class="gauge" id="gAlgae"><div class="lb"><span>🟩 이끼</span><span><span id="vAlgae">10</span>%</span></div><div class="bar"><i style="background:#9ccc65"></i><s style="left:80%"></s></div></div>
+    </div>
+    <div class="rowb"><button class="btn pri" id="startBtn" type="button">▶ 7일 버티기</button><button class="btn" id="ffBtn" type="button" aria-pressed="false">⏩ 빨리</button></div>
+    <p class="tip">빨간 선을 넘으면 위험해요. 산소가 20% 아래로 6시간, 먹이 0이 하루, 깨끗함 20% 아래, 이끼 80% 넘으면 실패!</p>
+    <a class="back" href="../">← 전체 데모 보기</a>
+  </aside>
+</main>
+<div class="ov" id="result"><div class="card">
+  <div class="big" id="rIcon">🎉</div>
+  <h2 id="rTitle">7일 버티기 성공!</h2>
+  <ul id="rWhy"></ul>
+  <div class="rowb"><button class="btn pri" id="againBtn" type="button">↻ 설정 바꿔 다시</button></div>
+</div></div>
+<script>
+(() => {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const KEY = 'edu-expo-eco-tank-v1';
+  const LIM = { P: [0, 6], F: [1, 8], S: [0, 6] };
+  // ---- 생태 모형 (1시간 단위) ----
+  const R = { photo: 1.6, plantNight: .3, fishO2: .55, snailO2: .15, mix: .04, grow: .35, eat: .3, poo: .3, clean: .45, algaeL: .4, algaeW: .015, snailAlgae: .22 };
+  const init = c => ({ h: 0, o2: 60, food: 40, waste: 10, algae: 10, low: 0, hungry: 0, end: null, c: { ...c }, log: { made: 0, used: 0 } });
+  const isLight = (c, h) => c.L && (h % 24) >= 6 && (h % 24) < 18;
+  function tick(s) {
+    if (s.end) return;
+    const { P, F, S, L } = s.c, light = isLight(s.c, s.h);
+    const made = light ? P * R.photo : 0, used = (light ? 0 : P * R.plantNight) + F * R.fishO2 + S * R.snailO2;
+    s.log.made += made; s.log.used += used;
+    s.o2 += made - used + (45 - s.o2) * R.mix;
+    s.food += (light ? P * R.grow : 0) - F * R.eat;
+    s.waste += F * R.poo - S * R.clean;
+    s.algae += (light ? R.algaeL + s.waste * R.algaeW : 0) - S * R.snailAlgae;
+    for (const k of ['o2', 'food', 'waste', 'algae']) s[k] = Math.max(0, Math.min(100, s[k]));
+    s.low = s.o2 < 20 ? s.low + 1 : 0; s.hungry = s.food <= 0 ? s.hungry + 1 : 0;
+    s.h++;
+    if (s.low >= 6) s.end = 'o2'; else if (s.hungry >= 24) s.end = 'food'; else if (s.waste >= 80) s.end = 'waste'; else if (s.algae >= 80) s.end = 'algae'; else if (s.h >= 168) s.end = 'win';
+  }
+  const run = c => { const s = init(c); while (!s.end) tick(s); return { end: s.end, h: s.h, o2: s.o2, food: s.food, waste: s.waste, algae: s.algae }; };
+
+  // ---- 상태 ----
+  const saved = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
+
+  let cfg = { P: 2, F: 5, S: 1, L: true };
+  let sim = init(cfg), phase = 'setup', speed = 1, acc = 0, manual = false, wins = Math.max(0, Math.round(+saved.wins) || 0);
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ P: cfg.P, F: cfg.F, S: cfg.S, L: cfg.L, wins })); } catch (e) {} };
+
+  // ---- 화면 ----
+  const cv = $('#tank'), g = cv.getContext('2d');
+  let W = 0, H = 0, dpr = 1;
+  const resize = () => { const r = $('#stage').getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1); W = Math.max(200, r.width); H = Math.max(200, r.height); cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); };
+  window.addEventListener('resize', resize); resize();
+  let rnd = 7; const rand = () => { rnd = (rnd * 16807) % 2147483647; return (rnd - 1) / 2147483646; };
+  const fish = Array.from({ length: 8 }, (_, i) => ({ x: rand(), y: .25 + rand() * .45, v: (.04 + rand() * .05) * (rand() < .5 ? -1 : 1), ph: rand() * 6, hue: [18, 45, 200, 330, 280, 10, 160, 55][i], sz: .8 + rand() * .5 }));
+  const snails = Array.from({ length: 6 }, () => ({ x: rand(), v: (.006 + rand() * .008) * (rand() < .5 ? -1 : 1), onGlass: rand() < .4, y: .4 + rand() * .3 }));
+  const plants = Array.from({ length: 6 }, (_, i) => ({ x: .12 + i * .15 + rand() * .05, h: .35 + rand() * .2, ph: rand() * 6, blades: 3 + Math.floor(rand() * 3) }));
+  const rocks = Array.from({ length: 7 }, () => ({ x: rand(), r: 18 + rand() * 30, c: 80 + rand() * 50 }));
+  let bubbles = [];
+  let px = 0, py = 0, tx = 0, ty = 0;
+  $('#stage').addEventListener('pointermove', e => { const r = $('#stage').getBoundingClientRect(); tx = (e.clientX - r.left) / r.width - .5; ty = (e.clientY - r.top) / r.height - .5; });
+
+  function draw(t) {
+    px += (tx - px) * .06; py += (ty - py) * .06;
+    const s = sim, light = phase === 'setup' ? cfg.L : isLight(s.c, s.h), hr = s.h % 24;
+    // 하늘빛(낮/밤) 섞기
+    const dayAmt = phase === 'setup' ? (cfg.L ? 1 : .15) : (s.c.L ? Math.max(.15, Math.min(1, Math.min(hr - 5, 18 - hr) / 2)) : .15);
+    const top = `rgb(${20 + 60 * dayAmt},${60 + 120 * dayAmt},${90 + 120 * dayAmt})`, bot = `rgb(${5 + 15 * dayAmt},${25 + 60 * dayAmt},${45 + 70 * dayAmt})`;
+    const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, top); gr.addColorStop(1, bot); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    // 빛줄기
+    if (light) { g.save(); g.globalAlpha = .08 + .04 * Math.sin(t / 900); g.fillStyle = '#fff8c8'; for (let i = 0; i < 5; i++) { const x0 = W * (.1 + i * .2) + Math.sin(t / 2000 + i) * 20 - px * 20; g.beginPath(); g.moveTo(x0, 0); g.lineTo(x0 + 40, 0); g.lineTo(x0 + 120, H); g.lineTo(x0 + 40, H); g.fill(); } g.restore(); }
+    // 뒤쪽 돌 (깊이 0.5)
+    const sandY = H * .84;
+    g.save(); g.translate(-px * 14, -py * 6);
+    rocks.forEach(r => { g.fillStyle = `rgb(${r.c * .6},${r.c * .7},${r.c * .75})`; g.beginPath(); g.ellipse(r.x * W, sandY + 4, r.r * 1.4, r.r, 0, Math.PI, 0); g.fill(); });
+    g.restore();
+    // 모래
+    g.save(); g.translate(-px * 24, 0);
+    g.fillStyle = '#c9a86a'; g.beginPath(); g.moveTo(-40, sandY); for (let x = -40; x <= W + 40; x += 40) g.lineTo(x, sandY + Math.sin(x / 70) * 5); g.lineTo(W + 40, H); g.lineTo(-40, H); g.fill();
+    // 찌꺼기 점
+    g.fillStyle = 'rgba(80,55,30,.8)'; const dots = Math.floor(s.waste * 1.2); for (let i = 0; i < dots; i++) { const x = ((i * 97.3) % 1) * W + (i * 37 % W); g.fillRect(x % W, sandY + 6 + (i * 13 % 30), 3, 2); }
+    // 수초
+    const nP = phase === 'setup' ? cfg.P : s.c.P;
+    for (let i = 0; i < nP; i++) { const p = plants[i], bx = p.x * W; for (let b = 0; b < p.blades; b++) { g.strokeStyle = b % 2 ? '#3fa34d' : '#5cc16a'; g.lineWidth = 6; g.lineCap = 'round'; g.beginPath(); g.moveTo(bx + b * 7, sandY + 4); const hh = H * p.h * (.8 + b * .1), sw = Math.sin(t / 900 + p.ph + b) * 14; g.quadraticCurveTo(bx + b * 7 + sw, sandY - hh * .5, bx + b * 7 + sw * 1.8, sandY - hh); g.stroke(); }
+      if (light && Math.random() < .03 * (phase === 'run' ? Math.min(speed, 3) : 1)) bubbles.push({ x: bx + Math.random() * 20, y: sandY - H * p.h, r: 2 + Math.random() * 3, v: 30 + Math.random() * 30 }); }
+    // 달팽이
+    const nS = phase === 'setup' ? cfg.S : s.c.S;
+    for (let i = 0; i < nS; i++) { const sn = snails[i]; const x = sn.x * W, y = sn.onGlass ? sn.y * H : sandY - 6; g.font = '22px system-ui'; g.save(); g.translate(x, y); if (sn.v > 0) g.scale(-1, 1); g.fillText('🐌', -11, 8); g.restore(); }
+    g.restore();
+    // 물고기 (중간 깊이)
+    const nF = phase === 'setup' ? cfg.F : s.c.F, dead = phase === 'end' && s.end !== 'win';
+    g.save(); g.translate(-px * 34, -py * 14);
+    for (let i = 0; i < nF; i++) { const f = fish[i]; const x = f.x * W, y = dead ? H * .12 + i * 6 : f.y * H + Math.sin(t / 700 + f.ph) * 8; const sz = 16 * f.sz * Math.min(1.4, W / 700 + .4);
+      g.save(); g.translate(x, y); if (f.v < 0) g.scale(-1, 1); if (dead) g.rotate(Math.PI);
+      g.fillStyle = `hsl(${f.hue},80%,${dead ? 45 : 60}%)`; g.beginPath(); g.ellipse(0, 0, sz, sz * .55, 0, 0, Math.PI * 2); g.fill();
+      const tw = Math.sin(t / 150 + f.ph) * sz * .2; g.beginPath(); g.moveTo(-sz * .8, 0); g.lineTo(-sz * 1.5, -sz * .5 + tw); g.lineTo(-sz * 1.5, sz * .5 + tw); g.fill();
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(sz * .45, -sz * .12, sz * .16, 0, 7); g.fill(); g.fillStyle = '#111'; g.beginPath(); g.arc(sz * .5, -sz * .12, sz * .08, 0, 7); g.fill(); g.restore(); }
+    g.restore();
+    // 거품
+    g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 1.2; bubbles.forEach(b => { g.beginPath(); g.arc(b.x - px * 24, b.y, b.r, 0, 7); g.stroke(); });
+    // 이끼·흐림
+    g.fillStyle = `rgba(110,170,60,${Math.min(.55, s.algae / 140)})`; g.fillRect(0, 0, W, H);
+    g.fillStyle = `rgba(110,85,40,${Math.min(.5, s.waste / 160)})`; g.fillRect(0, 0, W, H);
+    // 유리 반사 (앞 깊이)
+    g.save(); g.translate(-px * 50, 0); g.fillStyle = 'rgba(255,255,255,.05)'; g.beginPath(); g.moveTo(W * .7, 0); g.lineTo(W * .78, 0); g.lineTo(W * .62, H); g.lineTo(W * .54, H); g.fill(); g.restore();
+    g.strokeStyle = 'rgba(200,240,255,.35)'; g.lineWidth = 6; g.strokeRect(3, 3, W - 6, H - 6);
+  }
+  function move(dt) {
+    fish.forEach(f => { f.x += f.v * dt; if (f.x < .05 || f.x > .95) { f.v *= -1; f.x = Math.max(.05, Math.min(.95, f.x)); } if (Math.random() < .002) f.v *= -1; });
+    snails.forEach(sn => { sn.x += sn.v * dt; if (sn.x < .03 || sn.x > .97) sn.v *= -1; });
+    bubbles.forEach(b => { b.y -= b.v * dt; b.x += Math.sin(b.y / 20) * .3; }); bubbles = bubbles.filter(b => b.y > -10).slice(-160);
+  }
+
+  // ---- UI 갱신 ----
+  const setG = (id, v, warn) => { const el = $('#' + id); el.querySelector('i').style.width = Math.round(v) + '%'; el.classList.toggle('warn', !!warn); };
+  function ui() {
+    ['P', 'F', 'S'].forEach(k => { $('#n' + k).textContent = cfg[k]; });
+    document.querySelectorAll('[data-k]').forEach(b => { const k = b.dataset.k, d = +b.dataset.d; b.disabled = phase !== 'setup' || (d < 0 ? cfg[k] <= LIM[k][0] : cfg[k] >= LIM[k][1]); });
+    $('#lightBtn').textContent = cfg.L ? '💡 조명 켜짐 (낮 12시간)' : '🌑 조명 꺼짐 (계속 어둠)'; $('#lightBtn').setAttribute('aria-pressed', String(cfg.L)); $('#lightBtn').disabled = phase !== 'setup';
+    const s = sim; $('#vO2').textContent = Math.round(s.o2); $('#vFood').textContent = Math.round(s.food); $('#vClean').textContent = Math.round(100 - s.waste); $('#vAlgae').textContent = Math.round(s.algae);
+    setG('gO2', s.o2, s.o2 < 25); setG('gFood', s.food, s.food < 8); setG('gClean', 100 - s.waste, s.waste > 70); setG('gAlgae', s.algae, s.algae > 70);
+    const d = Math.floor(s.h / 24) + 1, hr = s.h % 24;
+    $('#day').textContent = phase === 'setup' ? '🎯 목표: 7일 버티기' : Math.min(d, 7) + '일째 ' + (s.h >= 168 ? '끝' : (hr < 12 ? '오전 ' : '오후 ') + ((hr % 12) || 12) + '시 ' + (isLight(s.c, s.h) ? '☀️' : '🌙'));
+    $('#dayBar').innerHTML = Array.from({ length: 7 }, (_, i) => `<i class="${i < Math.floor(s.h / 24) ? 'on' : (i === Math.floor(s.h / 24) && phase !== 'setup' ? 'cur' : '')}"></i>`).join('');
+    $('#startBtn').disabled = phase !== 'setup';
+    $('#ffBtn').setAttribute('aria-pressed', String(speed > 1));
+  }
+  const msg = s => { $('#msg').textContent = s; };
+
+  // ---- 결과 ----
+  function finish() {
+    phase = 'end'; const s = sim, c = s.c, why = [];
+    const days = (s.log.made / (s.h / 24)).toFixed(0), useD = (s.log.used / (s.h / 24)).toFixed(0);
+    const T = { win: ['🎉', '7일 버티기 성공!'], o2: ['😵', '산소가 부족해요'], food: ['🍽️', '먹이가 부족해요'], waste: ['🤢', '물이 너무 더러워졌어요'], algae: ['🟩', '이끼가 수조를 덮었어요'] }[s.end];
+    if (s.end === 'win') {
+      why.push(`수초 ${c.P}포기가 낮에 광합성으로 하루 약 ${days}만큼 산소를 만들고, 물고기·달팽이·밤의 수초가 약 ${useD}만큼 썼어요. 모자란 산소는 물 표면에서 조금씩 녹아 들어와 균형이 맞았어요.`);
+      why.push(`달팽이 ${c.S}마리가 물고기 ${c.F}마리의 배설물·찌꺼기와 이끼를 청소해 물이 깨끗했어요.`);
+      why.push('수초 → 산소·먹이 → 물고기 → 배설물 → 달팽이 청소로 이어지는 순환이 바로 생태계의 균형이에요.');
+      wins++; cfg = { ...c }; save();
+    } else if (s.end === 'o2') {
+      if (!c.L) why.push('조명을 끄니 빛이 없어 수초가 광합성을 못 했어요. 빛이 있어야 산소가 만들어져요.');
+      else why.push(`물고기 ${c.F}마리와 달팽이가 쓰는 산소가 수초 ${c.P}포기가 낮에 만드는 산소보다 많았어요. (하루 만듦 ${days} · 씀 ${useD})`);
+      why.push('밤에는 수초도 숨을 쉬어 산소를 써요. 그래서 새벽에 산소가 가장 적어요.');
+      why.push(c.L ? '💡 물고기를 줄이거나 수초를 늘려 보세요.' : '💡 조명을 켜고 다시 해 보세요.');
+    } else if (s.end === 'food') {
+      why.push(`수초 ${c.P}포기가 자라며 만드는 먹이보다 물고기 ${c.F}마리가 먹는 양이 많아 하루 넘게 굶었어요.`);
+      why.push('💡 수초를 늘리거나 물고기를 줄여 보세요.');
+    } else if (s.end === 'waste') {
+      why.push(`물고기 ${c.F}마리의 배설물과 찌꺼기가 쌓였는데, 청소할 달팽이가 ${c.S ? c.S + '마리뿐이라 모자랐어요' : '없었어요'}.`);
+      why.push('💡 달팽이를 늘리거나 물고기를 줄여 보세요.');
+    } else {
+      why.push('빛과 찌꺼기(양분)가 많아 이끼가 빠르게 번졌어요. 이끼를 먹어 줄 달팽이가 모자랐어요.');
+      why.push('💡 달팽이를 넣어 보세요.');
+    }
+    $('#rIcon').textContent = T[0]; $('#rTitle').textContent = T[1] + (s.end === 'win' ? '' : ` (${Math.floor(s.h / 24) + 1}일째)`);
+    $('#rWhy').innerHTML = ''; why.forEach(w => { const li = document.createElement('li'); li.textContent = w; $('#rWhy').appendChild(li); });
+    $('#result').classList.add('on'); msg(T[1]); ui(); sfx(s.end === 'win');
+  }
+  const advance = hours => { for (let i = 0; i < hours && phase === 'run'; i++) { tick(sim); if (sim.end) { finish(); break; } } ui(); };
+
+  // ---- 소리 ----
+  let ac = null, amb = null, soundOn = false;
+  const ctx = () => { if (!ac) { try { const A = window.AudioContext || window.webkitAudioContext; if (A) ac = new A(); } catch (e) { ac = null; } } return ac; };
+  const tone = (f, d, v = .07) => { if (!soundOn || !ctx()) return; try { const o = ac.createOscillator(), gg = ac.createGain(); o.frequency.value = f; o.type = 'triangle'; gg.gain.setValueAtTime(v, ac.currentTime); gg.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d); o.connect(gg).connect(ac.destination); o.start(); o.stop(ac.currentTime + d); } catch (e) {} };
+  const sfx = ok => (ok ? [523, 659, 784, 1047] : [440, 349, 262]).forEach((f, i) => setTimeout(() => tone(f, .3), i * 150));
+  const startAmb = () => { if (!ctx() || amb) return; try { const len = ac.sampleRate * 2, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * .08;
+      const src = ac.createBufferSource(); src.buffer = buf; src.loop = true; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; const gg = ac.createGain(); gg.gain.value = .35; src.connect(f).connect(gg).connect(ac.destination); src.start();
+      const blub = setInterval(() => tone(300 + Math.random() * 500, .08, .03), 900); amb = { src, blub }; } catch (e) {} };
+  const stopAmb = () => { if (!amb) return; try { amb.src.stop(); } catch (e) {} clearInterval(amb.blub); amb = null; };
+  $('#snd').addEventListener('click', () => { soundOn = !soundOn; $('#snd').setAttribute('aria-pressed', String(soundOn)); $('#snd').textContent = soundOn ? '🔊' : '🔇'; if (soundOn) { ctx(); if (ac && ac.resume) ac.resume().catch(() => {}); startAmb(); } else stopAmb(); });
+  $('#fsBtn').addEventListener('click', () => { try { const d = document; if (d.fullscreenElement) { d.exitFullscreen && d.exitFullscreen().catch(() => {}); return; } const el = d.documentElement; if (d.fullscreenEnabled && el.requestFullscreen) { const p = el.requestFullscreen(); if (p && p.catch) p.catch(() => {}); } } catch (e) {} });
+
+  // ---- 조작 ----
+  document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', () => { if (phase !== 'setup') return; const k = b.dataset.k; cfg[k] = Math.max(LIM[k][0], Math.min(LIM[k][1], cfg[k] + +b.dataset.d)); sim = init(cfg); tone(600 + cfg[k] * 60, .08); ui(); }));
+  $('#lightBtn').addEventListener('click', () => { if (phase !== 'setup') return; cfg.L = !cfg.L; sim = init(cfg); ui(); });
+  $('#startBtn').addEventListener('click', () => { if (phase !== 'setup') return; sim = init(cfg); phase = 'run'; acc = 0; manual = false; msg('☀️ 낮에는 수초에서 산소 방울이 올라와요. 🌙 밤에는 산소가 줄어요.'); ui(); });
+  $('#ffBtn').addEventListener('click', () => { speed = speed > 1 ? 1 : 10; ui(); });
+  $('#againBtn').addEventListener('click', () => { $('#result').classList.remove('on'); phase = 'setup'; sim = init(cfg); speed = 1; msg('개수를 바꿔 다시 도전해요!'); ui(); });
+  document.addEventListener('keydown', e => { if (e.key === ' ' && phase === 'setup' && e.target === document.body) { e.preventDefault(); $('#startBtn').click(); } if (e.key.toLowerCase() === 'f' && !e.ctrlKey) $('#ffBtn').click(); });
+
+  let lastT = performance.now();
+  function frame(t) {
+    const dt = Math.min(.05, (t - lastT) / 1000); lastT = t;
+    if (phase === 'run' && !manual) { acc += dt * speed / .4; const n = Math.floor(acc); if (n) { acc -= n; advance(n); } }
+    move(dt); draw(t); requestAnimationFrame(frame);
+  }
+  ui(); requestAnimationFrame(frame);
+  window.__test = {
+    run, state: () => ({ phase, h: sim.h, day: sim.h / 24, o2: sim.o2, food: sim.food, waste: sim.waste, algae: sim.algae, light: isLight(sim.c, sim.h), end: sim.end, speed, L: cfg.L, cfg: { ...cfg } }),
+    step: h => { manual = true; advance(h); }
+  };
+})();
+</script>
+</body>
+</html>

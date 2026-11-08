@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회의록 뚝딱 - 회의 메모를 회의록 양식으로 정리</title>
+<meta name="description" content="자유롭게 적은 회의 메모를 붙여넣으면 안건·논의·결정 사항·할 일(담당·기한)로 나눠 회의록 양식으로 정리해 주는 교직원용 도구. 규칙 기반, 외부 전송 없음. 복사·인쇄.">
+<style>
+  :root{--bg:#f5f4ef;--card:#fff;--ink:#22252b;--sub:#6b6f78;--line:#e3e1d8;--pri:#4b5bd6;--pri2:#eceefe;--g:#1f9d63;--o:#e08a1e}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink)}
+  button,input,textarea{font:inherit}
+  header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--card);border-bottom:2px solid var(--line);flex-wrap:wrap}
+  .logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#4b5bd6,#e08a1e);display:grid;place-items:center;font-size:24px;flex-shrink:0}
+  header h1{margin:0;font-size:22px}
+  header small{display:block;color:var(--sub);font-size:13px}
+  header .sp{flex:1}
+  .wipe{font-size:12px;font-weight:700;border:1px solid currentColor;background:transparent;color:var(--sub);border-radius:999px;padding:4px 10px;cursor:pointer}
+  main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;padding:14px 20px;align-items:start}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;min-width:0}
+  .panel h2{margin:0 0 6px;font-size:16px}
+  .panel h2 small{font-weight:500;color:var(--sub);font-size:12px}
+  #memo{width:100%;height:330px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;line-height:1.55;resize:vertical;background:#fffef9}
+  .help{font-size:12px;color:var(--sub);line-height:1.6;margin:6px 0 0}
+  .help code{background:#f1efe6;border-radius:4px;padding:0 4px;font-family:inherit;font-weight:700;color:#5a4a1a}
+  .form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
+  .form label{display:flex;flex-direction:column;font-size:12.5px;font-weight:800;color:var(--sub);gap:3px;min-width:0}
+  .form input{border:1px solid var(--line);border-radius:9px;padding:7px 9px;font-size:14px;color:var(--ink);min-width:0;width:100%}
+  .form .wide{grid-column:1/-1}
+  .btn{border:0;font-weight:800;font-size:14.5px;padding:9px 13px;border-radius:10px;cursor:pointer;background:var(--pri2);color:var(--pri);white-space:nowrap}
+  .btn.pri{background:var(--pri);color:#fff}
+  .btn[aria-pressed="true"]{background:var(--o);color:#fff}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  #stat{font-size:13px;color:var(--sub);font-weight:700;flex:1;min-width:150px}
+  #sheet{background:#fff;border:1px solid #d9d6ca;border-radius:6px;padding:20px 22px;box-shadow:0 6px 16px rgba(0,0,0,.05);line-height:1.6;outline:none}
+  #sheet[contenteditable="true"]{box-shadow:0 0 0 3px rgba(224,138,30,.45)}
+  #sheet .ttl{text-align:center;font-size:22px;margin:0 0 12px;letter-spacing:2px}
+  #sheet table{border-collapse:collapse;width:100%;font-size:14px}
+  #sheet th,#sheet td{border:1px solid #bdb9ab;padding:5px 8px;text-align:left;vertical-align:top}
+  #sheet th{background:#f4f2ea;width:84px;white-space:nowrap}
+  #sheet h3{font-size:16px;margin:16px 0 6px;padding:4px 8px;background:#eef0fb;border-left:5px solid var(--pri);border-radius:3px}
+  #sheet .blk{display:flex;gap:8px;margin:4px 0 2px 4px}
+  #sheet .tag{flex-shrink:0;font-size:12px;font-weight:800;border-radius:6px;padding:1px 7px;height:fit-content;margin-top:3px}
+  #sheet .t-note{background:#f0f0f0;color:#555}#sheet .t-dec{background:#e3f6ec;color:#11734a}#sheet .t-todo{background:#fff1dc;color:#9a5b00}
+  #sheet ul{margin:0;padding-left:18px}
+  #sheet .dec li{font-weight:700}
+  #sheet .none{color:#aaa;font-size:13px}
+  #todoTable th{width:auto!important;text-align:center}
+  #todoTable td:first-child,#todoTable td:nth-child(3),#todoTable td:nth-child(4){text-align:center;white-space:nowrap}
+  #sheet .next{margin:14px 0 0;font-weight:800}
+  #sheet .sign{margin-top:10px;text-align:right;color:#666;font-size:13px}
+  .twrap{overflow-x:auto}
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#22252b;color:#fff;padding:9px 16px;border-radius:12px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}
+  #toast.on{opacity:1}
+  .back{display:inline-block;margin:6px 20px 18px;color:var(--sub);font-size:13px;text-decoration:none}
+  @media (max-width:900px){main{grid-template-columns:1fr;padding:10px}#sheet{padding:14px 12px}header{padding:10px 12px}}
+  @media print{header,.left,.tools,.back,#toast{display:none!important}body{background:#fff}main{display:block;padding:0}.panel{border:0;padding:0}#sheet{border:0;box-shadow:none;padding:0}}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="회의록 뚝딱">
+<meta property="og:description" content="회의 메모를 붙여넣으면 안건·결정·할 일·담당으로 나눠 회의록 양식으로 정리">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/90-minutes-maker.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/minutes-maker/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<header>
+  <div class="logo">📝</div>
+  <div><h1>회의록 뚝딱</h1><small>막 적은 회의 메모 → 안건·결정·할 일(담당·기한) 회의록으로</small></div>
+  <span class="sp"></span>
+  <button type="button" id="wipeAll" class="wipe" title="공용 PC라면 다 쓴 뒤 눌러 주세요">🧹 이 PC 기록 모두 지우기</button>
+</header>
+<main>
+  <section class="left">
+    <div class="panel">
+      <h2>① 회의 메모 붙여넣기 <small>적는 대로 바로 정리돼요</small></h2>
+      <textarea id="memo" spellcheck="false" aria-label="회의 메모"></textarea>
+      <p class="help">알아듣는 말: 안건은 <code>1.</code> <code>안건:</code> <code>[제목]</code> <code>■</code> · 결정은 <code>결정:</code> <code>결론:</code> <code>~하기로 함</code> <code>확정</code> · 할 일은 <code>할 일:</code> <code>담당: 이름</code> <code>→ 이름</code> <code>~까지</code> · 기한은 <code>11/20</code> <code>11월 20일</code> <code>다음 주 금요일</code> <code>이번 주</code> · 첫 줄의 날짜·시각·장소와 <code>참석:</code> 줄은 양식 칸으로.</p>
+      <div class="tools" style="margin:8px 0 0"><button class="btn" id="sampleBtn" type="button">↺ 예시 메모 넣기</button><button class="btn" id="clearMemo" type="button">메모 비우기</button></div>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <h2>② 회의록 양식 <small>메모에서 자동으로 채우고, 고치면 그대로 유지</small></h2>
+      <div class="form">
+        <label>회의명<input id="fTitle" type="text" value="학년 협의회"></label>
+        <label>작성자<input id="fWriter" type="text" placeholder="예: 김민지"></label>
+        <label>날짜<input id="fDate" type="date"></label>
+        <label>시각<input id="fTime" type="time"></label>
+        <label class="wide">장소<input id="fPlace" type="text"></label>
+        <label class="wide">참석자<input id="fPeople" type="text" placeholder="쉼표로 구분"></label>
+      </div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="tools"><span id="stat"></span><button class="btn" id="editBtn" type="button" aria-pressed="false">✏️ 직접 고치기</button><button class="btn" id="copyBtn" type="button">📋 복사</button><button class="btn pri" id="printBtn" type="button">🖨 인쇄</button></div>
+    <div id="sheet"></div>
+  </section>
+</main>
+<a class="back" href="../">← 전체 데모 보기</a>
+<div id="toast" role="status"></div>
+<script>
+(() => {
+  'use strict';
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+  const KEY = 'edu-expo.minutes-maker.v1';
+  const SAMPLE = ['2026.11.10(화) 15:30 3층 회의실', '참석: 김민지, 박현수, 이수진, 최영호', '1. 학예회 준비', '- 날짜는 12월 5일 금요일로 확정', '- 학년별 공연 시간 10분 이내', '- 무대 배경은 6학년이 만들기로 함', '- 리허설 일정 정리 – 박현수 선생님 11/27까지',
+    '2. 겨울방학 방과후', '- 신청 인원이 작년보다 적음', '- 가정통신문 발송 → 이수진 다음 주 금요일까지', '- 강사 계약은 다음 회의에서 다시 논의', '안건: 교실 안전 점검', '결정: 매월 첫째 주 월요일 점검', '할 일: 점검표 양식 만들기 (최영호, 이번 주까지)', '기타 - 다음 회의 11월 24일'].join('\n');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const DAYS = '일월화수목금토';
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const toDate = s => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+  const todayIso = () => iso(new Date());
+  const addD = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const monday = d => addD(d, -((d.getDay() + 6) % 7));
+  const valid = (y, m, d) => m >= 1 && m <= 12 && d >= 1 && d <= 31;
+  const near = (base, m, d) => { let x = new Date(base.getFullYear(), m - 1, d); if (x < addD(base, -60)) x = new Date(base.getFullYear() + 1, m - 1, d); return x; };
+
+  // ---- 날짜 표현 → 날짜 ----
+  function dateInfo(s, baseIso) {
+    s = String(s); const base = toDate(baseIso) || toDate(todayIso());
+    let m;
+    if ((m = s.match(/(\d{4})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})\s*일?/)) && valid(+m[1], +m[2], +m[3])) return { iso: iso(new Date(+m[1], +m[2] - 1, +m[3])), text: m[0] };
+    if ((m = s.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/)) && valid(0, +m[1], +m[2])) return { iso: iso(near(base, +m[1], +m[2])), text: m[0] };
+    if ((m = s.match(/(\d{1,2})\s*\/\s*(\d{1,2})(?!\d)/)) && valid(0, +m[1], +m[2])) return { iso: iso(near(base, +m[1], +m[2])), text: m[0] };
+    if ((m = s.match(/(이번|다음|다다음)\s*주\s*([월화수목금토일])요일/))) { const w = { 이번: 0, 다음: 7, 다다음: 14 }[m[1]]; return { iso: iso(addD(monday(base), w + (DAYS.indexOf(m[2]) + 6) % 7)), text: m[0] }; }
+    if ((m = s.match(/([월화수목금토일])요일/))) { const k = (DAYS.indexOf(m[1]) - base.getDay() + 7) % 7; return { iso: iso(addD(base, k)), text: m[0] }; }
+    if ((m = s.match(/(이번|다음)\s*주/))) return { iso: iso(addD(monday(base), (m[1] === '다음' ? 7 : 0) + 4)), text: m[0] };
+    if ((m = s.match(/이번\s*달|이달|월말/))) return { iso: iso(new Date(base.getFullYear(), base.getMonth() + 1, 0)), text: m[0] };
+    if ((m = s.match(/오늘|내일|모레/))) return { iso: iso(addD(base, { 오늘: 0, 내일: 1, 모레: 2 }[m[0]])), text: m[0] };
+    if ((m = s.match(/(\d{1,2})\s*일(?=\s*까지)/)) && valid(0, 1, +m[1])) { let x = new Date(base.getFullYear(), base.getMonth(), +m[1]); if (+m[1] < base.getDate()) x = new Date(base.getFullYear(), base.getMonth() + 1, +m[1]); return { iso: iso(x), text: m[0] }; }
+    return null;
+  }
+  const due = (s, base) => { const r = dateInfo(s, base); return r ? r.iso : ''; };
+
+  // ---- 메모 해석 ----
+  const DEC_PRE = /^(결정\s*사항|결정|결론|합의)\s*[:：\-]\s*/;
+  const TODO_PRE = /^(할\s*일|해야\s*할\s*일|TODO|To\s*do)\s*[:：\-]\s*/i;
+  const DEC_RE = /(기로\s*(함|했|결정|합의)|로\s*확정|으로\s*확정|확정함|확정됨|확정$|결정함|결정됨|결정$|합의함)/;
+  const NAME = '([가-힣]{2,4})';
+  const TITLE = '(?:\\s*(?:선생님|샘|부장님?|교감님?|교장님?|주무관님?|님))?';
+  function parse(text, opt = {}) {
+    const lines = String(text).split(/\r?\n/);
+    const meta = { date: '', time: '', place: '', people: [] };
+    // 1) 머리 정보 먼저
+    for (const raw of lines.slice(0, 6)) {
+      const l = raw.trim(); let m;
+      if ((m = l.match(/^(참석자?|참여자?|참석 인원)\s*[:：]?\s*(.+)$/))) { meta.people = m[2].split(/[,，·、/]|\s{2,}|\s+(?=[가-힣]{2,4}(?:\s|$))/).map(x => x.replace(/(선생님|샘|님|부장|교감|교장)$/, '').trim()).filter(x => /^[가-힣A-Za-z]{2,10}$/.test(x)); continue; }
+      if ((m = l.match(/^장소\s*[:：]\s*(.+)$/))) { meta.place = m[1].trim(); continue; }
+      if (!meta.date && /^(일시\s*[:：]\s*)?(\d{4}\s*[.\-/년]|\d{1,2}\s*[/월])/.test(l)) {
+        let rest = l.replace(/^일시\s*[:：]\s*/, '');
+        const d = dateInfo(rest, opt.base || todayIso()); if (!d) continue; meta.date = d.iso; rest = rest.replace(d.text, ' ');
+        rest = rest.replace(/\(\s*[월화수목금토일]\s*\)|[월화수목금토일]요일/, ' ');
+        const t = rest.match(/(\d{1,2}):(\d{2})/) || rest.match(/(오전|오후)\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?/);
+        if (t) { meta.time = t[1] === '오전' || t[1] === '오후' ? pad((+t[2] % 12) + (t[1] === '오후' ? 12 : 0)) + ':' + pad(+(t[3] || 0)) : pad(+t[1]) + ':' + t[2]; rest = rest.replace(t[0], ' '); }
+        rest = rest.replace(/(장소\s*[:：])/, ' ').replace(/[,·|]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (rest && !meta.place) meta.place = rest;
+      }
+    }
+    const base = meta.date || opt.base || todayIso();
+    const people = meta.people.length ? meta.people : (opt.people || []);
+    const agendas = []; let cur = null, next = '';
+    const newAg = t => { cur = { title: t.trim(), notes: [], decisions: [], todos: [] }; agendas.push(cur); };
+    const need = () => { if (!cur) newAg('기타 논의'); return cur; };
+    for (const raw of lines) {
+      let l = raw.trim(); if (!l) continue; let m;
+      if (/^(참석자?|참여자?|참석 인원|장소)\s*[:：]/.test(l)) continue;
+      if (meta.date && /^(일시\s*[:：]\s*)?(\d{4}\s*[.\-/년]|\d{1,2}\s*[/월])/.test(l) && !agendas.length && dateInfo(l, base) && dateInfo(l, base).iso === meta.date) continue;
+      // 안건 머리
+      if ((m = l.match(/^(?:안건|의제)\s*\d*\s*[:：.)]?\s*(.+)$/)) || (m = l.match(/^(\d{1,2})\s*[.)]\s+(.+)$/)) || (m = l.match(/^\[([^\]]+)\]\s*$/)) || (m = l.match(/^[■□◆◇▶►#]+\s*(.+)$/))) { newAg(m[m.length - 1]); continue; }
+      l = l.replace(/^[-–—•·*○●▪◦]\s*/, '').trim(); if (!l) continue;
+      // 다음 회의
+      if (/다음\s*회의/.test(l) && !/논의|다시|안건/.test(l)) { const d = dateInfo(l.replace(/다음\s*회의/, ''), base); if (d) { next = d.iso; continue; } }
+      l = l.replace(/^기타\s*[:：\-]\s*/, '');
+      if ((m = l.match(DEC_PRE))) { need().decisions.push(l.slice(m[0].length).trim()); continue; }
+      let todo = false; if ((m = l.match(TODO_PRE))) { l = l.slice(m[0].length).trim(); todo = true; }
+      // 담당자 찾기
+      let who = '', whoTxt = '';
+      const pats = [new RegExp('담당\\s*[:：]?\\s*' + NAME + TITLE), new RegExp('(?:→|->|=>|–|—|-)\\s*' + NAME + TITLE + '(?=\\s|$|,|\\))'), new RegExp('\\(\\s*' + NAME + TITLE + '\\s*[,)]')];
+      for (const p of pats) { const x = l.match(p); if (x && !/^(다음|이번|오늘|내일|모레)$/.test(x[1])) { who = x[1]; whoTxt = x[0]; break; } }
+      if (!who) for (const p of people) { const x = l.match(new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + TITLE)); if (x) { who = p; whoTxt = x[0]; break; } }
+      const hasDue = /까지/.test(l);
+      if (todo || hasDue || who) {
+        let d = null; if (hasDue) { const i = l.indexOf('까지'); d = dateInfo(l.slice(Math.max(0, i - 14), i + 2), base); }
+        if (!d && todo) d = dateInfo(l, base);
+        let task = l;
+        if (whoTxt) task = task.replace(whoTxt, ' ');
+        if (d) task = task.replace(new RegExp(d.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*(까지)?'), ' ');
+        task = task.replace(/기한\s*[:：]?/, ' ').replace(/담당\s*[:：]?/, ' ').replace(/\(\s*[,\s]*\)/g, ' ').replace(/\(\s*[,\s]*/g, ' ').replace(/[,\s]*\)/g, ' ').replace(/(→|->|=>|–|—)/g, ' ').replace(/\s-\s/g, ' ').replace(/\s+/g, ' ').replace(/[\s,:\-]+$/, '').trim();
+        need().todos.push({ task: task || l, who, due: d ? d.iso : '' }); continue;
+      }
+      if (DEC_RE.test(l)) { need().decisions.push(l); continue; }
+      need().notes.push(l);
+    }
+    return { meta, agendas, next, base };
+  }
+
+  // ---- 화면 ----
+  const F = { title: '#fTitle', writer: '#fWriter', date: '#fDate', time: '#fTime', place: '#fPlace', people: '#fPeople' };
+  const touched = new Set();
+  const md = isoS => { const d = toDate(isoS); return d ? `${d.getMonth() + 1}/${d.getDate()}(${DAYS[d.getDay()]})` : ''; };
+  const longD = isoS => { const d = toDate(isoS); return d ? `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일(${DAYS[d.getDay()]})` : ''; };
+  let editing = false, last = null;
+  function render() {
+    const peopleField = $(F.people).value.split(/[,，·、]/).map(s => s.trim()).filter(Boolean);
+    const r = parse($('#memo').value, { base: $(F.date).value || undefined, people: peopleField });
+    last = r;
+    // 양식 칸 자동 채우기(사용자가 고친 칸은 그대로)
+    if (r.meta.date && !touched.has('date')) $(F.date).value = r.meta.date;
+    if (r.meta.time && !touched.has('time')) $(F.time).value = r.meta.time;
+    if (r.meta.place && !touched.has('place')) $(F.place).value = r.meta.place;
+    if (r.meta.people.length && !touched.has('people')) $(F.people).value = r.meta.people.join(', ');
+    const nDec = r.agendas.reduce((a, x) => a + x.decisions.length, 0), todos = r.agendas.flatMap(a => a.todos.map(t => ({ ...t, ag: a.title })));
+    $('#stat').textContent = `안건 ${r.agendas.length} · 결정 ${nDec} · 할 일 ${todos.length}`;
+    if (editing) return;
+    const v = k => $(F[k]).value.trim();
+    const ppl = v('people').split(/[,，·、]/).map(s => s.trim()).filter(Boolean);
+    const list = (arr, cls, tag, label) => `<div class="blk ${cls}"><span class="tag ${tag}">${label}</span>${arr.length ? `<ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<span class="none">없음</span>'}</div>`;
+    let h = `<h2 class="ttl">${esc(v('title') || '회의')} 회의록</h2><table class="meta"><tr><th>일시</th><td>${esc(longD(v('date')) || '(날짜)')} ${esc(v('time'))}</td></tr><tr><th>장소</th><td>${esc(v('place') || '-')}</td></tr><tr><th>참석자</th><td>${ppl.length ? esc(ppl.join(', ')) + ` (${ppl.length}명)` : '-'}</td></tr></table>`;
+    if (!r.agendas.length) h += '<p class="none" style="margin-top:14px">메모를 적으면 여기에 회의록이 만들어져요.</p>';
+    r.agendas.forEach((a, i) => { h += `<div class="agenda"><h3>안건 ${i + 1}. ${esc(a.title)}</h3>${list(a.notes, 'note', 't-note', '논의')}${list(a.decisions, 'dec', 't-dec', '결정')}${a.todos.length ? list(a.todos.map(t => t.task + (t.who ? ' — ' + t.who : '') + (t.due ? ' (' + md(t.due) + '까지)' : '')), 'todo', 't-todo', '할 일') : ''}</div>`; });
+    h += `<h3>할 일 정리</h3><div class="twrap"><table id="todoTable"><thead><tr><th>번호</th><th>할 일</th><th>담당</th><th>기한</th><th>안건</th></tr></thead><tbody>${todos.length ? todos.map((t, i) => `<tr><td>${i + 1}</td><td>${esc(t.task)}</td><td>${esc(t.who || '미정')}</td><td>${esc(md(t.due) || '-')}</td><td>${esc(t.ag)}</td></tr>`).join('') : '<tr><td colspan="5" class="none">할 일이 없어요</td></tr>'}</tbody></table></div>`;
+    if (r.next) h += `<p class="next">📅 다음 회의: ${esc(longD(r.next))}</p>`;
+    h += `<p class="sign">작성자: ${esc(v('writer') || '　　　　')} (서명)</p>`;
+    $('#sheet').innerHTML = h;
+  }
+  let svT = 0, rT = 0;
+  const save = () => { clearTimeout(svT); svT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify({ memo: $('#memo').value, f: Object.fromEntries(Object.entries(F).map(([k, s]) => [k, $(s).value])), touched: [...touched] })); } catch (e) {} }, 250); };
+  const later = () => { clearTimeout(rT); rT = setTimeout(render, 200); save(); };
+  $('#memo').addEventListener('input', later);
+  Object.entries(F).forEach(([k, s]) => $(s).addEventListener('input', () => { touched.add(k); later(); }));
+  $('#sampleBtn').addEventListener('click', () => { $('#memo').value = SAMPLE; render(); save(); });
+  $('#clearMemo').addEventListener('click', () => { $('#memo').value = ''; render(); save(); });
+  $('#editBtn').addEventListener('click', () => { editing = !editing; $('#sheet').contentEditable = editing ? 'true' : 'false'; $('#editBtn').setAttribute('aria-pressed', String(editing)); $('#editBtn').textContent = editing ? '✅ 고치기 끝' : '✏️ 직접 고치기'; if (editing) { $('#sheet').focus(); toast('회의록을 눌러 바로 고치세요. 고치는 동안은 메모가 바뀌어도 덮어쓰지 않아요.'); } });
+  let tt = 0; const toast = s => { $('#toast').textContent = s; $('#toast').classList.add('on'); clearTimeout(tt); tt = setTimeout(() => $('#toast').classList.remove('on'), 2400); };
+  const sheetText = () => $('#sheet').innerText.replace(/\n{3,}/g, '\n\n').trim();
+  $('#copyBtn').addEventListener('click', () => {
+    const t = sheetText();
+    const fallback = () => { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); let okc = false; try { okc = document.execCommand('copy'); } catch (e) {} ta.remove(); toast(okc ? '📋 복사했어요. 한글·메일에 붙여넣으세요.' : '복사가 막혀 있어요. 회의록을 드래그해 복사하세요.'); };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => toast('📋 복사했어요. 한글·메일에 붙여넣으세요.'), fallback); else fallback(); } catch (e) { fallback(); }
+  });
+  $('#printBtn').addEventListener('click', () => window.print());
+  $('#wipeAll').addEventListener('click', () => { if (!confirm('이 PC에 저장된 회의 메모와 양식 내용을 모두 지울까요? 되돌릴 수 없어요.')) return; try { localStorage.removeItem(KEY); } catch (e) {} location.reload(); });
+  // ---- 시작 ----
+  let st = null; try { st = JSON.parse(localStorage.getItem(KEY)); } catch (e) { st = null; }
+  $('#memo').value = st && typeof st.memo === 'string' ? st.memo : SAMPLE;
+  if (st && st.f && typeof st.f === 'object') { Object.entries(F).forEach(([k, s]) => { if (typeof st.f[k] === 'string') $(s).value = st.f[k]; }); (Array.isArray(st.touched) ? st.touched : []).forEach(k => { if (F[k]) touched.add(k); }); }
+  render();
+  window.__mm = { parse, due, SAMPLE, last: () => last };
+})();
+</script>
+</body>
+</html>

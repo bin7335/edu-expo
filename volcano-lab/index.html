@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- csp:auto --><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><!-- /csp:auto -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>화산 실험실 - 마그마 점성과 가스로 바뀌는 화산 모양</title>
+<meta name="description" content="마그마의 점성(끈적임)과 가스 양을 바꿔 분출시키면 용암 흐름·화산재 기둥·땅 흔들림과 함께 순상화산·성층화산·용암돔·폭발적 분출이 만들어지는 과학 실험. 하와이 킬라우에아, 후지산, 제주 산방산 같은 실제 예와 비교해요.">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#1a1414;color:#2a1d18;-webkit-user-select:none;user-select:none}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hud{position:fixed;left:0;right:0;top:0;display:flex;align-items:flex-start;gap:8px;padding:10px 12px;pointer-events:none;z-index:3}
+.hud>*{pointer-events:auto}
+.ttl{background:rgba(255,248,240,.92);border-radius:16px;padding:7px 14px;box-shadow:0 4px 14px rgba(0,0,0,.25);min-width:0}
+.ttl h1{margin:0;font-size:21px;letter-spacing:-.5px}
+.ttl small{display:block;font-size:12px;color:#7a5446}
+.sp{flex:1}
+.ib{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,248,240,.92);font-size:20px;box-shadow:0 4px 14px rgba(0,0,0,.25);flex-shrink:0}
+.ib[aria-pressed=true]{background:#ffc46a}
+.panel{position:fixed;left:12px;bottom:34px;z-index:3;background:rgba(255,248,240,.94);border-radius:20px;padding:12px 14px;width:min(340px,calc(100vw - 24px));box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.row{margin-bottom:8px}
+.row label{display:flex;justify-content:space-between;font-weight:900;font-size:15px}
+.row label span{font-weight:700;color:#b4471b;font-size:14px}
+.row input{width:100%;accent-color:#d9480f;height:26px}
+.ends{display:flex;justify-content:space-between;font-size:11px;color:#8a6a5a;margin-top:-4px}
+#erupt{width:100%;border:0;border-radius:14px;padding:11px;font-weight:900;font-size:18px;background:linear-gradient(#ff7a2f,#d9480f);color:#fff;box-shadow:0 4px 0 #8f2d07}
+#erupt:active{transform:translateY(2px);box-shadow:0 2px 0 #8f2d07}
+#erupt:disabled{opacity:.6}
+.goals{position:fixed;right:12px;top:66px;z-index:3;background:rgba(255,248,240,.92);border-radius:16px;padding:8px 12px;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:14px;width:190px}
+.goals b{display:block;font-size:13px;color:#7a5446;margin-bottom:4px}
+.goal{display:flex;gap:6px;align-items:center;padding:2px 0;color:#9a8a80}
+.goal::before{content:"☐";font-size:15px}
+.goal.done{color:#2a1d18;font-weight:800}
+.goal.done::before{content:"✅"}
+.back{position:fixed;right:10px;bottom:6px;font-size:12px;color:#fff;background:rgba(0,0,0,.45);padding:4px 10px;border-radius:99px;text-decoration:none;z-index:6}
+.ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:70px 14px 36px;z-index:5;pointer-events:none}
+.ov.on{display:flex}
+.ov.dim{background:rgba(20,10,8,.45)}
+.card{pointer-events:auto;background:#fff8f0;border-radius:22px;padding:18px 20px;width:100%;max-width:500px;box-shadow:0 18px 50px rgba(0,0,0,.45);max-height:100%;overflow:auto;border:3px solid #f0b48a}
+.card h2{margin:0 0 6px;font-size:23px}
+.card p{margin:6px 0;line-height:1.5}
+.big{border:0;border-radius:14px;padding:11px 18px;font-weight:900;font-size:17px;background:#d9480f;color:#fff;margin:8px 6px 0 0}
+.ex{background:#fdeee2;border-radius:12px;padding:8px 12px;font-size:15px}
+.clue{font-size:14px;color:#7a5446}
+.steps{display:grid;gap:6px;margin:10px 0;padding:0;list-style:none}
+.steps li{background:#fdeee2;border-radius:12px;padding:7px 10px;font-size:15px}
+.badge{display:inline-block;background:#2a1d18;color:#ffc46a;border-radius:99px;padding:3px 10px;font-size:13px;font-weight:800}
+@media (min-width:900px){#intro{justify-content:flex-start;padding-left:3vw;align-items:flex-start;padding-top:80px}#intro .card{max-width:430px}#result{justify-content:flex-start;align-items:flex-start;padding-top:80px;padding-left:3vw}#result .card{max-width:430px}}
+@media (max-width:640px){.goals{top:auto;bottom:250px;right:8px;width:auto;font-size:12px;padding:6px 9px}.goals b{display:none}.panel{left:8px;width:calc(100vw - 16px);padding:9px 12px}.row{margin-bottom:4px}#erupt{font-size:16px;padding:9px}.ttl h1{font-size:18px}.ttl small{font-size:11px}.card h2{font-size:20px}}
+</style>
+<!-- og:auto -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="화산 실험실">
+<meta property="og:description" content="마그마 점성과 가스 양을 바꿔 분출 모습과 화산 모양이 어떻게 달라지는지 보기">
+<meta property="og:image" content="https://bin7335.github.io/edu-expo/thumbnails/82-volcano-lab.png">
+<meta property="og:url" content="https://bin7335.github.io/edu-expo/volcano-lab/">
+<meta name="twitter:card" content="summary_large_image">
+<!-- /og:auto -->
+</head>
+<body>
+<canvas id="cv" aria-label="화산 단면 실험 화면"></canvas>
+<div class="hud">
+  <div class="ttl"><h1>🌋 화산 실험실</h1><small id="sub">점성과 가스를 정하고 분출 버튼을 눌러요</small></div>
+  <div class="sp"></div>
+  <button class="ib" id="snd" aria-pressed="false" title="소리 켜기/끄기" aria-label="소리">🔈</button>
+  <button class="ib" id="fs" title="전체화면" aria-label="전체화면">⛶</button>
+</div>
+<div class="goals" id="goals"><b>🔬 실험 노트 (찾은 화산)</b></div>
+<div class="panel">
+  <div class="row"><label for="visc">🍯 마그마 점성 <span id="viscTxt">보통</span></label><input type="range" id="visc" min="0" max="100" value="50"><div class="ends"><span>묽다 (잘 흐름)</span><span>끈적하다</span></div></div>
+  <div class="row"><label for="gas">🫧 가스 양 <span id="gasTxt">보통</span></label><input type="range" id="gas" min="0" max="100" value="50"><div class="ends"><span>적다</span><span>많다</span></div></div>
+  <button id="erupt">🌋 분출!</button>
+</div>
+
+<div class="ov" id="intro"><div class="card">
+  <h2>🌋 화산 실험실</h2>
+  <p>땅속 마그마가 <b>얼마나 끈적한지(점성)</b>, <b>가스가 얼마나 많은지</b>에 따라 화산은 전혀 다른 모습으로 분출해요.</p>
+  <ol class="steps">
+    <li>🍯 점성과 🫧 가스 슬라이더를 정해요</li>
+    <li>🌋 분출 버튼(또는 스페이스 키)을 눌러 지켜봐요</li>
+    <li>🔬 화산 4가지(순상·성층·용암돔·폭발적 분출)를 모두 만들어 봐요</li>
+  </ol>
+  <button class="big" id="start">🔬 실험 시작</button>
+</div></div>
+
+<div class="ov" id="result"><div class="card">
+  <span class="badge" id="resBadge">실험 결과</span>
+  <h2 id="resName"></h2>
+  <p id="resText"></p>
+  <div class="ex" id="resEx"></div>
+  <p class="clue" id="resSet"></p>
+  <button class="big" id="resOk">계속 실험하기</button>
+</div></div>
+
+<div class="ov dim" id="end"><div class="card">
+  <h2>🏅 화산 박사 인증!</h2>
+  <p>네 가지 화산을 모두 만들었어요.</p>
+  <p class="ex"><b>정리</b><br>· 점성이 낮으면 용암이 멀리 흘러 <b>완만한 순상화산</b><br>· 점성이 높으면 용암이 쌓여 <b>경사가 급한 용암돔</b><br>· 점성이 높고 가스가 많으면 <b>폭발적 분출</b>과 화산재</p>
+  <p class="clue" id="endMsg"></p>
+  <button class="big" id="endOk">더 실험하기</button>
+</div></div>
+<a class="back" href="../">← 전체 데모 보기</a>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const KEY = 'edu-expo-volcano-lab-v1';
+let store = null;
+try { store = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+if (!store || typeof store !== 'object') store = {};
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} };
+
+const TYPES = {
+  shield: { name: '순상화산', em: '🛡️', text: '점성이 낮은 묽은 용암이 강물처럼 멀리 흘러 넓게 퍼져요. 그래서 방패를 엎어 놓은 것처럼 경사가 완만한 화산이 돼요. 가스가 쉽게 빠져나가 폭발은 약해요.', ex: '하와이 킬라우에아·마우나로아, 제주도 한라산의 완만한 아랫부분' },
+  strato: { name: '성층화산', em: '🗻', text: '점성이 중간쯤인 용암과 화산재·화산탄이 번갈아 층층이 쌓여, 경사가 급한 원뿔 모양이 돼요. 조용히 흐르다가 폭발하기도 해요.', ex: '일본 후지산, 필리핀 마욘산, 백두산' },
+  dome: { name: '용암돔(종상화산)', em: '🔔', text: '점성이 아주 높은 끈적한 용암은 멀리 흐르지 못하고 분화구 위에 종처럼 봉긋 쌓여요. 경사가 매우 급해요. 가스가 적어 크게 폭발하지는 않아요.', ex: '제주 산방산, 한라산 꼭대기의 일부' },
+  explosive: { name: '폭발적 분출', em: '💥', text: '끈적한 마그마 속에 가스가 많으면 가스가 빠져나가지 못하고 모였다가 한꺼번에 터져요. 화산재 기둥이 높이 솟고 화산탄이 날아가며, 뜨거운 화산재 구름(화쇄류)이 산을 타고 내려와요. 꼭대기가 무너져 커다란 분화구가 생기기도 해요.', ex: '1980년 미국 세인트헬렌스산, 1991년 필리핀 피나투보산, 서기 79년 이탈리아 베수비오산(폼페이)' }
+};
+const ORDER = ['shield', 'strato', 'dome', 'explosive'];
+function classify(v, gas) {
+  if (v < 34) return 'shield';
+  if (v < 67) return 'strato';
+  return gas >= 50 ? 'explosive' : 'dome';
+}
+
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const WW = 1000, GY = 420, N = 250, DX = WW / N, VENT = 500;
+let W = 0, H = 0, dpr = 1, sc = 1, ox = 0, oy = 0, manual = false;
+let rnd = mulberry(5);
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const g = { phase: 'intro', t: 0, h: new Float32Array(N), prev: null, heat: new Float32Array(N), parts: [], bubbles: [], er: null, shake: 0, wait: 0, mouse: { x: 0, y: 0 }, par: { x: 0, y: 0 }, found: [], last: null };
+
+function prof(type, d) {
+  d = Math.abs(d);
+  if (type === 'shield') { const B = 440, Hh = 95; return d < B ? Hh * Math.pow(1 - d / B, 1.15) : 0; }
+  if (type === 'strato') { const B = 270, Hh = 240; let h = d < B ? Hh * Math.pow(1 - d / B, 1.7) : 0; if (d < 18) h -= (18 - d) * 1.2; return h; }
+  if (type === 'dome') { const base = d < 170 ? 50 * (1 - d / 170) : 0, R = 95; return base + (d < R ? 135 * Math.sqrt(1 - (d / R) * (d / R)) : 0); }
+  if (type === 'explosive') { const B = 300, Hh = 210; let h = d < B ? Hh * Math.pow(1 - d / B, 1.5) : 0; return h; }
+  if (type === 'start') { return d < 140 ? 28 * (1 - d / 140) : 0; }
+  return 0;
+}
+const caldera = d => 210 * .5 + Math.abs(d) * .55;
+function setProfile(type, k) { for (let i = 0; i < N; i++) g.h[i] = prof(type, i * DX + DX / 2 - VENT) * (k == null ? 1 : k); }
+const hAt = x => { const i = Math.max(0, Math.min(N - 1, Math.floor(x / DX))); return g.h[i]; };
+const surf = x => GY - hAt(x);
+function metrics() {
+  let hm = 0; for (let i = 0; i < N; i++) hm = Math.max(hm, g.h[i]);
+  let l = N, r = 0; for (let i = 0; i < N; i++) if (g.h[i] > 5) { l = Math.min(l, i); r = Math.max(r, i); }
+  const half = r >= l ? (r - l + 1) * DX / 2 : 1;
+  return { height: hm, half, steep: hm / half };
+}
+
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const mob = W < 640;
+  const avail = H - (mob ? 360 : 20);
+  sc = Math.max(.3, Math.min(W / (mob ? 640 : 1000), avail / 590));
+  ox = W / 2 - VENT * sc + (mob ? 0 : W * .1);
+  oy = (mob ? 70 : 10) + (avail - 590 * sc) / 2 - (GY - 330) * sc;
+}
+
+function readouts() {
+  const v = +$('#visc').value, gs = +$('#gas').value;
+  $('#viscTxt').textContent = v < 15 ? '아주 묽음' : v < 34 ? '묽음' : v < 67 ? '보통' : v < 85 ? '끈적함' : '아주 끈적함';
+  $('#gasTxt').textContent = gs < 20 ? '아주 적음' : gs < 50 ? '적음' : gs < 80 ? '많음' : '아주 많음';
+}
+
+function erupt() {
+  if (g.phase !== 'idle' && g.phase !== 'result-closed') return;
+  ensureAudio();
+  const v = +$('#visc').value, gas = +$('#gas').value;
+  const type = classify(v, gas), e = Math.max(0, Math.min(1, (v - 30) / 70)) * gas / 100;
+  g.prev = g.h.slice();
+  setProfile('start'); g.heat.fill(0);
+  g.parts = g.parts.filter(p => p.k === 'steam');
+  g.er = { t: 0, dur: 6, pre: .9, type, v, gas, e, reach: 0, maxShake: 0, maxAsh: 0 };
+  g.phase = 'erupt'; $('#erupt').disabled = true;
+  $('#sub').textContent = '분출 중… 땅이 흔들려요!';
+  rumble(.3 + e);
+}
+function finishEruption() {
+  const er = g.er, T = TYPES[er.type];
+  g.phase = 'result'; $('#erupt').disabled = false;
+  const m = metrics();
+  g.last = { type: er.type, reach: er.reach, steep: m.steep, height: m.height };
+  const fresh = !g.found.includes(er.type);
+  if (fresh) g.found.push(er.type);
+  store.found = ORDER.filter(k => g.found.includes(k) || (Array.isArray(store.found) && store.found.includes(k))); store.runs = (store.runs || 0) + 1; save();
+  $('#resBadge').textContent = fresh ? '🆕 새 화산 발견! 실험 노트에 기록' : '실험 결과';
+  $('#resName').textContent = T.em + ' ' + T.name;
+  $('#resText').textContent = T.text;
+  $('#resEx').textContent = '🌍 실제 예: ' + T.ex;
+  $('#resSet').textContent = `점성 ${er.v} · 가스 ${er.gas} → 높이 ${Math.round(m.height * 4)}m 모형 · 용암이 흐른 거리 ${Math.round(er.reach * 4)}m 모형 (실제 크기는 수천 배예요)`;
+  $('#result').classList.add('on'); goals();
+  $('#sub').textContent = `${T.name}이(가) 만들어졌어요`;
+  [523, 659, 784].forEach((f, i) => tone(f, .4, 'triangle', .06, i * .1));
+}
+function closeResult() {
+  $('#result').classList.remove('on');
+  if (g.phase === 'result') g.phase = 'idle';
+  if (g.found.length === 4 && !g.ended) { g.wait = .3; }
+}
+function goals() {
+  const box = $('#goals'); $$('.goal').forEach(e => e.remove());
+  for (const k of ORDER) { const d = document.createElement('div'); d.className = 'goal' + (g.found.includes(k) ? ' done' : ''); d.dataset.k = k; d.textContent = TYPES[k].name; box.appendChild(d); }
+}
+
+// ---- 시뮬레이션 ----
+function spawn(p) { if (g.parts.length < 1800) g.parts.push(p); }
+function tick(dt) {
+  g.t += dt;
+  g.par.x += (g.mouse.x - g.par.x) * Math.min(1, dt * 3); g.par.y += (g.mouse.y - g.par.y) * Math.min(1, dt * 3);
+  const v = g.er ? g.er.v : +$('#visc').value, gas = g.er ? g.er.gas : +$('#gas').value;
+  // 마그마방 거품: 가스가 많을수록 많고, 점성이 높을수록 천천히 오름
+  const want = 5 + gas * .35;
+  if (g.bubbles.length < want && rnd() < dt * 20) g.bubbles.push({ x: VENT + (rnd() - .5) * 220, y: GY + 210 + rnd() * 30, r: 2 + rnd() * 5 });
+  for (const b of g.bubbles) { b.y -= (40 * (1 - v / 100) + 5) * dt; b.x += Math.sin(g.t * 2 + b.r) * 6 * dt; }
+  g.bubbles = g.bubbles.filter(b => b.y > GY + 150 && g.bubbles.length <= want + 5);
+  // 김(평소 연기)
+  if (rnd() < dt * 3) spawn({ k: 'steam', x: VENT + (rnd() - .5) * 10, y: surf(VENT) - 4, vx: 6 + rnd() * 8, vy: -20 - rnd() * 15, life: 3 + rnd() * 2, max: 5, r: 6 });
+  let target = 0;
+  if (g.phase === 'intro') {
+    // 첫 화면: 작은 분출이 계속 이어짐
+    const top = surf(VENT) - 2;
+    if (rnd() < dt * 22) { const dir = rnd() < .5 ? -1 : 1; spawn({ k: 'lava', x: VENT, y: top, vx: dir * (10 + rnd() * 30), vy: -60 - rnd() * 120, air: true, dir, sp: 40 * (.7 + rnd() * .6), life: 3.5, max: 3.5, r: 3 }); }
+    if (rnd() < dt * 18) spawn({ k: 'ash', x: VENT + (rnd() - .5) * 20, y: top, vx: (rnd() - .5) * 30, vy: -(150 + rnd() * 120), life: 4 + rnd() * 3, max: 7, r: 5 + rnd() * 8 });
+    target = 1.5;
+  }
+  if (g.phase === 'erupt') {
+    const er = g.er; er.t += dt;
+    const p = Math.max(0, (er.t - er.pre) / er.dur);
+    target = er.t < er.pre ? (er.t / er.pre) * (1 + er.e * 3) : (p < 1 ? (1 + er.e * 14) * (1 - p * .6) : 0);
+    if (er.t >= er.pre && p < 1) {
+      const ease = 1 - Math.pow(1 - p, 2);
+      for (let i = 0; i < N; i++) { const d = i * DX + DX / 2 - VENT; let tg = prof(er.type, d) * ease; if (er.type === 'explosive' && p > .8 && Math.abs(d) < 75) tg = Math.min(tg, caldera(d)); if (tg > g.h[i] || (er.type === 'explosive' && p > .8 && Math.abs(d) < 75)) g.h[i] = Math.max(prof('start', d), tg > g.h[i] ? g.h[i] + (tg - g.h[i]) * Math.min(1, dt * 6) : tg); }
+      const top = surf(VENT) - 2, flow = 140 * Math.pow(1 - er.v / 100, 2) + 3;
+      // 용암
+      const lavaRate = er.type === 'explosive' ? 25 : 60;
+      for (let k = 0; k < lavaRate * dt * 3; k++) if (rnd() < 1 / 3) {
+        const dir = rnd() < .5 ? -1 : 1, fountain = er.v < 34 && er.gas > 50;
+        spawn({ k: 'lava', x: VENT + dir * rnd() * 8, y: top, vx: dir * (fountain ? 20 + rnd() * 30 : 10), vy: fountain ? -(er.gas * 2.2 + rnd() * 60) : -10 - rnd() * 20, air: true, dir, sp: flow * (.7 + rnd() * .6), life: 3.5, max: 3.5, r: 3 });
+      }
+      // 화산재 기둥
+      const ashRate = er.e * 260;
+      for (let k = 0; k < ashRate * dt; k++) spawn({ k: 'ash', x: VENT + (rnd() - .5) * 20, y: top, vx: (rnd() - .5) * 40, vy: -(80 + 420 * er.e) * (.6 + rnd() * .6), life: 4 + rnd() * 3, max: 7, r: 5 + rnd() * 8 });
+      // 화산탄
+      if (er.v >= 34) for (let k = 0; k < er.e * 18 * dt * 3; k++) if (rnd() < 1 / 3) spawn({ k: 'bomb', x: VENT, y: top, vx: (rnd() - .5) * 300 * (.4 + er.e), vy: -(150 + rnd() * 250) * (.4 + er.e), life: 4, max: 4, r: 3 + rnd() * 3 });
+      // 화쇄류
+      if (er.type === 'explosive' && p > .35 && p < .9) for (let k = 0; k < 40 * dt; k++) { const dir = rnd() < .5 ? -1 : 1; spawn({ k: 'pyro', x: VENT + dir * 30, y: top, dir, sp: 120 + rnd() * 80, life: 3, max: 3, r: 12 + rnd() * 14 }); }
+    }
+    if (er.t >= er.pre + er.dur + 1.2) finishEruption();
+  }
+  g.shake += (target - g.shake) * Math.min(1, dt * 6);
+  if (g.er && g.phase === 'erupt') g.er.maxShake = Math.max(g.er.maxShake, g.shake);
+  // 입자 움직임
+  let ash = 0;
+  for (const p of g.parts) {
+    p.life -= dt;
+    if (p.k === 'lava') {
+      if (p.air) { p.vy += 300 * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.y >= surf(p.x) - 2 && p.vy > 0) { p.air = false; p.y = surf(p.x) - 2; } }
+      else {
+        const s0 = surf(p.x), s1 = surf(p.x + p.dir * 4), slope = Math.max(.05, (s1 - s0) / 4 + .2);
+        p.x += p.dir * p.sp * (.6 + Math.min(.6, slope)) * dt; p.y = surf(p.x) - 2; p.sp *= Math.pow(.75, dt);
+        const i = Math.floor(p.x / DX); if (i >= 0 && i < N) g.heat[i] = Math.min(1, g.heat[i] + dt * 2.5);
+        if (g.er && g.phase === 'erupt') g.er.reach = Math.max(g.er.reach, Math.abs(p.x - VENT));
+      }
+    } else if (p.k === 'ash') { ash++; p.vy += (p.vy < -30 ? 140 : 8) * dt; p.vx += 18 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += 6 * dt; }
+    else if (p.k === 'bomb') { p.vy += 300 * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.y > surf(p.x)) p.life = 0; }
+    else if (p.k === 'pyro') { ash++; p.x += p.dir * p.sp * dt; p.y = surf(p.x) - p.r * .5; p.sp *= Math.pow(.6, dt); p.r += 8 * dt; }
+    else if (p.k === 'steam') { p.x += p.vx * dt; p.y += p.vy * dt; p.r += 5 * dt; }
+  }
+  g.parts = g.parts.filter(p => p.life > 0 && p.x > -200 && p.x < WW + 200);
+  if (g.er && g.phase === 'erupt') g.er.maxAsh = Math.max(g.er.maxAsh, ash);
+  g.ash = ash;
+  for (let i = 0; i < N; i++) g.heat[i] = Math.max(0, g.heat[i] - dt * .22);
+  if (g.wait > 0) { g.wait -= dt; if (g.wait <= 0) showEnd(); }
+}
+function showEnd() {
+  if (g.phase === 'end') return;
+  g.phase = 'end'; g.ended = true; store.done = (store.done || 0) + 1; save();
+  $('#endMsg').textContent = `지금까지 분출 실험 ${store.runs || 0}번 · 화산 박사 ${store.done}회`;
+  $('#end').classList.add('on');
+  [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .5, 'triangle', .07, i * .12));
+}
+
+// ---- 그리기 ----
+const X = x => ox + x * sc, Y = y => oy + y * sc;
+function render() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const sh = g.shake, sx = (rnd() - .5) * sh, sy = (rnd() - .5) * sh;
+  const dark = g.ash ? Math.min(.55, g.ash / 900) : 0;
+  const sky = ctx.createLinearGradient(0, 0, 0, Y(GY));
+  sky.addColorStop(0, '#5a7fb0'); sky.addColorStop(1, '#f2c79a'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  if (dark) { ctx.fillStyle = `rgba(60,50,50,${dark})`; ctx.fillRect(0, 0, W, Y(GY)); }
+  ctx.save(); ctx.translate(sx, sy);
+  // 먼 산(시차)
+  const px = g.par.x, py = g.par.y;
+  const far = (base, amp, col, k, seed) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-50, Y(GY) + 2); for (let x = -50; x <= W + 50; x += 20) { const xx = x + px * k; ctx.lineTo(x, Y(GY) - (Math.sin(xx / 150 + seed) * .5 + .5) * amp * sc - base * sc + py * k * .3); } ctx.lineTo(W + 50, Y(GY) + 2); ctx.fill(); };
+  far(10, 90, '#9a8fa8', -8, 1); far(0, 50, '#7f7a8a', -18, 3);
+  // 땅 단면
+  const gr = ctx.createLinearGradient(0, Y(GY), 0, H); gr.addColorStop(0, '#6b4f3f'); gr.addColorStop(1, '#2a1c17');
+  ctx.fillStyle = gr; ctx.fillRect(0, Y(GY), W, H);
+  for (let k = 0; k < 5; k++) { ctx.fillStyle = k % 2 ? 'rgba(0,0,0,.12)' : 'rgba(255,220,180,.06)'; ctx.beginPath(); ctx.moveTo(0, Y(GY + 30 + k * 45)); for (let x = 0; x <= W; x += 40) ctx.lineTo(x, Y(GY + 30 + k * 45) + Math.sin(x / 90 + k) * 6); ctx.lineTo(W, Y(GY + 60 + k * 45)); ctx.lineTo(0, Y(GY + 60 + k * 45)); ctx.fill(); }
+  // 마그마방과 통로
+  const v = g.er ? g.er.v : +$('#visc').value;
+  const mcol = `hsl(${12 + v * .25},95%,${50 + v * .08}%)`;
+  const glow = .7 + Math.sin(g.t * 3) * .1 + g.shake * .02;
+  ctx.fillStyle = mcol; ctx.globalAlpha = glow;
+  ctx.beginPath(); ctx.ellipse(X(VENT), Y(GY + 200), 150 * sc, 52 * sc, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(X(VENT - 9), Y(GY + 160)); ctx.lineTo(X(VENT - 6), Y(surf(VENT))); ctx.lineTo(X(VENT + 6), Y(surf(VENT))); ctx.lineTo(X(VENT + 9), Y(GY + 160)); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(255,240,200,.75)'; for (const b of g.bubbles) { ctx.beginPath(); ctx.arc(X(b.x), Y(b.y), b.r * sc, 0, 7); ctx.fill(); }
+  ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = `800 ${Math.max(11, 15 * sc)}px system-ui,sans-serif`; ctx.textAlign = 'center';
+  ctx.fillText('마그마방', X(VENT), Y(GY + 205));
+  // 이전 모양(점선)
+  if (g.prev && g.phase !== 'intro') { ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i < N; i++) { const x = X(i * DX + DX / 2), y = Y(GY - g.prev[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); ctx.setLineDash([]); }
+  // 화산 몸
+  const type = g.er ? g.er.type : 'strato';
+  ctx.beginPath(); ctx.moveTo(X(0), Y(GY)); for (let i = 0; i < N; i++) ctx.lineTo(X(i * DX + DX / 2), Y(GY - g.h[i])); ctx.lineTo(X(WW), Y(GY)); ctx.closePath();
+  ctx.save(); ctx.clip();
+  const vg = ctx.createLinearGradient(0, Y(GY - 260), 0, Y(GY)); vg.addColorStop(0, type === 'dome' ? '#8d8580' : '#5b4a44'); vg.addColorStop(1, '#3b2c27'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, Y(GY) + 2);
+  // 층(성층: 굵은 층 번갈아, 순상: 얇은 용암층)
+  for (let k = 0; k < 14; k++) { const yy = GY - k * (type === 'shield' ? 8 : 20); ctx.fillStyle = k % 2 ? (type === 'strato' || type === 'explosive' ? 'rgba(160,150,140,.35)' : 'rgba(0,0,0,.15)') : 'rgba(0,0,0,0)'; ctx.fillRect(0, Y(yy - (type === 'shield' ? 8 : 20)), W, (type === 'shield' ? 8 : 20) * sc); }
+  ctx.restore();
+  // 뜨거운 용암 덮개
+  ctx.lineCap = 'round';
+  for (let i = 0; i < N; i++) if (g.heat[i] > .02) { const h = g.heat[i]; ctx.strokeStyle = `rgba(255,${80 + h * 140 | 0},20,${Math.min(1, h * 1.3)})`; ctx.lineWidth = (3 + h * 6) * sc; ctx.beginPath(); ctx.moveTo(X(i * DX), Y(GY - g.h[i]) - 1); ctx.lineTo(X(i * DX + DX), Y(GY - g.h[Math.min(N - 1, i + 1)]) - 1); ctx.stroke(); }
+  // 분화구 불빛
+  const vy = surf(VENT); const rg = ctx.createRadialGradient(X(VENT), Y(vy), 1, X(VENT), Y(vy), (30 + g.shake * 6) * sc);
+  rg.addColorStop(0, 'rgba(255,200,80,.9)'); rg.addColorStop(1, 'rgba(255,80,0,0)'); ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(X(VENT), Y(vy), (30 + g.shake * 6) * sc, 0, 7); ctx.fill();
+  // 입자
+  for (const p of g.parts) {
+    const a = Math.max(0, Math.min(1, p.life / p.max * 1.5));
+    if (p.k === 'lava') { ctx.fillStyle = `rgba(255,${120 + a * 110 | 0},40,${a})`; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), p.r * sc, 0, 7); ctx.fill(); }
+    else if (p.k === 'ash') { ctx.fillStyle = `rgba(90,82,80,${a * .45})`; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), p.r * sc, 0, 7); ctx.fill(); }
+    else if (p.k === 'pyro') { ctx.fillStyle = `rgba(150,130,120,${a * .5})`; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), p.r * sc, 0, 7); ctx.fill(); }
+    else if (p.k === 'bomb') { ctx.fillStyle = '#2a1a14'; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), p.r * sc, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(255,120,40,.8)'; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), p.r * .5 * sc, 0, 7); ctx.fill(); }
+    else if (p.k === 'steam') { ctx.fillStyle = `rgba(240,240,240,${a * .25})`; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), p.r * sc, 0, 7); ctx.fill(); }
+  }
+  // 눈금(높이·거리)
+  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = `700 ${Math.max(10, 12 * sc)}px system-ui,sans-serif`; ctx.textAlign = 'right';
+  const m = metrics(); ctx.fillText(`높이 ${Math.round(m.height * 4)}m · 폭 ${Math.round(m.half * 8)}m (모형)`, Math.min(W - 12, X(WW - 20)), Y(GY + 22));
+  ctx.restore();
+  if (g.shake > 4) { ctx.fillStyle = `rgba(255,90,20,${Math.min(.15, (g.shake - 4) * .01)})`; ctx.fillRect(0, 0, W, H); }
+}
+
+// ---- 입력 ----
+$('#visc').addEventListener('input', readouts); $('#gas').addEventListener('input', readouts);
+$('#erupt').onclick = () => { if (g.phase === 'intro') begin(); erupt(); };
+cv.addEventListener('pointermove', e => { g.mouse.x = (e.clientX / (W || 1) - .5) * 2; g.mouse.y = (e.clientY / (H || 1) - .5) * 2; });
+addEventListener('keydown', e => {
+  if ((e.key === ' ' || e.key === 'Enter') && !(e.target && /BUTTON|INPUT/.test(e.target.tagName))) { e.preventDefault(); if (g.phase === 'idle') erupt(); }
+});
+function begin() { $('#intro').classList.remove('on'); g.phase = 'idle'; g.prev = g.h.slice(); ensureAudio(); }
+$('#start').onclick = begin;
+$('#resOk').onclick = closeResult;
+$('#endOk').onclick = () => { $('#end').classList.remove('on'); g.phase = 'idle'; };
+
+// ---- 소리 ----
+let ac = null, master = null, soundOn = false, nbuf = null, rumG = null;
+function ensureAudio() {
+  if (!soundOn) return;
+  if (!ac) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      ac = new AC(); master = ac.createGain(); master.gain.value = .8; master.connect(ac.destination);
+      const len = ac.sampleRate * 2; nbuf = ac.createBuffer(1, len, ac.sampleRate); const d = nbuf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const s = ac.createBufferSource(); s.buffer = nbuf; s.loop = true; const fl = ac.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 120; rumG = ac.createGain(); rumG.gain.value = .04;
+      s.connect(fl); fl.connect(rumG); rumG.connect(master); s.start();
+    } catch (e) { ac = null; return; }
+  }
+  if (ac.state === 'suspended') { try { ac.resume().catch(() => {}); } catch (e) {} }
+}
+function rumble(k) {
+  if (!soundOn || !ac || !rumG) return;
+  try { const t = ac.currentTime; rumG.gain.cancelScheduledValues(t); rumG.gain.setTargetAtTime(.15 + k * .5, t, .3); rumG.gain.setTargetAtTime(.04, t + 6.5, 1); } catch (e) {}
+  if (k > .6) { setTimeout(() => boom(), 900); }
+}
+function boom() { if (!soundOn || !ac) return; try { const s = ac.createBufferSource(); s.buffer = nbuf; const fl = ac.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 300; const gn = ac.createGain(); const t = ac.currentTime; gn.gain.setValueAtTime(.8, t); gn.gain.exponentialRampToValueAtTime(.001, t + 2.2); s.connect(fl); fl.connect(gn); gn.connect(master); s.start(t); s.stop(t + 2.3); } catch (e) {} }
+function tone(f, d, type, vol, delay) {
+  if (!soundOn || !ac) return;
+  try { const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), gn = ac.createGain(); o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); gn.gain.setValueAtTime(vol || .08, t); gn.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(gn); gn.connect(master); o.start(t); o.stop(t + d + .05); } catch (e) {}
+}
+function setSnd() {
+  const b = $('#snd'); b.setAttribute('aria-pressed', String(soundOn)); b.textContent = soundOn ? '🔊' : '🔈';
+  if (master && ac) { try { master.gain.setTargetAtTime(soundOn ? .8 : 0, ac.currentTime, .05); } catch (e) {} }
+}
+$('#snd').onclick = () => { soundOn = !soundOn; ensureAudio(); setSnd(); };
+const fsEl = document.documentElement, fsBtn = $('#fs');
+if (!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen)) fsBtn.hidden = true;
+fsBtn.onclick = () => {
+  try {
+    const d = document, on = d.fullscreenElement || d.webkitFullscreenElement;
+    const fn = on ? (d.exitFullscreen || d.webkitExitFullscreen) : (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+    if (fn) { const p = fn.call(on ? d : fsEl); if (p && p.catch) p.catch(() => {}); }
+  } catch (e) {}
+};
+
+// ---- 시작 ----
+setProfile('strato', .75);
+for (let i = 0; i < N; i++) if (Math.abs(i * DX - VENT) < 120) g.heat[i] = 0;
+addEventListener('resize', resize); resize(); readouts(); goals();
+$('#intro').classList.add('on');
+let last = performance.now();
+function frame(now) {
+  const dt = Math.max(0, Math.min(.05, (now - last) / 1000)); last = now;
+  if (!manual) tick(dt);
+  render(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+window.__test = {
+  step(n) { manual = true; for (let i = 0; i < (n || 1); i++) tick(1 / 60); render(); },
+  state() { const m = metrics(); return { phase: g.phase, t: g.t, parts: g.parts.length + g.bubbles.length, ash: g.ash || 0, shake: g.shake, type: g.last ? g.last.type : null, reach: g.last ? g.last.reach : 0, steep: g.last ? g.last.steep : m.steep, height: m.height, found: g.found.slice(), sound: soundOn }; }
+};
+})();
+</script>
+</body>
+</html>
