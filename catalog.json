@@ -73,6 +73,10 @@
     {"no":68,"slug":"stack-tower","name":"차곡차곡 탑","kind":"게임","desc":"움직이는 블록을 딱 맞춰 떨어뜨려 높이 쌓는 2.5D 타이밍 게임","who":"누구나","path":"stack-tower/"},
     {"no":69,"slug":"ice-curling","name":"얼음 과녁","kind":"게임","desc":"튕겨 밀어 낸 스톤을 과녁 한가운데 세우는 힘 조절 게임","who":"누구나","path":"ice-curling/"},
     {"no":70,"slug":"basket-shot","name":"교실 농구","kind":"게임","desc":"위로 쓸어 던져 포물선으로 골대에 넣는 슛 게임","who":"학생·누구나","path":"basket-shot/"},
-    {"no":71,"slug":"mini-driver","name":"꼬마 운전 연습","kind":"게임","desc":"핸들과 페달로 신호를 지키며 주차 칸에 차를 세우는 교통안전 운전 게임","who":"학생","path":"mini-driver/"}
+    {"no":71,"slug":"mini-driver","name":"꼬마 운전 연습","kind":"게임","desc":"핸들과 페달로 신호를 지키며 주차 칸에 차를 세우는 교통안전 운전 게임","who":"학생","path":"mini-driver/"},
+    {"no":72,"slug":"drift-kart","name":"운동장 드리프트","kind":"게임","desc":"위에서 내려다보는 트랙을 드리프트로 돌며 부스터를 모아 AI 친구 3명과 3바퀴 경주하는 카트 레이싱","who":"학생·누구나","path":"drift-kart/"},
+    {"no":73,"slug":"road-rally","name":"달려라 그랑프리","kind":"게임","desc":"차 뒤에서 바라보는 2.5D 시점으로 굽은 길과 언덕을 달리며 드리프트 부스터로 순위를 올리는 레이싱","who":"학생·누구나","path":"road-rally/"},
+    {"no":74,"slug":"item-kart","name":"물풍선 카트 대작전","kind":"게임","desc":"아이템 상자를 먹고 물풍선·비눗물·우산 방패로 AI와 겨루는 아이템 카트 경주","who":"학생·누구나","path":"item-kart/"},
+    {"no":75,"slug":"ghost-lap","name":"번개 타임어택","kind":"게임","desc":"트랙 3곳에서 내 최고 기록 유령차와 겨루며 금·은·동 메달에 도전하는 타임어택","who":"학생·누구나","path":"ghost-lap/"}
   ]
 }

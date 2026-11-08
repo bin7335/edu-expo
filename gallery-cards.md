@@ -1,4 +1,4 @@
-# 패들렛·작품 등록용 카드 문구 (71개)
+# 패들렛·작품 등록용 카드 문구 (75개)
 
 - catalog.json에서 생성(tools/build-catalog.js). 직접 고치지 말고 catalog.json을 고친 뒤 다시 실행.
 - 썸네일: `thumbnails/` 같은 번호 PNG (1280×720)
@@ -366,4 +366,24 @@ https://bin7335.github.io/edu-expo/basket-shot/
 핸들과 페달로 신호를 지키며 주차 칸에 차를 세우는 교통안전 운전 게임
 대상: 학생 · 게임
 https://bin7335.github.io/edu-expo/mini-driver/
+
+**72. 운동장 드리프트**
+위에서 내려다보는 트랙을 드리프트로 돌며 부스터를 모아 AI 친구 3명과 3바퀴 경주하는 카트 레이싱
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/drift-kart/
+
+**73. 달려라 그랑프리**
+차 뒤에서 바라보는 2.5D 시점으로 굽은 길과 언덕을 달리며 드리프트 부스터로 순위를 올리는 레이싱
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/road-rally/
+
+**74. 물풍선 카트 대작전**
+아이템 상자를 먹고 물풍선·비눗물·우산 방패로 AI와 겨루는 아이템 카트 경주
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/item-kart/
+
+**75. 번개 타임어택**
+트랙 3곳에서 내 최고 기록 유령차와 겨루며 금·은·동 메달에 도전하는 타임어택
+대상: 학생·누구나 · 게임
+https://bin7335.github.io/edu-expo/ghost-lap/
 
